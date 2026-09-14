@@ -1,7 +1,9 @@
 #![no_std]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol, Vec,
+};
 
 #[contract]
 pub struct MusicLicensingContract;
@@ -53,8 +55,12 @@ impl MusicLicensingContract {
         artist.require_auth();
         assert!(!Self::is_paused(&env), "Contract is paused");
 
-        let id = env.storage().instance().get(&DataKey::NextTrackId).unwrap_or(1u32);
-        
+        let id = env
+            .storage()
+            .instance()
+            .get(&DataKey::NextTrackId)
+            .unwrap_or(1u32);
+
         let track = Track {
             id,
             artist: artist.clone(),
@@ -64,7 +70,9 @@ impl MusicLicensingContract {
         };
 
         env.storage().persistent().set(&DataKey::Track(id), &track);
-        env.storage().instance().set(&DataKey::NextTrackId, &(id + 1));
+        env.storage()
+            .instance()
+            .set(&DataKey::NextTrackId, &(id + 1));
 
         env.events().publish((EVENT_TRACK_REGISTERED, artist), id);
         id
@@ -74,7 +82,11 @@ impl MusicLicensingContract {
         buyer.require_auth();
         assert!(!Self::is_paused(&env), "Contract is paused");
 
-        let track: Track = env.storage().persistent().get(&DataKey::Track(track_id)).expect("Track not found");
+        let track: Track = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Track(track_id))
+            .expect("Track not found");
         assert!(track.is_active, "Track is not active");
 
         // Note: In a real implementation, we would transfer USDC/XLM here from buyer to track.artist
@@ -86,20 +98,34 @@ impl MusicLicensingContract {
             purchase_time: env.ledger().timestamp(),
         };
 
-        let mut licenses: Vec<License> = env.storage().persistent().get(&DataKey::Licenses(track_id)).unwrap_or(Vec::new(&env));
+        let mut licenses: Vec<License> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Licenses(track_id))
+            .unwrap_or(Vec::new(&env));
         licenses.push_back(license);
-        env.storage().persistent().set(&DataKey::Licenses(track_id), &licenses);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Licenses(track_id), &licenses);
 
-        env.events().publish((EVENT_LICENSE_PURCHASED, buyer), track_id);
+        env.events()
+            .publish((EVENT_LICENSE_PURCHASED, buyer), track_id);
     }
 
     pub fn get_track(env: Env, id: u32) -> Track {
-        env.storage().persistent().get(&DataKey::Track(id)).expect("Track not found")
+        env.storage()
+            .persistent()
+            .get(&DataKey::Track(id))
+            .expect("Track not found")
     }
 
     pub fn pause(env: Env, admin: Address) {
         admin.require_auth();
-        let stored_admin: Address = env.storage().instance().get(&DataKey::Admin).expect("not initialized");
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized");
         if admin != stored_admin {
             panic!("unauthorized");
         }
@@ -109,7 +135,11 @@ impl MusicLicensingContract {
 
     pub fn unpause(env: Env, admin: Address) {
         admin.require_auth();
-        let stored_admin: Address = env.storage().instance().get(&DataKey::Admin).expect("not initialized");
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized");
         if admin != stored_admin {
             panic!("unauthorized");
         }
@@ -118,6 +148,9 @@ impl MusicLicensingContract {
     }
 
     pub fn is_paused(env: &Env) -> bool {
-        env.storage().instance().get(&DataKey::IsPaused).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get(&DataKey::IsPaused)
+            .unwrap_or(false)
     }
 }

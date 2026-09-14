@@ -108,17 +108,12 @@ export class BatchSubmitter extends EventEmitter {
       batch.map(async ({ tx, resolve, reject }) => {
         const pool = this.#registry.getPool(tx.sourceAccount);
         try {
-          const seq = await pool.acquire();
-          const envelope = tx.buildEnvelope(seq);
-          const result = await this.#submitWithRetry(tx.id, envelope);
+          const result = await this.#submitWithRetry(tx, pool);
           this.emit('tx:success', { txId: tx.id, hash: result.hash });
           resolve({ txId: tx.id, hash: result.hash });
         } catch (err) {
           // Resync pool in case of sequence error
-          await this.#registry
-            .getPool(tx.sourceAccount)
-            .resync()
-            .catch(() => {});
+          await pool.resync().catch(() => {});
           this.emit('tx:failed', { txId: tx.id, error: err.message });
           reject(err);
         }
@@ -128,13 +123,21 @@ export class BatchSubmitter extends EventEmitter {
     this.emit('batch:submitted', { batchId, count: batch.length });
   }
 
-  async #submitWithRetry(txId, envelope, attempt = 1) {
+  async #submitWithRetry(tx, pool, attempt = 1) {
+    const seq = await pool.acquire();
+    const envelope = tx.buildEnvelope(seq);
     try {
       return await this.#submitFn(envelope);
     } catch (err) {
       if (attempt >= this.#retryAttempts) throw err;
+      const isSeqError =
+        typeof err.message === 'string' &&
+        /seq_no_too_low|bad_seq|tx_bad_seq|sequence/i.test(err.message);
+      if (isSeqError) {
+        await pool.resync().catch(() => {});
+      }
       await new Promise((r) => setTimeout(r, this.#retryDelayMs * attempt));
-      return this.#submitWithRetry(txId, envelope, attempt + 1);
+      return this.#submitWithRetry(tx, pool, attempt + 1);
     }
   }
 

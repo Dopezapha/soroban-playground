@@ -6,12 +6,12 @@ mod types;
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Vec};
 use crate::storage::{
-    get_song, is_initialized, set_initialized, set_song, get_usage_record, set_usage_record,
-    get_license, set_license, get_revenue_share, set_revenue_share,
+    get_license, get_revenue_share, get_song, get_usage_record, is_initialized, set_initialized,
+    set_license, set_revenue_share, set_song, set_usage_record,
 };
-use crate::types::{Error, Song, Split, UsageRecord, License, RevenueShare};
+use crate::types::{Error, License, RevenueShare, Song, Split, UsageRecord};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Vec};
 
 /// Basis points for 100% (used for split validation)
 const TOTAL_SHARE_BASIS_POINTS: u32 = 10000;
@@ -51,15 +51,14 @@ impl MusicRoyalty {
         splits: Vec<Split>,
     ) -> Result<(), Error> {
         artist.require_auth();
-        
-        if id.len() == 0 || id.len() > MAX_SONG_ID_LENGTH {
+
+        if id.is_empty() || id.len() > MAX_SONG_ID_LENGTH {
             return Err(Error::InvalidSongId);
         }
 
-        if title.len() == 0 || title.len() > MAX_TITLE_LENGTH {
+        if title.is_empty() || title.len() > MAX_TITLE_LENGTH {
             return Err(Error::InvalidTitle);
         }
-
 
         // Validate splits total 10000 (100%)
         let total_share = self::validate_splits(&splits)?;
@@ -83,12 +82,12 @@ impl MusicRoyalty {
         if amount <= 0 {
             return Err(Error::ZeroAmount);
         }
-        
+
         let mut song = get_song(&env, song_id.clone()).ok_or(Error::SongNotFound)?;
-        
+
         // In a real contract, we would actually transfer funds here
         // for each split.account. For the playground, we just track it.
-        
+
         // checked_add on every running total in this contract: these are
         // lifetime accumulators that only ever grow, and this crate's release
         // profile sets overflow-checks = true, so an unchecked `+=` would abort
@@ -118,13 +117,13 @@ impl MusicRoyalty {
         duration_seconds: u64,
     ) -> Result<(), Error> {
         artist.require_auth();
-        
+
         // Verify song exists
         let _song = get_song(&env, song_id.clone()).ok_or(Error::SongNotFound)?;
-        
+
         // Validate license parameters
         validate_license_params(&license_type, royalty_rate, duration_seconds)?;
-        
+
         let now = env.ledger().timestamp();
         // A duration near u64::MAX would overflow the expiry. MAX_LICENSE_DURATION
         // already bounds it, but relying on a validation elsewhere to prevent an
@@ -141,9 +140,9 @@ impl MusicRoyalty {
             created_at: now,
             expires_at,
         };
-        
+
         set_license(&env, song_id.clone(), licensee.clone(), &license);
-        
+
         // Initialize revenue share if not exists
         if get_revenue_share(&env, song_id.clone()).is_none() {
             let share = RevenueShare {
@@ -155,8 +154,9 @@ impl MusicRoyalty {
             };
             set_revenue_share(&env, song_id.clone(), &share);
         }
-        
-        env.events().publish((symbol_short!("license"),), (song_id, licensee));
+
+        env.events()
+            .publish((symbol_short!("license"),), (song_id, licensee));
         Ok(())
     }
 
@@ -174,28 +174,28 @@ impl MusicRoyalty {
         if usage_count == 0 || payment_amount <= 0 {
             return Err(Error::ZeroAmount);
         }
-        
+
         // LicenseNotFound rather than SongNotFound: the song may well exist and
         // simply have no license for this licensee, and reporting the song as
         // missing sends a caller looking in the wrong place.
-        let license = get_license(&env, song_id.clone(), licensee.clone())
-            .ok_or(Error::LicenseNotFound)?;
-        
+        let license =
+            get_license(&env, song_id.clone(), licensee.clone()).ok_or(Error::LicenseNotFound)?;
+
         let current_time = env.ledger().timestamp();
         if !is_license_active(&license, current_time) {
             return Err(Error::Unauthorized);
         }
-        
+
         // Update or create usage record
-        let mut record = get_usage_record(&env, song_id.clone(), licensee.clone())
-            .unwrap_or(UsageRecord {
+        let mut record =
+            get_usage_record(&env, song_id.clone(), licensee.clone()).unwrap_or(UsageRecord {
                 song_id: song_id.clone(),
                 licensee: licensee.clone(),
                 usage_count: 0,
                 total_paid: 0,
                 last_payment_timestamp: 0,
             });
-        
+
         record.usage_count = record
             .usage_count
             .checked_add(usage_count)
@@ -220,27 +220,27 @@ impl MusicRoyalty {
                 .ok_or(Error::Overflow)?;
             set_revenue_share(&env, song_id.clone(), &share);
         }
-        
-        env.events().publish((symbol_short!("usage"),), (song_id, usage_count, payment_amount));
+
+        env.events().publish(
+            (symbol_short!("usage"),),
+            (song_id, usage_count, payment_amount),
+        );
         Ok(())
     }
 
     // ── Revenue Distribution ──────────────────────────────────────────────────
 
     /// Distribute royalties to split recipients
-    pub fn distribute_royalties(
-        env: Env,
-        song_id: String,
-    ) -> Result<i128, Error> {
+    pub fn distribute_royalties(env: Env, song_id: String) -> Result<i128, Error> {
         let _song = get_song(&env, song_id.clone()).ok_or(Error::SongNotFound)?;
         let mut share = get_revenue_share(&env, song_id.clone()).ok_or(Error::SongNotFound)?;
-        
+
         if share.pending_distribution <= 0 {
             return Err(Error::ZeroAmount);
         }
-        
+
         let amount_to_distribute = share.pending_distribution;
-        
+
         // In a real contract, we would transfer funds to each split recipient
         // For now, we just track the distribution
         share.distributed_revenue = share
@@ -249,10 +249,11 @@ impl MusicRoyalty {
             .ok_or(Error::Overflow)?;
         share.pending_distribution = 0;
         share.last_distribution_timestamp = env.ledger().timestamp();
-        
+
         set_revenue_share(&env, song_id.clone(), &share);
-        
-        env.events().publish((symbol_short!("distrib"),), (song_id, amount_to_distribute));
+
+        env.events()
+            .publish((symbol_short!("distrib"),), (song_id, amount_to_distribute));
         Ok(amount_to_distribute)
     }
 
@@ -334,15 +335,15 @@ fn validate_license_params(
     // Each failure now reports what actually failed. These all returned
     // InvalidSplits before, which told a caller their split table was wrong
     // when the split table was fine.
-    if license_type.len() == 0 || license_type.len() > MAX_LICENSE_TYPE_LENGTH {
+    if license_type.is_empty() || license_type.len() > MAX_LICENSE_TYPE_LENGTH {
         return Err(Error::InvalidLicenseType);
     }
 
-    if royalty_rate < MIN_ROYALTY_RATE || royalty_rate > MAX_ROYALTY_RATE {
+    if !(MIN_ROYALTY_RATE..=MAX_ROYALTY_RATE).contains(&royalty_rate) {
         return Err(Error::InvalidRoyaltyRate);
     }
 
-    if duration_seconds < MIN_LICENSE_DURATION || duration_seconds > MAX_LICENSE_DURATION {
+    if !(MIN_LICENSE_DURATION..=MAX_LICENSE_DURATION).contains(&duration_seconds) {
         return Err(Error::InvalidDuration);
     }
 

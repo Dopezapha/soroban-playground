@@ -46,9 +46,7 @@ pub mod mock_token;
 
 /// Enhanced test assertion helpers.
 pub mod assertions;
-pub use assertions::{
-    assert_auth_required, assert_event_emitted, assert_near, assert_panics,
-};
+pub use assertions::{assert_auth_required, assert_event_emitted, assert_near, assert_panics};
 
 /// Property-based fuzzing strategies for Soroban types.
 ///

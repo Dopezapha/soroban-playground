@@ -26,7 +26,9 @@ pub fn get_admin(env: &Env) -> Result<Address, Error> {
 }
 
 pub fn set_trust_count(env: &Env, count: u32) {
-    env.storage().instance().set(&InstanceKey::TrustCount, &count);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::TrustCount, &count);
 }
 
 pub fn get_trust_count(env: &Env) -> u32 {

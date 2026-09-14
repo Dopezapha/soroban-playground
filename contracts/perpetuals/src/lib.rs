@@ -38,7 +38,9 @@
 
 #![no_std]
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env,
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -184,11 +186,7 @@ impl Perpetuals {
         reserve_y: i128,
         index_price: i128,
     ) -> Result<(), Error> {
-        if env
-            .storage()
-            .instance()
-            .has(&DataKey::Initialized)
-        {
+        if env.storage().instance().has(&DataKey::Initialized) {
             return Err(Error::AlreadyInitialized);
         }
         if reserve_x <= 0 || reserve_y <= 0 {
@@ -200,18 +198,10 @@ impl Perpetuals {
 
         admin.require_auth();
 
-        env.storage()
-            .instance()
-            .set(&DataKey::Admin, &admin);
-        env.storage()
-            .instance()
-            .set(&DataKey::Initialized, &true);
-        env.storage()
-            .instance()
-            .set(&DataKey::Paused, &false);
-        env.storage()
-            .instance()
-            .set(&DataKey::PositionCount, &0u64);
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::Initialized, &true);
+        env.storage().instance().set(&DataKey::Paused, &false);
+        env.storage().instance().set(&DataKey::PositionCount, &0u64);
         env.storage()
             .instance()
             .set(&DataKey::FundingAccumulator, &0i64);
@@ -249,8 +239,7 @@ impl Perpetuals {
     pub fn set_paused(env: Env, admin: Address, paused: bool) -> Result<(), Error> {
         Self::assert_admin(&env, &admin)?;
         env.storage().instance().set(&DataKey::Paused, &paused);
-        env.events()
-            .publish((symbol_short!("pause"),), paused);
+        env.events().publish((symbol_short!("pause"),), paused);
         Ok(())
     }
 
@@ -483,9 +472,7 @@ impl Perpetuals {
             .get(&DataKey::PositionCount)
             .unwrap_or(0)
             + 1;
-        env.storage()
-            .instance()
-            .set(&DataKey::PositionCount, &id);
+        env.storage().instance().set(&DataKey::PositionCount, &id);
         env.storage()
             .instance()
             .set(&DataKey::FundingSnapshot(id), &acc);
@@ -510,11 +497,7 @@ impl Perpetuals {
     }
 
     /// Close a position.  Returns net settlement (collateral ± PnL ± funding).
-    pub fn close_position(
-        env: Env,
-        trader: Address,
-        position_id: u64,
-    ) -> Result<i128, Error> {
+    pub fn close_position(env: Env, trader: Address, position_id: u64) -> Result<i128, Error> {
         Self::assert_not_paused(&env)?;
         Self::assert_initialized(&env)?;
         trader.require_auth();
@@ -560,7 +543,7 @@ impl Perpetuals {
             .get(&DataKey::FundingSnapshot(position_id))
             .unwrap_or(0);
         let acc_delta = acc - open_acc; // bps × 1_000_000
-        // funding_payment = size × acc_delta / (10_000 × 1_000_000)
+                                        // funding_payment = size × acc_delta / (10_000 × 1_000_000)
         let funding_payment = pos.size * i128::from(acc_delta) / 10_000_000_000i128;
         let net_settlement = if pos.is_long {
             pos.collateral + pnl - funding_payment
@@ -584,8 +567,10 @@ impl Perpetuals {
             .instance()
             .set(&DataKey::FundingRate, &funding);
 
-        env.events()
-            .publish((symbol_short!("close_pos"), position_id), (trader, net_settlement));
+        env.events().publish(
+            (symbol_short!("close_pos"), position_id),
+            (trader, net_settlement),
+        );
         Ok(net_settlement)
     }
 
@@ -707,7 +692,16 @@ impl Perpetuals {
     /// For a short (sell): dx leaves → reserve_x decreases → reserve_y increases.
     fn apply_vamm_trade(vamm: &mut VammConfig, is_long: bool, size: i128) -> Result<(), Error> {
         if is_long {
-            // Trader buys `size` base asset → feed base into pool
+            // Trader buys `size` base asset → remove base from pool, increasing mark price
+            if vamm.reserve_x <= size {
+                return Err(Error::InvalidVammReserves);
+            }
+            let new_x = vamm.reserve_x - size;
+            let new_y = vamm.k / new_x;
+            vamm.reserve_x = new_x;
+            vamm.reserve_y = new_y;
+        } else {
+            // Trader sells `size` base asset → feed base into pool, decreasing mark price
             let new_x = vamm
                 .reserve_x
                 .checked_add(size)
@@ -715,15 +709,6 @@ impl Perpetuals {
             if new_x == 0 {
                 return Err(Error::InvalidVammReserves);
             }
-            let new_y = vamm.k / new_x;
-            vamm.reserve_x = new_x;
-            vamm.reserve_y = new_y;
-        } else {
-            // Trader sells `size` base asset → remove base from pool
-            if vamm.reserve_x <= size {
-                return Err(Error::InvalidVammReserves);
-            }
-            let new_x = vamm.reserve_x - size;
             let new_y = vamm.k / new_x;
             vamm.reserve_x = new_x;
             vamm.reserve_y = new_y;
@@ -783,8 +768,9 @@ impl Perpetuals {
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Env};
+    use soroban_sdk::{testutils::Address as _, testutils::Ledger as _, Env};
 
     /// 1 billion virtual units of each reserve → seed mark price ≈ 1.0
     const RX: i128 = 1_000_000_000;

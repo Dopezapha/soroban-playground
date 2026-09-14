@@ -3,11 +3,7 @@
 
 #![cfg(test)]
 
-use soroban_sdk::{
-    testutils::Address as _,
-    symbol_short,
-    Address, Env,
-};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env};
 
 use crate::{
     assert_auth_required, assert_event_emitted, assert_near, assert_panics,
@@ -188,9 +184,8 @@ mod mock_oracle_tests {
         oracle.set_price(&symbol_short!("DATA"), &999);
         // Read storage directly to verify internal data
         let key = symbol_short!("DATA");
-        let stored: Option<PriceData> = env.as_contract(&contract_id, || {
-            env.storage().instance().get(&key)
-        });
+        let stored: Option<PriceData> =
+            env.as_contract(&contract_id, || env.storage().instance().get(&key));
         assert_eq!(
             stored,
             Some(PriceData {
@@ -209,9 +204,8 @@ mod mock_oracle_tests {
         oracle.set_price(&symbol_short!("X"), &100);
         oracle.set_stale(&symbol_short!("X"));
         let key = symbol_short!("X");
-        let stored: Option<PriceData> = env.as_contract(&contract_id, || {
-            env.storage().instance().get(&key)
-        });
+        let stored: Option<PriceData> =
+            env.as_contract(&contract_id, || env.storage().instance().get(&key));
         assert_eq!(
             stored,
             Some(PriceData {
@@ -429,10 +423,7 @@ mod mock_token_tests {
     #[test]
     fn test_symbol() {
         let (_env, token) = setup();
-        assert_eq!(
-            token.symbol(),
-            soroban_sdk::String::from_str(&_env, "MCK")
-        );
+        assert_eq!(token.symbol(), soroban_sdk::String::from_str(&_env, "MCK"));
     }
 
     #[test]
@@ -775,8 +766,12 @@ mod assertions_tests {
 
     #[test]
     fn test_assert_auth_required_on_soroban_err_type() {
-        let env_result: Result<(), soroban_sdk::Error> = Err(soroban_sdk::Error::from(1u32));
-        assert_auth_required(&env_result, "soroban Error should be detected as auth failure");
+        let env_result: Result<(), soroban_sdk::Error> =
+            Err(soroban_sdk::Error::from_contract_error(1u32));
+        assert_auth_required(
+            &env_result,
+            "soroban Error should be detected as auth failure",
+        );
     }
 
     // ── assert_panics ────────────────────────────────────────────────────
@@ -810,7 +805,11 @@ mod assertions_tests {
         }));
         assert!(result.is_err(), "should panic when messages don't match");
         let msg = extract_panic_msg(&result);
-        assert!(msg.contains("expected panic message to contain"), "got: {}", msg);
+        assert!(
+            msg.contains("expected panic message to contain"),
+            "got: {}",
+            msg
+        );
     }
 
     #[test]
@@ -842,11 +841,7 @@ mod assertions_tests {
     #[test]
     fn test_assert_panics_custom_msg() {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            assert_panics(
-                || {},
-                "x",
-                "my custom assertion message",
-            );
+            assert_panics(|| {}, "x", "my custom assertion message");
         }));
         let msg = extract_panic_msg(&result);
         assert!(msg.contains("my custom assertion message"), "got: {}", msg);
@@ -859,7 +854,11 @@ mod assertions_tests {
         }));
         assert!(result.is_err());
         let msg = extract_panic_msg(&result);
-        assert!(msg.contains("diff = 500"), "msg should contain diff: {}", msg);
+        assert!(
+            msg.contains("diff = 500"),
+            "msg should contain diff: {}",
+            msg
+        );
     }
 
     #[test]
@@ -871,7 +870,12 @@ mod assertions_tests {
     fn test_assert_near_negative_tolerance_still_checks() {
         // A negative tolerance should still work (|actual - expected| <= tolerance where tolerance is negative will always fail if actual != expected)
         // But per spec, diff > tolerance, so if tolerance is -1 and actual == expected, diff = 0, 0 > -1 = true, so it passes
-        assert_near(100, 100, -1, "exact match should pass even with negative tolerance");
+        assert_near(
+            100,
+            100,
+            -1,
+            "exact match should pass even with negative tolerance",
+        );
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             assert_near(101, 100, -1, "should fail with negative tolerance");
         }));
@@ -900,11 +904,15 @@ mod assertions_tests {
         let oracle = MockOracleClient::new(&env, &contract_id);
         oracle.set_price(&symbol_short!("X"), &1);
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            assert_event_emitted(&env, symbol_short!("NONEXISTENT"), "check topics list");
+            assert_event_emitted(&env, symbol_short!("NO_EVENT"), "check topics list");
         }));
         assert!(result.is_err());
         let msg = extract_panic_msg(&result);
-        assert!(msg.contains("Emitted topics"), "msg should list topics: {}", msg);
+        assert!(
+            msg.contains("Emitted topics"),
+            "msg should list topics: {}",
+            msg
+        );
     }
 
     #[test]
@@ -1149,13 +1157,17 @@ mod fuzz_tests {
     #[test]
     fn test_arb_amount_boundaries() {
         let mut runner = TestRunner::new(FuzzTester::run_fuzz());
-        let strategy = FuzzTester::arb_amount();
         for _ in 0..50 {
-            let result = runner.run_one(strategy.clone(), |v| {
+            let strategy = FuzzTester::arb_amount();
+            let result = runner.run_one(strategy, |v| {
                 assert!(v < i128::MAX, "arb_amount should be < i128::MAX, got {}", v);
                 Ok(())
             });
-            assert!(result.is_ok(), "arb_amount boundary test failed: {:?}", result);
+            assert!(
+                result.is_ok(),
+                "arb_amount boundary test failed: {:?}",
+                result
+            );
         }
     }
 
@@ -1163,9 +1175,9 @@ mod fuzz_tests {
     fn test_arb_symbol_generates_valid() {
         let env = Env::default();
         let mut runner = TestRunner::new(FuzzTester::run_fuzz());
-        let strategy = FuzzTester::arb_symbol(&env);
         for _ in 0..50 {
-            let result = runner.run_one(strategy.clone(), |sym| {
+            let strategy = FuzzTester::arb_symbol(&env);
+            let result = runner.run_one(strategy, |sym| {
                 let bytes: soroban_sdk::Vec<u8> = sym.into_iter().collect();
                 assert!(!bytes.is_empty(), "symbol should not be empty");
                 assert!(bytes.len() <= 8, "symbol should be <= 8 bytes");
@@ -1178,17 +1190,21 @@ mod fuzz_tests {
     #[test]
     fn test_arb_amount_produces_different_values() {
         let mut runner = TestRunner::new(FuzzTester::run_fuzz());
-        let strategy = FuzzTester::arb_amount();
         let mut seen = std::collections::HashSet::new();
         for _ in 0..20 {
-            let result = runner.run_one(strategy.clone(), |v| {
+            let strategy = FuzzTester::arb_amount();
+            let result = runner.run_one(strategy, |v| {
                 seen.insert(v);
                 Ok(())
             });
             assert!(result.is_ok());
         }
         // With 20 samples from i128::MAX space, duplicates are extremely unlikely
-        assert!(seen.len() > 1, "should produce varied values, got {} unique", seen.len());
+        assert!(
+            seen.len() > 1,
+            "should produce varied values, got {} unique",
+            seen.len()
+        );
     }
 
     #[test]
@@ -1201,9 +1217,9 @@ mod fuzz_tests {
     fn test_arb_address_with_env() {
         let env = Env::default();
         let mut runner = TestRunner::new(FuzzTester::run_fuzz());
-        let strategy = FuzzTester::arb_address(&env);
         for _ in 0..10 {
-            let result = runner.run_one(strategy.clone(), |addr| {
+            let strategy = FuzzTester::arb_address(&env);
+            let result = runner.run_one(strategy, |_addr| {
                 // Address should be valid (not the same as a default)
                 let default_env = Env::default();
                 let _other = Address::generate(&default_env);
@@ -1223,7 +1239,13 @@ mod integration_tests {
     use super::*;
     use crate::TestHarness;
 
-    fn setup_full() -> (TestHarness, MockOracleClient<'static>, MockTokenClient<'static>, Address, Address) {
+    fn setup_full() -> (
+        TestHarness,
+        MockOracleClient<'static>,
+        MockTokenClient<'static>,
+        Address,
+        Address,
+    ) {
         let harness = TestHarness::new();
         let env = harness.env();
         let oracle_id = env.register_contract(None, MockOracle);
@@ -1303,7 +1325,8 @@ mod integration_tests {
         // Mark one as stale
         oracle.set_stale(&symbol_short!("SOL"));
         // Token transfer based on a pricing decision
-        let total_value = oracle.get_price(&symbol_short!("BTC")) + oracle.get_price(&symbol_short!("ETH"));
+        let total_value =
+            oracle.get_price(&symbol_short!("BTC")) + oracle.get_price(&symbol_short!("ETH"));
         token.transfer(&alice, &bob, &total_value);
         assert_eq!(token.balance(&bob), 63_000);
         assert!(oracle.is_stale(&symbol_short!("SOL")));

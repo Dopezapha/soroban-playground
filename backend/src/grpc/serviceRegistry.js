@@ -114,7 +114,10 @@ export class ServiceRegistry extends EventEmitter {
 
     const existing = this._services
       .get(name)
-      .find((e) => e.endpoint.host === endpoint.host && e.endpoint.port === endpoint.port);
+      .find(
+        (e) =>
+          e.endpoint.host === endpoint.host && e.endpoint.port === endpoint.port
+      );
 
     if (existing) {
       existing.registeredAt = Date.now();
@@ -153,7 +156,8 @@ export class ServiceRegistry extends EventEmitter {
     if (!entries) return;
 
     const idx = entries.findIndex(
-      (e) => e.endpoint.host === endpoint.host && e.endpoint.port === endpoint.port,
+      (e) =>
+        e.endpoint.host === endpoint.host && e.endpoint.port === endpoint.port
     );
     if (idx === -1) return;
 
@@ -172,7 +176,7 @@ export class ServiceRegistry extends EventEmitter {
    */
   resolve(name) {
     const healthy = (this._services.get(name) ?? []).filter(
-      (e) => e.health === 'healthy',
+      (e) => e.health === 'healthy'
     );
     if (healthy.length === 0) return null;
 
@@ -199,12 +203,14 @@ export class ServiceRegistry extends EventEmitter {
   snapshot() {
     const out = {};
     for (const [name, entries] of this._services.entries()) {
-      out[name] = entries.map(({ endpoint, health, registeredAt, lastCheckedAt }) => ({
-        endpoint,
-        health,
-        registeredAt,
-        lastCheckedAt,
-      }));
+      out[name] = entries.map(
+        ({ endpoint, health, registeredAt, lastCheckedAt }) => ({
+          endpoint,
+          health,
+          registeredAt,
+          lastCheckedAt,
+        })
+      );
     }
     return out;
   }
@@ -243,7 +249,11 @@ export class ServiceRegistry extends EventEmitter {
       entry.lastCheckedAt = Date.now();
     }
     if (entry.health !== prev) {
-      this.emit('health_change', { name: entry.name, endpoint: entry.endpoint, health: entry.health });
+      this.emit('health_change', {
+        name: entry.name,
+        endpoint: entry.endpoint,
+        health: entry.health,
+      });
     }
   }
 }

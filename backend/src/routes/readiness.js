@@ -61,7 +61,11 @@ async function checkWorkerQueue() {
             typeof q.getJobCounts === 'function'
               ? await q.getJobCounts(['active', 'failed'])
               : {};
-          return { queue: name, active: jobCounts.active ?? 0, failed: jobCounts.failed ?? 0 };
+          return {
+            queue: name,
+            active: jobCounts.active ?? 0,
+            failed: jobCounts.failed ?? 0,
+          };
         })
       ),
       'worker-queue'
@@ -77,21 +81,28 @@ export const readinessHandler = asyncHandler(async (_req, res) => {
 
   const [postgres, redis, sorobanRpc, workerQueue] = await Promise.allSettled([
     checkPostgres(),
-    (healthService.dependencyCheckers.redis
+    healthService.dependencyCheckers.redis
       ? healthService.dependencyCheckers.redis()
-      : Promise.resolve({ status: 'unknown' })),
-    (healthService.dependencyCheckers.sorobanRpc
+      : Promise.resolve({ status: 'unknown' }),
+    healthService.dependencyCheckers.sorobanRpc
       ? healthService.dependencyCheckers.sorobanRpc()
-      : Promise.resolve({ status: 'unknown' })),
+      : Promise.resolve({ status: 'unknown' }),
     checkWorkerQueue(),
   ]);
 
-  const value = (r, fallback) => (r.status === 'fulfilled' ? r.value : fallback);
+  const value = (r, fallback) =>
+    r.status === 'fulfilled' ? r.value : fallback;
   const dependencies = {
     postgres: value(postgres, { status: 'unhealthy', error: 'check crashed' }),
     redis: value(redis, { status: 'unhealthy', error: 'check crashed' }),
-    sorobanRpc: value(sorobanRpc, { status: 'unhealthy', error: 'check crashed' }),
-    workerQueue: value(workerQueue, { status: 'unhealthy', error: 'check crashed' }),
+    sorobanRpc: value(sorobanRpc, {
+      status: 'unhealthy',
+      error: 'check crashed',
+    }),
+    workerQueue: value(workerQueue, {
+      status: 'unhealthy',
+      error: 'check crashed',
+    }),
   };
 
   const criticalDown = ['postgres', 'redis'].some(
@@ -102,7 +113,8 @@ export const readinessHandler = asyncHandler(async (_req, res) => {
   );
 
   const status = criticalDown ? 'unhealthy' : degraded ? 'degraded' : 'ready';
-  const httpStatus = status === 'ready' ? 200 : status === 'degraded' ? 200 : 503;
+  const httpStatus =
+    status === 'ready' ? 200 : status === 'degraded' ? 200 : 503;
 
   return res.status(httpStatus).json({
     success: status !== 'unhealthy',

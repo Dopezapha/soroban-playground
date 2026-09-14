@@ -71,7 +71,10 @@ impl RegistryIntegrationContract {
         };
 
         env.storage().persistent().set(&contract_address, &entry);
-        env.events().publish((symbol_short!("registered"), contract_address), (caller, metadata));
+        env.events().publish(
+            (symbol_short!("registered"), contract_address),
+            (caller, metadata),
+        );
         Ok(())
     }
 
@@ -90,7 +93,8 @@ impl RegistryIntegrationContract {
 
         entry.active = false;
         env.storage().persistent().set(&contract_address, &entry);
-        env.events().publish((symbol_short!("unregistered"), contract_address), caller);
+        env.events()
+            .publish((symbol_short!("unregistered"), contract_address), caller);
         Ok(())
     }
 
@@ -108,7 +112,8 @@ impl RegistryIntegrationContract {
 
         entry.active = false;
         env.storage().persistent().set(&contract_address, &entry);
-        env.events().publish((symbol_short!("revoked"), contract_address), admin);
+        env.events()
+            .publish((symbol_short!("revoked"), contract_address), admin);
         Ok(())
     }
 
@@ -139,7 +144,10 @@ impl RegistryIntegrationContract {
 
         entry.metadata = metadata.clone();
         env.storage().persistent().set(&contract_address, &entry);
-        env.events().publish((symbol_short!("metadata_updated"), contract_address), metadata);
+        env.events().publish(
+            (symbol_short!("metadata_updated"), contract_address),
+            metadata,
+        );
         Ok(())
     }
 }
@@ -161,7 +169,11 @@ impl RegistryIntegrationContract {
     fn assert_admin(env: &Env, caller: &Address) -> Result<(), Error> {
         caller.require_auth();
         let admin_key = symbol_short!("admin");
-        let admin: Address = env.storage().persistent().get(&admin_key).ok_or(Error::Unauthorized)?;
+        let admin: Address = env
+            .storage()
+            .persistent()
+            .get(&admin_key)
+            .ok_or(Error::Unauthorized)?;
         if admin != *caller {
             return Err(Error::Unauthorized);
         }

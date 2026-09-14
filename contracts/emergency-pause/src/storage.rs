@@ -36,7 +36,9 @@ pub fn is_paused(env: &Env) -> bool {
 }
 
 pub fn set_pause_reason(env: &Env, reason: &String) {
-    env.storage().instance().set(&InstanceKey::PauseReason, reason);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::PauseReason, reason);
 }
 
 pub fn get_pause_reason(env: &Env) -> Option<String> {
@@ -91,7 +93,9 @@ pub fn get_guardian_count(env: &Env) -> u32 {
 }
 
 pub fn set_guardian_count(env: &Env, count: u32) {
-    env.storage().instance().set(&InstanceKey::GuardianCount, &count);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::GuardianCount, &count);
 }
 
 // ── Proposals ─────────────────────────────────────────────────────────────────

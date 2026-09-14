@@ -185,9 +185,15 @@ function healthCheck(_call, callback) {
 export async function startGrpcServer(
   compileJobStore = new Map(),
   deployJobStore = new Map(),
-  opts = {},
+  opts = {}
 ) {
-  const { host = '0.0.0.0', port = 50051, tls = false, certChain, privateKey } = opts;
+  const {
+    host = '0.0.0.0',
+    port = 50051,
+    tls = false,
+    certChain,
+    privateKey,
+  } = opts;
 
   const server = new grpc.Server({
     'grpc.max_send_message_length': 64 * 1024 * 1024, // 64 MB
@@ -206,7 +212,9 @@ export async function startGrpcServer(
   });
 
   const credentials = tls
-    ? grpc.ServerCredentials.createSsl(null, [{ cert_chain: certChain, private_key: privateKey }])
+    ? grpc.ServerCredentials.createSsl(null, [
+        { cert_chain: certChain, private_key: privateKey },
+      ])
     : grpc.ServerCredentials.createInsecure();
 
   await new Promise((resolve, reject) => {
@@ -232,7 +240,10 @@ export function shutdownGrpcServer(server, timeoutMs = 5_000) {
   return new Promise((resolve) => {
     server.tryShutdown((err) => {
       if (err) {
-        console.error('[gRPC] Forced shutdown after drain timeout:', err.message);
+        console.error(
+          '[gRPC] Forced shutdown after drain timeout:',
+          err.message
+        );
         server.forceShutdown();
       }
       resolve();

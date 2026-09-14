@@ -70,8 +70,12 @@ export class CircuitBreaker {
     if (this.state === CIRCUIT_STATES.HALF_OPEN) {
       this.transitionTo(CIRCUIT_STATES.OPEN);
     } else if (this.state === CIRCUIT_STATES.CLOSED) {
-      const failureRate = this.totalRequests > 0 ? this.failureCount / this.totalRequests : 0;
-      if (this.failureCount >= this.failureThreshold || (this.totalRequests >= 5 && failureRate >= this.failureRateThreshold)) {
+      const failureRate =
+        this.totalRequests > 0 ? this.failureCount / this.totalRequests : 0;
+      if (
+        this.failureCount >= this.failureThreshold ||
+        (this.totalRequests >= 5 && failureRate >= this.failureRateThreshold)
+      ) {
         this.transitionTo(CIRCUIT_STATES.OPEN);
       }
     }

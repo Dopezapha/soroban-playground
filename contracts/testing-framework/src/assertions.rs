@@ -1,7 +1,7 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
 
-use soroban_sdk::{Env, Symbol};
+use soroban_sdk::{testutils::Events, Env, Symbol, TryFromVal};
 
 /// Asserts that `actual` is within `tolerance` of `expected`.
 ///
@@ -58,9 +58,9 @@ pub fn assert_near(actual: i128, expected: i128, tolerance: i128, msg: &str) {
 pub fn assert_event_emitted(env: &Env, topic: Symbol, msg: &str) {
     let events = env.events().all();
     for event in events.iter() {
-        let (topics, _) = event;
+        let (_contract_id, topics, _data) = event;
         if let Some(first) = topics.get(0) {
-            if first == topic.into() {
+            if Symbol::try_from_val(env, &first) == Ok(topic.clone()) {
                 return;
             }
         }
@@ -68,7 +68,7 @@ pub fn assert_event_emitted(env: &Env, topic: Symbol, msg: &str) {
     // Build a list of topics that were emitted
     let mut emitted: Vec<String> = Vec::new();
     for event in events.iter() {
-        let (topics, _) = event;
+        let (_contract_id, topics, _data) = event;
         if let Some(t) = topics.get(0) {
             let s = format!("{:?}", t);
             emitted.push(s);

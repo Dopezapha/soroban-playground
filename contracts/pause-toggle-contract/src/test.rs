@@ -137,7 +137,10 @@ fn pause_timestamp_reflects_ledger_time() {
     let (env, admin, client) = setup();
     advance_time(&env, 1_000);
     client.pause(&admin, &None);
-    assert_eq!(client.get_pause_timestamp().unwrap(), env.ledger().timestamp());
+    assert_eq!(
+        client.get_pause_timestamp().unwrap(),
+        env.ledger().timestamp()
+    );
 }
 
 #[test]
@@ -178,7 +181,10 @@ fn pause_with_empty_reason_stores_empty_string() {
 #[test]
 fn pause_with_long_reason_stores_full_string() {
     let (env, admin, client) = setup();
-    let long_reason = make_str(&env, "critical exploit found in transfer logic causing double-spend under edge conditions");
+    let long_reason = make_str(
+        &env,
+        "critical exploit found in transfer logic causing double-spend under edge conditions",
+    );
     client.pause(&admin, &Some(long_reason.clone()));
     assert_eq!(client.get_pause_reason(), Some(long_reason));
 }
@@ -422,14 +428,8 @@ fn do_action_different_users_all_blocked_when_paused() {
     let u1 = Address::generate(&env);
     let u2 = Address::generate(&env);
     client.pause(&admin, &None);
-    assert_eq!(
-        client.try_do_action(&u1),
-        Err(Ok(Error::ContractPaused))
-    );
-    assert_eq!(
-        client.try_do_action(&u2),
-        Err(Ok(Error::ContractPaused))
-    );
+    assert_eq!(client.try_do_action(&u1), Err(Ok(Error::ContractPaused)));
+    assert_eq!(client.try_do_action(&u2), Err(Ok(Error::ContractPaused)));
 }
 
 // ── Full lifecycle cycles ─────────────────────────────────────────────────────
@@ -511,7 +511,10 @@ fn state_is_consistent_after_many_operations() {
         advance_time(&env, 100);
         client.pause(&admin, &None);
         assert!(client.paused());
-        assert_eq!(client.get_pause_timestamp().unwrap(), env.ledger().timestamp());
+        assert_eq!(
+            client.get_pause_timestamp().unwrap(),
+            env.ledger().timestamp()
+        );
         assert!(client.try_do_action(&user).is_err());
         client.unpause(&admin);
         assert!(!client.paused());
@@ -617,10 +620,7 @@ fn non_admin_unpause_does_not_mutate_paused_state() {
     let _ = client.try_unpause(&attacker);
     // state must be unchanged
     assert!(client.paused());
-    assert_eq!(
-        client.get_pause_reason(),
-        Some(make_str(&env, "test"))
-    );
+    assert_eq!(client.get_pause_reason(), Some(make_str(&env, "test")));
 }
 
 #[test]

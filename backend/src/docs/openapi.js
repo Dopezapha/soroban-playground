@@ -35,8 +35,10 @@ export function zodToOpenAPI(zodSchema) {
   switch (typeName) {
     case 'ZodString':
       const stringSchema = { type: 'string' };
-      if (schema.minLength !== undefined) stringSchema.minLength = schema.minLength;
-      if (schema.maxLength !== undefined) stringSchema.maxLength = schema.maxLength;
+      if (schema.minLength !== undefined)
+        stringSchema.minLength = schema.minLength;
+      if (schema.maxLength !== undefined)
+        stringSchema.maxLength = schema.maxLength;
       if (schema.regex) stringSchema.pattern = schema.regex.source;
       if (schema.format) stringSchema.format = schema.format;
       return stringSchema;
@@ -106,7 +108,7 @@ export function zodToOpenAPI(zodSchema) {
     case 'ZodUnion':
     case 'ZodDiscriminatedUnion':
       return {
-        oneOf: schema.options.map(opt => zodToOpenAPI(opt)),
+        oneOf: schema.options.map((opt) => zodToOpenAPI(opt)),
       };
 
     case 'ZodRecord':
@@ -130,7 +132,7 @@ export function zodToOpenAPI(zodSchema) {
     case 'ZodTuple':
       return {
         type: 'array',
-        items: schema.items.map(item => zodToOpenAPI(item)),
+        items: schema.items.map((item) => zodToOpenAPI(item)),
         minItems: schema.items.length,
         maxItems: schema.items.length,
       };
@@ -158,11 +160,11 @@ export function extractSchemasFromRoutes(app) {
   const schemas = {};
   const routes = [];
 
-  app._router.stack.forEach(middleware => {
+  app._router.stack.forEach((middleware) => {
     if (middleware.route) {
       routes.push(middleware.route);
     } else if (middleware.name === 'router') {
-      middleware.handle.stack.forEach(handler => {
+      middleware.handle.stack.forEach((handler) => {
         if (handler.route) {
           routes.push(handler.route);
         }
@@ -196,42 +198,56 @@ export function generateOpenAPISpec(routes = [], options = {}) {
   const paths = {};
 
   for (const route of routes) {
-    const { method, path, summary, description, parameters, requestSchema, responseSchema, tags = [] } = route;
-    
+    const {
+      method,
+      path,
+      summary,
+      description,
+      parameters,
+      requestSchema,
+      responseSchema,
+      tags = [],
+    } = route;
+
     if (!paths[path]) paths[path] = {};
-    
+
     paths[path][method.toLowerCase()] = {
       summary,
       description,
       operationId: `${method.toLowerCase()}_${path.replace(/\//g, '_').replace(/[^a-zA-Z0-9]/g, '_')}`,
       tags: ['API v1', ...tags],
-      parameters: parameters?.map(param => ({
-        name: param.name,
-        in: param.in || 'query',
-        required: param.required || false,
-        schema: zodToOpenAPI(param.schema),
-        description: param.description,
-      })) || [],
-      requestBody: requestSchema ? {
-        required: true,
-        content: {
-          'application/json': {
-            schema: zodToOpenAPI(requestSchema),
-          },
-        },
-      } : undefined,
-      responses: responseSchema ? {
-        '200': {
-          description: 'Successful response',
-          content: {
-            'application/json': {
-              schema: zodToOpenAPI(responseSchema),
+      parameters:
+        parameters?.map((param) => ({
+          name: param.name,
+          in: param.in || 'query',
+          required: param.required || false,
+          schema: zodToOpenAPI(param.schema),
+          description: param.description,
+        })) || [],
+      requestBody: requestSchema
+        ? {
+            required: true,
+            content: {
+              'application/json': {
+                schema: zodToOpenAPI(requestSchema),
+              },
             },
+          }
+        : undefined,
+      responses: responseSchema
+        ? {
+            200: {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: zodToOpenAPI(responseSchema),
+                },
+              },
+            },
+          }
+        : {
+            200: { description: 'Successful response' },
           },
-        },
-      } : {
-        '200': { description: 'Successful response' },
-      },
     };
   }
 
@@ -240,21 +256,36 @@ export function generateOpenAPISpec(routes = [], options = {}) {
     info: {
       title: options.title || 'Soroban Playground API',
       version: options.version || '1.0.0',
-      description: options.description || 'REST API for compiling, deploying, and invoking Soroban smart contracts on Stellar.',
+      description:
+        options.description ||
+        'REST API for compiling, deploying, and invoking Soroban smart contracts on Stellar.',
     },
     servers: [
       { url: '/api', description: 'Default server' },
-      ...Object.keys(versions).map(version => ({
+      ...Object.keys(versions).map((version) => ({
         url: `/api/${version}`,
         description: `${version.toUpperCase()} API server`,
       })),
     ],
     tags: [
       { name: 'Versioning', description: 'API version discovery and routing' },
-      { name: 'Contract Compiler', description: 'Synchronous and Asynchronous WASM Compilation' },
-      { name: 'Deploy & Invoke', description: 'Contract deployment and invocation operations' },
-      { name: 'Contract Verification', description: 'Source-to-WASM hash verification for deployed Soroban contracts' },
-      { name: 'RPC Network Manager', description: 'Circuit breaker & RPC health status' },
+      {
+        name: 'Contract Compiler',
+        description: 'Synchronous and Asynchronous WASM Compilation',
+      },
+      {
+        name: 'Deploy & Invoke',
+        description: 'Contract deployment and invocation operations',
+      },
+      {
+        name: 'Contract Verification',
+        description:
+          'Source-to-WASM hash verification for deployed Soroban contracts',
+      },
+      {
+        name: 'RPC Network Manager',
+        description: 'Circuit breaker & RPC health status',
+      },
     ],
     components: {
       securitySchemes: {
@@ -309,7 +340,7 @@ function isVersionablePath(pathName) {
   if (!pathName.startsWith('/api/')) return false;
   const pathWithoutApiPrefix = pathName.slice('/api'.length);
   return versionedRoutePrefixes.some(
-    prefix =>
+    (prefix) =>
       pathWithoutApiPrefix === prefix ||
       pathWithoutApiPrefix.startsWith(`${prefix}/`)
   );

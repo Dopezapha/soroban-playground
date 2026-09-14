@@ -35,9 +35,9 @@ pub enum Sport {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Outcome {
-    Home,  // 0
-    Draw,  // 1
-    Away,  // 2
+    Home, // 0
+    Draw, // 1
+    Away, // 2
 }
 
 #[contracttype]

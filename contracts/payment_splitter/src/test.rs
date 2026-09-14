@@ -65,7 +65,10 @@ fn conserves_value_for_every_remainder() {
         // the single remainder unit.
         let min = shares.iter().min().unwrap();
         let max = shares.iter().max().unwrap();
-        assert!(max - min <= 1, "shares for {amount} differ by more than one unit");
+        assert!(
+            max - min <= 1,
+            "shares for {amount} differ by more than one unit"
+        );
     }
 }
 
@@ -82,7 +85,10 @@ fn smallest_valid_amount_gives_each_recipient_one_unit() {
     let (env, client) = setup();
     let recipients = addresses(&env, 5);
 
-    assert_eq!(client.preview_split(&5, &recipients), vec![&env, 1, 1, 1, 1, 1]);
+    assert_eq!(
+        client.preview_split(&5, &recipients),
+        vec![&env, 1, 1, 1, 1, 1]
+    );
 }
 
 // ─── Error cases ─────────────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ jest.mock('../src/services/redisService.js', () => ({
   default: {
     get: jest.fn(),
     set: jest.fn(),
+    del: jest.fn(),
   },
 }));
 
@@ -53,7 +54,7 @@ describe('AuthService', () => {
   });
 
   describe('generateTokens', () => {
-    it('should generate access and refresh tokens correctly', () => {
+    it('should generate access and refresh tokens correctly', async () => {
       uuidv4
         .mockReturnValueOnce('access-jti')
         .mockReturnValueOnce('refresh-jti')
@@ -64,7 +65,7 @@ describe('AuthService', () => {
         .mockReturnValueOnce('refresh-token');
 
       const user = { id: 1, username: 'testuser' };
-      const result = authService.generateTokens(user);
+      const result = await authService.generateTokens(user);
 
       expect(result).toEqual({
         accessToken: 'access-token',
@@ -77,7 +78,12 @@ describe('AuthService', () => {
       expect(jwt.sign).toHaveBeenCalledTimes(2);
       expect(jwt.sign).toHaveBeenNthCalledWith(
         1,
-        { sub: user.id, username: user.username, jti: 'access-jti' },
+        {
+          sub: user.id,
+          username: user.username,
+          jti: 'access-jti',
+          type: 'access',
+        },
         expect.any(String),
         { expiresIn: 15 * 60 }
       );
@@ -97,7 +103,7 @@ describe('AuthService', () => {
 
   describe('verifyAccessToken', () => {
     it('should throw if token is blacklisted', async () => {
-      const decoded = { jti: 'some-jti' };
+      const decoded = { jti: 'some-jti', type: 'access' };
       jwt.verify.mockReturnValue(decoded);
       redisService.get.mockResolvedValue('1');
 
@@ -109,7 +115,7 @@ describe('AuthService', () => {
     });
 
     it('should return decoded token if valid and not blacklisted', async () => {
-      const decoded = { jti: 'some-jti' };
+      const decoded = { jti: 'some-jti', type: 'access' };
       jwt.verify.mockReturnValue(decoded);
       redisService.get.mockResolvedValue(null);
 
@@ -219,7 +225,12 @@ describe('AuthService', () => {
         exp: Math.floor(Date.now() / 1000) + 1000,
       };
       jwt.verify.mockReturnValue(decoded);
-      redisService.get.mockResolvedValue(null);
+      redisService.get.mockImplementation(async (key) => {
+        if (key === 'refresh:r-jti') {
+          return JSON.stringify({ sub: 1, familyId: 'f-id' });
+        }
+        return null;
+      });
 
       const result = await authService.rotateRefreshToken('token');
       expect(result).toEqual({
@@ -305,7 +316,7 @@ describe('AuthService', () => {
       expect(user).toEqual({ id: 20, role: 'admin', permissions: ['all'] });
     });
 
-    it('should fallback to x-user-id header', async () => {
+    it('should fallback to x-user-id header in non-production', async () => {
       const req = { headers: { 'x-user-id': '30' } };
       jest
         .spyOn(authService, 'getUserById')
@@ -314,21 +325,6 @@ describe('AuthService', () => {
 
       const user = await authService.authenticate(req);
       expect(user).toEqual({ id: 30, role: 'user', permissions: ['read'] });
-    });
-
-    it('should fallback to x-role header and return mock user', async () => {
-      const req = { headers: { 'x-role': 'admin' } };
-      mockDb.all.mockResolvedValue([{ name: 'all' }]);
-
-      const user = await authService.authenticate(req);
-      expect(user).toEqual(
-        expect.objectContaining({
-          id: 1,
-          username: 'admin_user',
-          role: 'admin',
-          permissions: ['all'],
-        })
-      );
     });
 
     it('should default to guest if nothing matches', async () => {

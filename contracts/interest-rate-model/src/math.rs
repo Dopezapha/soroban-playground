@@ -20,7 +20,9 @@ pub fn compute_utilization_bps(borrowed: i128, total_available: i128) -> Result<
         return Ok(0);
     }
     let scaled = borrowed.checked_mul(BPS as i128).ok_or(Error::Overflow)?;
-    let util = scaled.checked_div(total_available).ok_or(Error::DivisionByZero)?;
+    let util = scaled
+        .checked_div(total_available)
+        .ok_or(Error::DivisionByZero)?;
     if util < 0 {
         return Ok(0);
     }

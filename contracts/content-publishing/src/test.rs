@@ -57,7 +57,11 @@ fn end_to_end_publish_tip_subscribe_analytics() {
 
     // premium without subscription is rejected
     assert_eq!(
-        client.try_record_view(&reader, &premium_id).err().unwrap().unwrap(),
+        client
+            .try_record_view(&reader, &premium_id)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::PremiumRequiresSubscription
     );
 
@@ -120,7 +124,11 @@ fn cannot_self_tip_or_self_subscribe() {
         Error::SelfTipForbidden
     );
     assert_eq!(
-        client.try_subscribe(&author, &author, &1u32).err().unwrap().unwrap(),
+        client
+            .try_subscribe(&author, &author, &1u32)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::SelfSubscribeForbidden
     );
 }
@@ -164,7 +172,11 @@ fn non_admin_cannot_pause() {
     let (env, _admin, client) = setup();
     let stranger = Address::generate(&env);
     assert_eq!(
-        client.try_set_paused(&stranger, &true).err().unwrap().unwrap(),
+        client
+            .try_set_paused(&stranger, &true)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::Unauthorized
     );
 }
@@ -213,12 +225,7 @@ fn premium_view_after_expiry_fails() {
         &10_i128,
         &100u64,
     );
-    let id = client.publish(
-        &author,
-        &String::from_str(&env, "P"),
-        &hash(&env, 7),
-        &true,
-    );
+    let id = client.publish(&author, &String::from_str(&env, "P"), &hash(&env, 7), &true);
     client.subscribe(&reader, &author, &1u32);
     client.record_view(&reader, &id);
 

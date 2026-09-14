@@ -1,5 +1,7 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
+};
 
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280;
 const INSTANCE_EXTEND_TO: u32 = 518_400;
@@ -160,9 +162,7 @@ impl CharityTrackerContract {
         env.storage()
             .instance()
             .set(&DataKey::Campaign(id), &campaign);
-        env.storage()
-            .instance()
-            .set(&DataKey::CampaignCount, &id);
+        env.storage().instance().set(&DataKey::CampaignCount, &id);
         env.storage()
             .instance()
             .set(&DataKey::TotalDonations(id), &0u32);
@@ -212,10 +212,9 @@ impl CharityTrackerContract {
             completed_at: 0,
         };
 
-        env.storage().persistent().set(
-            &DataKey::Milestone(campaign_id, milestone_id),
-            &milestone,
-        );
+        env.storage()
+            .persistent()
+            .set(&DataKey::Milestone(campaign_id, milestone_id), &milestone);
         env.storage().persistent().extend_ttl(
             &DataKey::Milestone(campaign_id, milestone_id),
             PERSISTENT_BUMP_THRESHOLD,
@@ -267,10 +266,10 @@ impl CharityTrackerContract {
             receipt_issued: false,
         };
 
-        env.storage().instance().set(&DataKey::Donation(id), &donation);
         env.storage()
             .instance()
-            .set(&DataKey::DonationCount, &id);
+            .set(&DataKey::Donation(id), &donation);
+        env.storage().instance().set(&DataKey::DonationCount, &id);
 
         let donation_index: u32 = env
             .storage()
@@ -286,18 +285,18 @@ impl CharityTrackerContract {
             .set(&DataKey::TotalDonations(campaign_id), &(donation_index + 1));
 
         let impact_key = DataKey::DonorImpact(donor.clone(), campaign_id);
-        let mut impact: DonorImpact = env
-            .storage()
-            .persistent()
-            .get(&impact_key)
-            .unwrap_or(DonorImpact {
-                donor: donor.clone(),
-                campaign_id,
-                total_donated: 0,
-                allocated_amount: 0,
-                milestones_supported: 0,
-                last_donation_timestamp: env.ledger().timestamp(),
-            });
+        let mut impact: DonorImpact =
+            env.storage()
+                .persistent()
+                .get(&impact_key)
+                .unwrap_or(DonorImpact {
+                    donor: donor.clone(),
+                    campaign_id,
+                    total_donated: 0,
+                    allocated_amount: 0,
+                    milestones_supported: 0,
+                    last_donation_timestamp: env.ledger().timestamp(),
+                });
         impact.total_donated += amount;
         impact.last_donation_timestamp = env.ledger().timestamp();
         env.storage().persistent().set(&impact_key, &impact);
@@ -512,18 +511,18 @@ impl CharityTrackerContract {
         }
 
         let impact_key = DataKey::DonorImpact(donor.clone(), campaign_id);
-        let mut impact: DonorImpact = env
-            .storage()
-            .persistent()
-            .get(&impact_key)
-            .unwrap_or(DonorImpact {
-                donor: donor.clone(),
-                campaign_id,
-                total_donated: 0,
-                allocated_amount: 0,
-                milestones_supported: 0,
-                last_donation_timestamp: env.ledger().timestamp(),
-            });
+        let mut impact: DonorImpact =
+            env.storage()
+                .persistent()
+                .get(&impact_key)
+                .unwrap_or(DonorImpact {
+                    donor: donor.clone(),
+                    campaign_id,
+                    total_donated: 0,
+                    allocated_amount: 0,
+                    milestones_supported: 0,
+                    last_donation_timestamp: env.ledger().timestamp(),
+                });
 
         impact.allocated_amount += amount;
         impact.milestones_supported += 1;
@@ -568,7 +567,8 @@ impl CharityTrackerContract {
             return Err(CharityError::Unauthorized);
         }
 
-        let vote_key = DataKey::MilestoneValidatorVote(campaign_id, milestone_id, validator.clone());
+        let vote_key =
+            DataKey::MilestoneValidatorVote(campaign_id, milestone_id, validator.clone());
         if env.storage().persistent().has(&vote_key) {
             return Err(CharityError::InvalidMilestoneStatus);
         }

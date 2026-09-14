@@ -1,25 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 
-const mockMonacoEditorStub = jest.fn(({ value, onChange }) => (
-  <div data-testid="monaco-editor">
-    <div>{value}</div>
-    <button type="button" onClick={() => onChange?.("updated code")}>
-      Change code
-    </button>
-  </div>
-));
-
-jest.mock("@/lib/monacoWorkers", () => ({
-  configureMonacoWorkers: jest.fn(),
-}));
-
-jest.mock("@/lib/editorLoadScheduler", () => ({
-  scheduleEditorLoad: jest.fn((task) => {
-    void task();
-    return jest.fn();
-  }),
-  loadMonacoEditor: jest.fn(async () => ({ default: mockMonacoEditorStub })),
+const mockUseMonaco = jest.fn();
+jest.mock("@/hooks/useMonaco", () => ({
+  useMonaco: (props: any) => mockUseMonaco(props),
 }));
 
 jest.mock("@/hooks/useCollaborativeEditor", () => ({
@@ -27,11 +11,6 @@ jest.mock("@/hooks/useCollaborativeEditor", () => ({
 }));
 
 import Editor from "../../components/Editor";
-import { configureMonacoWorkers } from "@/lib/monacoWorkers";
-import {
-  loadMonacoEditor,
-  scheduleEditorLoad,
-} from "@/lib/editorLoadScheduler";
 import { useCollaborativeEditor } from "@/hooks/useCollaborativeEditor";
 
 describe("Editor", () => {
@@ -45,36 +24,49 @@ describe("Editor", () => {
   });
 
   it("renders the loading state and then renders the Monaco editor", async () => {
-    const setCode = jest.fn();
+    let ready = false;
+    mockUseMonaco.mockImplementation(() => ({
+      containerRef: { current: null },
+      isEditorReady: ready,
+    }));
 
-    render(<Editor code="initial code" setCode={setCode} />);
+    const { rerender } = render(<Editor code="initial code" setCode={jest.fn()} />);
 
     expect(screen.getByText(/loading editor/i)).toBeInTheDocument();
+
+    ready = true;
+    rerender(<Editor code="initial code" setCode={jest.fn()} />);
+
     await waitFor(() =>
       expect(screen.getByTestId("monaco-editor")).toBeInTheDocument(),
     );
-
-    expect(configureMonacoWorkers).toHaveBeenCalledTimes(1);
-    expect(scheduleEditorLoad).toHaveBeenCalledTimes(1);
-    expect(loadMonacoEditor).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("initial code")).toBeInTheDocument();
+    expect(screen.queryByText(/loading editor/i)).not.toBeInTheDocument();
   });
 
   it("calls setCode when the Monaco editor onChange is invoked", async () => {
+    let capturedOnChange: ((val: string) => void) | undefined;
+    mockUseMonaco.mockImplementation(({ onChange }) => {
+      capturedOnChange = onChange;
+      return {
+        containerRef: { current: null },
+        isEditorReady: true,
+      };
+    });
     const setCode = jest.fn();
 
     render(<Editor code="initial code" setCode={setCode} />);
 
-    await waitFor(() =>
-      expect(screen.getByTestId("monaco-editor")).toBeInTheDocument(),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /change code/i }));
+    expect(screen.getByTestId("monaco-editor")).toBeInTheDocument();
+    capturedOnChange?.("updated code");
 
     expect(setCode).toHaveBeenCalledWith("updated code");
   });
 
   it("renders collaborative header with peer count and connection state", async () => {
+    mockUseMonaco.mockReturnValue({
+      containerRef: { current: null },
+      isEditorReady: true,
+    });
     (useCollaborativeEditor as jest.Mock).mockReturnValue({
       peers: [{ id: "peer-1", name: "Peer", color: "#ff0000" }],
       isConnected: true,

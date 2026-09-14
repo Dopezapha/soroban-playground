@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{TokenGatedAccess, TokenGatedAccessClient};
 use crate::types::{Error, Tier};
+use crate::{TokenGatedAccess, TokenGatedAccessClient};
 
 fn setup() -> (Env, TokenGatedAccessClient<'static>, Address) {
     let env = Env::default();
@@ -30,7 +30,9 @@ fn test_mint_and_check_access() {
     let user = Address::generate(&env);
     let uri = String::from_str(&env, "ipfs://membership/1");
 
-    let token_id = client.mint(&admin, &user, &Tier::Premium, &0u64, &uri).unwrap();
+    let token_id = client
+        .mint(&admin, &user, &Tier::Premium, &0u64, &uri)
+        .unwrap();
     assert_eq!(token_id, 1);
 
     // Premium user passes Basic check
@@ -53,7 +55,9 @@ fn test_revoke() {
     let (env, client, admin) = setup();
     let user = Address::generate(&env);
     let uri = String::from_str(&env, "ipfs://membership/2");
-    let token_id = client.mint(&admin, &user, &Tier::Basic, &0u64, &uri).unwrap();
+    let token_id = client
+        .mint(&admin, &user, &Tier::Basic, &0u64, &uri)
+        .unwrap();
 
     client.revoke(&admin, &token_id);
     assert!(!client.check_access(&user, &Tier::Basic).unwrap());
@@ -67,7 +71,9 @@ fn test_upgrade() {
     let (env, client, admin) = setup();
     let user = Address::generate(&env);
     let uri = String::from_str(&env, "ipfs://membership/3");
-    let token_id = client.mint(&admin, &user, &Tier::Basic, &0u64, &uri).unwrap();
+    let token_id = client
+        .mint(&admin, &user, &Tier::Basic, &0u64, &uri)
+        .unwrap();
 
     client.upgrade(&admin, &token_id, &Tier::Elite);
     assert!(client.check_access(&user, &Tier::Elite).unwrap());
@@ -82,7 +88,9 @@ fn test_duplicate_mint_rejected() {
     let (env, client, admin) = setup();
     let user = Address::generate(&env);
     let uri = String::from_str(&env, "ipfs://membership/4");
-    client.mint(&admin, &user, &Tier::Basic, &0u64, &uri).unwrap();
+    client
+        .mint(&admin, &user, &Tier::Basic, &0u64, &uri)
+        .unwrap();
     assert_eq!(
         client.mint(&admin, &user, &Tier::Premium, &0u64, &uri),
         Err(Error::AlreadyMember)
@@ -100,7 +108,9 @@ fn test_pause_blocks_mint() {
         Err(Error::Paused)
     );
     client.unpause(&admin);
-    client.mint(&admin, &user, &Tier::Basic, &0u64, &uri).unwrap();
+    client
+        .mint(&admin, &user, &Tier::Basic, &0u64, &uri)
+        .unwrap();
 }
 
 #[test]
@@ -112,7 +122,9 @@ fn test_analytics() {
     let uri = String::from_str(&env, "ipfs://x");
 
     client.mint(&admin, &u1, &Tier::Basic, &0u64, &uri).unwrap();
-    client.mint(&admin, &u2, &Tier::Premium, &0u64, &uri).unwrap();
+    client
+        .mint(&admin, &u2, &Tier::Premium, &0u64, &uri)
+        .unwrap();
     client.mint(&admin, &u3, &Tier::Elite, &0u64, &uri).unwrap();
 
     client.check_access(&u1, &Tier::Basic).unwrap();

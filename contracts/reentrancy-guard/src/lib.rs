@@ -17,7 +17,9 @@ pub struct ReentrancyGuardContract;
 #[contractimpl]
 impl ReentrancyGuardContract {
     pub fn initialize(env: Env) {
-        env.storage().instance().set(&symbol_short!("locked"), &false);
+        env.storage()
+            .instance()
+            .set(&symbol_short!("locked"), &false);
     }
 
     pub fn guarded_action(env: Env) -> Result<u64, Error> {
@@ -35,19 +37,31 @@ impl ReentrancyGuardContract {
     }
 
     pub fn is_locked(env: Env) -> bool {
-        env.storage().instance().get::<_, bool>(&symbol_short!("locked")).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get::<_, bool>(&symbol_short!("locked"))
+            .unwrap_or(false)
     }
 
     fn enter(env: &Env) -> Result<(), Error> {
-        if env.storage().instance().get::<_, bool>(&symbol_short!("locked")).unwrap_or(false) {
+        if env
+            .storage()
+            .instance()
+            .get::<_, bool>(&symbol_short!("locked"))
+            .unwrap_or(false)
+        {
             return Err(Error::ReentrantCall);
         }
-        env.storage().instance().set(&symbol_short!("locked"), &true);
+        env.storage()
+            .instance()
+            .set(&symbol_short!("locked"), &true);
         Ok(())
     }
 
     fn exit(env: &Env) {
-        env.storage().instance().set(&symbol_short!("locked"), &false);
+        env.storage()
+            .instance()
+            .set(&symbol_short!("locked"), &false);
     }
 
     fn run_critical_section(_env: &Env) -> Result<u64, Error> {

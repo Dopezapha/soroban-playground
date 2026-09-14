@@ -131,7 +131,9 @@ impl ContentPublishingContract {
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Paused, &false);
-        env.storage().instance().set(&DataKey::ArticleCounter, &0u64);
+        env.storage()
+            .instance()
+            .set(&DataKey::ArticleCounter, &0u64);
         Ok(())
     }
 
@@ -143,7 +145,10 @@ impl ContentPublishingContract {
     }
 
     pub fn is_paused(env: Env) -> bool {
-        env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
     }
 
     // ── Author management ───────────────────────────────────────────────────
@@ -161,7 +166,11 @@ impl ContentPublishingContract {
         if subscription_price < 0 {
             return Err(Error::InvalidAmount);
         }
-        if env.storage().persistent().has(&DataKey::Author(author.clone())) {
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::Author(author.clone()))
+        {
             return Err(Error::AuthorAlreadyRegistered);
         }
         let profile = AuthorProfile {
@@ -172,10 +181,12 @@ impl ContentPublishingContract {
             period_seconds: period_seconds.max(1),
             created_at: env.ledger().timestamp(),
         };
-        env.storage().persistent().set(&DataKey::Author(author.clone()), &profile);
         env.storage()
             .persistent()
-            .set(&DataKey::AuthorStats(author.clone()), &AuthorStats {
+            .set(&DataKey::Author(author.clone()), &profile);
+        env.storage().persistent().set(
+            &DataKey::AuthorStats(author.clone()),
+            &AuthorStats {
                 article_count: 0,
                 total_views: 0,
                 total_likes: 0,
@@ -183,13 +194,16 @@ impl ContentPublishingContract {
                 active_subscribers: 0,
                 lifetime_subscribers: 0,
                 subscription_revenue: 0,
-            });
-        env.storage()
-            .persistent()
-            .set(&DataKey::AuthorArticles(author.clone()), &Vec::<u64>::new(&env));
-        env.storage()
-            .persistent()
-            .set(&DataKey::AuthorSubscribers(author), &Vec::<Address>::new(&env));
+            },
+        );
+        env.storage().persistent().set(
+            &DataKey::AuthorArticles(author.clone()),
+            &Vec::<u64>::new(&env),
+        );
+        env.storage().persistent().set(
+            &DataKey::AuthorSubscribers(author),
+            &Vec::<Address>::new(&env),
+        );
         Ok(())
     }
 
@@ -211,7 +225,9 @@ impl ContentPublishingContract {
         profile.bio = bio;
         profile.subscription_price = subscription_price;
         profile.period_seconds = period_seconds.max(1);
-        env.storage().persistent().set(&DataKey::Author(author), &profile);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Author(author), &profile);
         Ok(())
     }
 
@@ -253,7 +269,9 @@ impl ContentPublishingContract {
 
         // effects
         env.storage().instance().set(&DataKey::ArticleCounter, &id);
-        env.storage().persistent().set(&DataKey::Article(id), &article);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Article(id), &article);
 
         let mut owned: Vec<u64> = env
             .storage()
@@ -281,7 +299,9 @@ impl ContentPublishingContract {
         while latest.len() > LATEST_CAP {
             latest.pop_back();
         }
-        env.storage().instance().set(&DataKey::LatestArticles, &latest);
+        env.storage()
+            .instance()
+            .set(&DataKey::LatestArticles, &latest);
 
         env.events().publish((TOPIC_PUBLISH, author), id);
         Ok(id)
@@ -308,7 +328,9 @@ impl ContentPublishingContract {
         }
 
         article.views = article.views.saturating_add(1);
-        env.storage().persistent().set(&DataKey::Article(id), &article);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Article(id), &article);
 
         let mut stats = Self::load_stats(&env, &article.author);
         stats.total_views = stats.total_views.saturating_add(1);
@@ -328,12 +350,19 @@ impl ContentPublishingContract {
             .ok_or(Error::ArticleNotFound)?;
 
         let liked_key = DataKey::HasLiked(id, reader.clone());
-        if env.storage().persistent().get::<_, bool>(&liked_key).unwrap_or(false) {
+        if env
+            .storage()
+            .persistent()
+            .get::<_, bool>(&liked_key)
+            .unwrap_or(false)
+        {
             return Err(Error::AlreadyLiked);
         }
 
         article.likes = article.likes.saturating_add(1);
-        env.storage().persistent().set(&DataKey::Article(id), &article);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Article(id), &article);
         env.storage().persistent().set(&liked_key, &true);
 
         let mut stats = Self::load_stats(&env, &article.author);
@@ -342,7 +371,8 @@ impl ContentPublishingContract {
             .persistent()
             .set(&DataKey::AuthorStats(article.author.clone()), &stats);
 
-        env.events().publish((TOPIC_LIKE, article.author, id), reader);
+        env.events()
+            .publish((TOPIC_LIKE, article.author, id), reader);
         Ok(())
     }
 
@@ -475,7 +505,9 @@ impl ContentPublishingContract {
     // ── Analytics & feeds ───────────────────────────────────────────────────
 
     pub fn get_stats(env: Env, author: Address) -> Option<AuthorStats> {
-        env.storage().persistent().get(&DataKey::AuthorStats(author))
+        env.storage()
+            .persistent()
+            .get(&DataKey::AuthorStats(author))
     }
 
     pub fn get_articles_by_author(env: Env, author: Address) -> Vec<u64> {
@@ -500,7 +532,11 @@ impl ContentPublishingContract {
             .unwrap_or_else(|| Vec::new(&env));
         let mut out = Vec::new(&env);
         for id in ids.iter() {
-            if let Some(article) = env.storage().persistent().get::<_, Article>(&DataKey::Article(id)) {
+            if let Some(article) = env
+                .storage()
+                .persistent()
+                .get::<_, Article>(&DataKey::Article(id))
+            {
                 out.push_back(article);
             }
         }
@@ -526,7 +562,12 @@ impl ContentPublishingContract {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
-        if env.storage().instance().get::<_, bool>(&DataKey::Paused).unwrap_or(false) {
+        if env
+            .storage()
+            .instance()
+            .get::<_, bool>(&DataKey::Paused)
+            .unwrap_or(false)
+        {
             return Err(Error::Paused);
         }
         Ok(())

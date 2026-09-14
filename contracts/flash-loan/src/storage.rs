@@ -27,21 +27,31 @@ pub fn set_admin(env: &Env, admin: &Address) {
 }
 
 pub fn get_total_loans(env: &Env) -> u32 {
-    env.storage().instance().get(&DataKey::TotalLoans).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::TotalLoans)
+        .unwrap_or(0)
 }
 
 pub fn increment_loans(env: &Env) {
     let count = get_total_loans(env);
-    env.storage().instance().set(&DataKey::TotalLoans, &(count + 1));
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalLoans, &(count + 1));
 }
 
 pub fn get_total_fees(env: &Env) -> i128 {
-    env.storage().instance().get(&DataKey::TotalFees).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::TotalFees)
+        .unwrap_or(0)
 }
 
 pub fn add_fees(env: &Env, amount: i128) {
     let total = get_total_fees(env);
-    env.storage().instance().set(&DataKey::TotalFees, &(total + amount));
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalFees, &(total + amount));
 }
 
 pub fn get_balance(env: &Env) -> i128 {

@@ -5,9 +5,9 @@
 
 use super::*;
 use soroban_sdk::{
+    symbol_short,
     testutils::{Address as _, Events},
-    Env,
-    vec, IntoVal, symbol_short, Env, Symbol, TryFromVal,
+    vec, Env, IntoVal, Symbol, TryFromVal,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -54,10 +54,7 @@ fn force_position(
             env,
             crate::storage::get_total_deposited(env) + deposited,
         );
-        crate::storage::set_total_borrowed(
-            env,
-            crate::storage::get_total_borrowed(env) + borrowed,
-        );
+        crate::storage::set_total_borrowed(env, crate::storage::get_total_borrowed(env) + borrowed);
     });
 }
 
@@ -321,14 +318,24 @@ fn test_repay_emits_event() {
     assert_eq!(credit, 5);
 }
 
-fn setup_position(env: &Env, contract_id: &Address, user: &Address, deposited: i128, borrowed: i128) {
+fn setup_position(
+    env: &Env,
+    contract_id: &Address,
+    user: &Address,
+    deposited: i128,
+    borrowed: i128,
+) {
     env.as_contract(contract_id, || {
-        set_position(env, user, &UserPosition {
-            deposited,
-            borrowed,
-            last_updated: env.ledger().timestamp(),
-            credit_score: 0,
-        });
+        set_position(
+            env,
+            user,
+            &UserPosition {
+                deposited,
+                borrowed,
+                last_updated: env.ledger().timestamp(),
+                credit_score: 0,
+            },
+        );
         set_total_deposited(env, get_total_deposited(env) + deposited);
         set_total_borrowed(env, get_total_borrowed(env) + borrowed);
     });
@@ -487,9 +494,18 @@ fn test_uninitialized_contract_fails() {
     let client = LendingProtocolClient::new(&env, &contract_id);
     let user = Address::generate(&env);
 
-    assert_eq!(client.try_deposit(&user, &100), Err(Ok(Error::NotInitialized)));
-    assert_eq!(client.try_borrow(&user, &50), Err(Ok(Error::NotInitialized)));
-    assert_eq!(client.try_withdraw(&user, &50), Err(Ok(Error::NotInitialized)));
+    assert_eq!(
+        client.try_deposit(&user, &100),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_borrow(&user, &50),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_withdraw(&user, &50),
+        Err(Ok(Error::NotInitialized))
+    );
     assert_eq!(client.try_repay(&user, &50), Err(Ok(Error::NotInitialized)));
 }
 

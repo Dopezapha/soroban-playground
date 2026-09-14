@@ -36,7 +36,7 @@ fn test_unauthorized_setter() {
     let non_admin = Address::generate(&env);
 
     client.initialize(&admin);
-    
+
     env.mock_all_auths();
     client.set_value(&non_admin, &10); // Should panic
 }

@@ -1,7 +1,6 @@
-
 #![no_std]
 
-use soroban_sdk::{Address, Env, String, Vec, U256, U128, I128};
+use soroban_sdk::{Address, Env, String, Vec, I128, U128, U256};
 
 /// Result for property test execution
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,7 +41,12 @@ impl<'a> PropertyTester<'a> {
         }
     }
 
-    pub fn test_with_limit<F, I>(&self, inputs: Vec<I>, limit: u64, property: F) -> PropertyTestResult
+    pub fn test_with_limit<F, I>(
+        &self,
+        inputs: Vec<I>,
+        limit: u64,
+        property: F,
+    ) -> PropertyTestResult
     where
         F: Fn(&I) -> Result<(), String>,
     {
@@ -153,14 +157,7 @@ impl<'a> BoundaryTester<'a> {
         F: Fn(u128) -> Result<(), String>,
     {
         let mut results = Vec::new(self.env);
-        let test_values = [
-            u128::MIN,
-            1,
-            1000,
-            u128::MAX / 2,
-            u128::MAX - 1,
-            u128::MAX,
-        ];
+        let test_values = [u128::MIN, 1, 1000, u128::MAX / 2, u128::MAX - 1, u128::MAX];
 
         for &v in &test_values {
             results.push_back((v, f(v)));
@@ -170,15 +167,18 @@ impl<'a> BoundaryTester<'a> {
     }
 
     pub fn checked_add_i128(&self, a: i128, b: i128) -> Result<i128, String> {
-        a.checked_add(b).ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
+        a.checked_add(b)
+            .ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
     }
 
     pub fn checked_sub_i128(&self, a: i128, b: i128) -> Result<i128, String> {
-        a.checked_sub(b).ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
+        a.checked_sub(b)
+            .ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
     }
 
     pub fn checked_mul_i128(&self, a: i128, b: i128) -> Result<i128, String> {
-        a.checked_mul(b).ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
+        a.checked_mul(b)
+            .ok_or_else(|| String::from_str(self.env, "overflow/underflow"))
     }
 
     pub fn is_in_range_i128(&self, value: i128, min: i128, max: i128) -> bool {

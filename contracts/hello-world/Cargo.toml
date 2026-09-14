@@ -8,7 +8,7 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = "20.0.0"
+soroban-sdk = "21.0.6"
 
 [profile.release]
 opt-level = "z"

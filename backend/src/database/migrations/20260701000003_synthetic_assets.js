@@ -22,7 +22,11 @@ export async function up(knex) {
     table.string('user_address', 255).notNullable();
     table.string('asset_symbol', 50).notNullable();
     table.string('type', 20).notNullable().comment("'COLLATERAL' or 'TRADING'");
-    table.string('status', 20).notNullable().defaultTo('OPEN').comment("'OPEN', 'CLOSED', 'LIQUIDATED'");
+    table
+      .string('status', 20)
+      .notNullable()
+      .defaultTo('OPEN')
+      .comment("'OPEN', 'CLOSED', 'LIQUIDATED'");
 
     // Collateral position fields
     table.bigInteger('collateral_amount').nullable();
@@ -60,7 +64,11 @@ export async function up(knex) {
   // Price history table
   await knex.schema.createTable('asset_prices', (table) => {
     table.increments('id').primary();
-    table.string('asset_symbol', 50).notNullable().references('symbol').inTable('synthetic_assets');
+    table
+      .string('asset_symbol', 50)
+      .notNullable()
+      .references('symbol')
+      .inTable('synthetic_assets');
     table.bigInteger('price').notNullable();
     table.integer('confidence').notNullable().comment('0-100');
 
@@ -73,13 +81,22 @@ export async function up(knex) {
   // Events table — uses JSONB on PG, text on SQLite
   await knex.schema.createTable('synthetic_asset_events', (table) => {
     table.increments('id').primary();
-    table.string('event_type', 50).notNullable().comment("'MINT', 'BURN', 'TRADE', 'LIQUIDATE', etc.");
-    table.string('subject', 255).notNullable().comment('Position ID or asset symbol');
+    table
+      .string('event_type', 50)
+      .notNullable()
+      .comment("'MINT', 'BURN', 'TRADE', 'LIQUIDATE', etc.");
+    table
+      .string('subject', 255)
+      .notNullable()
+      .comment('Position ID or asset symbol');
 
     if (isPg) {
       table.jsonb('details').notNullable();
     } else {
-      table.text('details').notNullable().comment('JSON stored as text on SQLite');
+      table
+        .text('details')
+        .notNullable()
+        .comment('JSON stored as text on SQLite');
     }
 
     table.timestamp('created_at').defaultTo(knex.fn.now());
@@ -92,7 +109,12 @@ export async function up(knex) {
   // Liquidation alerts table
   await knex.schema.createTable('liquidation_alerts', (table) => {
     table.increments('id').primary();
-    table.bigInteger('position_id').notNullable().unique().references('position_id').inTable('positions');
+    table
+      .bigInteger('position_id')
+      .notNullable()
+      .unique()
+      .references('position_id')
+      .inTable('positions');
     table.timestamp('alerted_at').defaultTo(knex.fn.now());
     table.timestamp('resolved_at').nullable();
 
@@ -116,7 +138,11 @@ export async function up(knex) {
   // Collateral ratio history (analytics)
   await knex.schema.createTable('collateral_ratio_history', (table) => {
     table.increments('id').primary();
-    table.bigInteger('position_id').notNullable().references('position_id').inTable('positions');
+    table
+      .bigInteger('position_id')
+      .notNullable()
+      .references('position_id')
+      .inTable('positions');
     table.bigInteger('ratio').notNullable();
     table.bigInteger('health_factor').notNullable();
 

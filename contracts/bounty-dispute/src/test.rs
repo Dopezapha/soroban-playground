@@ -38,20 +38,12 @@ fn test_bonded_arbitrator_can_rule() {
     let arbitrator = Address::generate(&env);
 
     // Not bonded -> cannot rule
-    let res = client.try_resolve_bounty_dispute(
-        &1u64,
-        &RulingVerdict::PayWhitehat,
-        &arbitrator,
-    );
+    let res = client.try_resolve_bounty_dispute(&1u64, &RulingVerdict::PayWhitehat, &arbitrator);
     assert!(res.is_err());
 
     // Bond and rule
     client.stake_arbitrator_bond(&arbitrator, &1_000_000i128);
-    client.resolve_bounty_dispute(
-        &1u64,
-        &RulingVerdict::PayWhitehat,
-        &arbitrator,
-    );
+    client.resolve_bounty_dispute(&1u64, &RulingVerdict::PayWhitehat, &arbitrator);
 
     let r = client.get_ruling(&1u64).unwrap();
     assert!(r.pay_whitehat);
@@ -86,10 +78,7 @@ fn test_real_double_stake_fails() {
 fn test_unbonded_ruling_fails() {
     let (env, client, _w) = setup_env();
     let arbitrator = Address::generate(&env);
-    let res = client.try_resolve_bounty_dispute(
-        &9u64,
-        &RulingVerdict::ReturnToSponsor,
-        &arbitrator,
-    );
+    let res =
+        client.try_resolve_bounty_dispute(&9u64, &RulingVerdict::ReturnToSponsor, &arbitrator);
     assert!(matches!(res, Err(Ok(DisputeError::NotBonded))));
 }

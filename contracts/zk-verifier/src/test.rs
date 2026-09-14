@@ -73,7 +73,7 @@ fn accepts_valid_pairing_equation() {
     let client = client(&env);
     let (vk, proof) = fixture(&env);
 
-    assert!(client.verify(&vk, &proof, &Vec::new(&env)).unwrap());
+    assert!(client.verify(&vk, &proof, &Vec::new(&env)));
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn rejects_invalid_proof_without_trapping() {
     let two_g1 = (G1Projective::from(g1) * ark_bn254::Fr::from(2u64)).into_affine();
     proof.a = g1_bytes(&env, two_g1);
 
-    assert!(!client.verify(&vk, &proof, &Vec::new(&env)).unwrap());
+    assert!(!client.verify(&vk, &proof, &Vec::new(&env)));
 }
 
 #[test]
@@ -148,11 +148,9 @@ fn verifies_a_public_input_msm() {
     let mut two = [0u8; 32];
     two[31] = 2;
 
-    assert!(client
-        .verify(
-            &vk,
-            &proof,
-            &soroban_sdk::vec![&env, BytesN::from_array(&env, &two)]
-        )
-        .unwrap());
+    assert!(client.verify(
+        &vk,
+        &proof,
+        &soroban_sdk::vec![&env, BytesN::from_array(&env, &two)]
+    ));
 }

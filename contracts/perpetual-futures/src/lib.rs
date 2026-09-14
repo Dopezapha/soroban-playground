@@ -137,8 +137,10 @@ impl PerpetualFutures {
         set_position(&env, &pos);
 
         let net_settlement = pos.collateral + pnl;
-        env.events()
-            .publish((symbol_short!("close_pos"), position_id), (trader, net_settlement));
+        env.events().publish(
+            (symbol_short!("close_pos"), position_id),
+            (trader, net_settlement),
+        );
 
         Ok(net_settlement)
     }

@@ -4,7 +4,7 @@
 use soroban_sdk::contracterror;
 
 #[contracterror]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Error {
     KeyNotFound = 1,
     IndexOutOfBounds = 2,

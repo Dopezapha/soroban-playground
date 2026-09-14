@@ -20,7 +20,7 @@
 // * The PSM can be individually paused without pausing the broader contract.
 // * Fee revenue accumulates in `PsmFeeVault` and can be collected by admin.
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, Symbol};
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
@@ -133,25 +133,47 @@ impl AlgorithmicStablecoin {
         admin.require_auth();
 
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::OracleAddress, &oracle);
-        env.storage().instance().set(&DataKey::TargetPrice, &10_000_000i128);
-        env.storage().instance().set(&DataKey::CurrentPrice, &10_000_000i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::OracleAddress, &oracle);
+        env.storage()
+            .instance()
+            .set(&DataKey::TargetPrice, &10_000_000i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::CurrentPrice, &10_000_000i128);
         env.storage().instance().set(&DataKey::TotalSupply, &0i128);
-        env.storage().instance().set(&DataKey::ShareSupply, &1_000_000_000i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::ShareSupply, &1_000_000_000i128);
         env.storage().instance().set(&DataKey::Paused, &false);
-        env.storage().instance().set(&DataKey::LastRebaseTime, &0u64);
-        env.storage().instance().set(&DataKey::ReserveBalance, &0i128);
-        env.storage().instance().set(&DataKey::RebaseCooldown, &3600u64);
+        env.storage()
+            .instance()
+            .set(&DataKey::LastRebaseTime, &0u64);
+        env.storage()
+            .instance()
+            .set(&DataKey::ReserveBalance, &0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::RebaseCooldown, &3600u64);
 
         // PSM defaults
         env.storage().instance().set(&DataKey::PsmPaused, &false);
-        env.storage().instance().set(&DataKey::PsmMintFeeBps, &10u32);   // 0.10 %
-        env.storage().instance().set(&DataKey::PsmRedeemFeeBps, &10u32); // 0.10 %
+        env.storage()
+            .instance()
+            .set(&DataKey::PsmMintFeeBps, &10u32); // 0.10 %
+        env.storage()
+            .instance()
+            .set(&DataKey::PsmRedeemFeeBps, &10u32); // 0.10 %
         env.storage()
             .instance()
             .set(&DataKey::PsmDebtCeiling, &1_000_000_000_000i128); // 1 M tokens (7 decimals)
-        env.storage().instance().set(&DataKey::PsmMintedDebt, &0i128);
-        env.storage().instance().set(&DataKey::PsmVaultBalance, &0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::PsmMintedDebt, &0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::PsmVaultBalance, &0i128);
         env.storage().instance().set(&DataKey::PsmFeeVault, &0i128);
 
         env.events()
@@ -282,9 +304,10 @@ impl AlgorithmicStablecoin {
             .persistent()
             .get(&DataKey::UserTokens(user.clone()))
             .unwrap_or(0);
-        env.storage()
-            .persistent()
-            .set(&DataKey::UserTokens(user.clone()), &(user_balance + amount_out));
+        env.storage().persistent().set(
+            &DataKey::UserTokens(user.clone()),
+            &(user_balance + amount_out),
+        );
 
         // Update total supply and PSM debt
         let total_supply: i128 = env
@@ -375,7 +398,11 @@ impl AlgorithmicStablecoin {
             .instance()
             .get(&DataKey::PsmMintedDebt)
             .unwrap_or(0);
-        let new_minted_debt = if minted_debt > amount { minted_debt - amount } else { 0 };
+        let new_minted_debt = if minted_debt > amount {
+            minted_debt - amount
+        } else {
+            0
+        };
         env.storage()
             .instance()
             .set(&DataKey::PsmMintedDebt, &new_minted_debt);
@@ -424,8 +451,10 @@ impl AlgorithmicStablecoin {
 
         env.storage().instance().set(&DataKey::PsmFeeVault, &0i128);
 
-        env.events()
-            .publish((Symbol::new(&env, "psm_fees_collected"),), (admin, fee_vault));
+        env.events().publish(
+            (Symbol::new(&env, "psm_fees_collected"),),
+            (admin, fee_vault),
+        );
 
         Ok(fee_vault)
     }
@@ -487,9 +516,10 @@ impl AlgorithmicStablecoin {
             .persistent()
             .get(&DataKey::UserTokens(to.clone()))
             .unwrap_or(0);
-        env.storage()
-            .persistent()
-            .set(&DataKey::UserTokens(to.clone()), &(current_balance + amount));
+        env.storage().persistent().set(
+            &DataKey::UserTokens(to.clone()),
+            &(current_balance + amount),
+        );
 
         let total_supply: i128 = env
             .storage()
@@ -523,9 +553,10 @@ impl AlgorithmicStablecoin {
             return Err(Error::InsufficientBalance);
         }
 
-        env.storage()
-            .persistent()
-            .set(&DataKey::UserTokens(from.clone()), &(current_balance - amount));
+        env.storage().persistent().set(
+            &DataKey::UserTokens(from.clone()),
+            &(current_balance - amount),
+        );
 
         let total_supply: i128 = env
             .storage()
@@ -623,11 +654,7 @@ impl AlgorithmicStablecoin {
             .instance()
             .get(&DataKey::CurrentPrice)
             .unwrap();
-        let target_price: i128 = env
-            .storage()
-            .instance()
-            .get(&DataKey::TargetPrice)
-            .unwrap();
+        let target_price: i128 = env.storage().instance().get(&DataKey::TargetPrice).unwrap();
         let old_supply: i128 = env
             .storage()
             .instance()
@@ -635,21 +662,22 @@ impl AlgorithmicStablecoin {
             .unwrap_or(0);
 
         let new_supply = if current_price > target_price {
-            let expansion_ratio =
-                (current_price - target_price) * 1_000_000 / target_price;
+            let expansion_ratio = (current_price - target_price) * 1_000_000 / target_price;
             let expansion_amount = old_supply * expansion_ratio / 1_000_000;
             old_supply + expansion_amount
         } else if current_price < target_price {
-            let contraction_ratio =
-                (target_price - current_price) * 1_000_000 / target_price;
+            let contraction_ratio = (target_price - current_price) * 1_000_000 / target_price;
             let max_contraction = old_supply * contraction_ratio / 1_000_000;
             let reserve: i128 = env
                 .storage()
                 .instance()
                 .get(&DataKey::ReserveBalance)
                 .unwrap_or(0);
-            let actual_contraction =
-                if max_contraction > reserve { reserve } else { max_contraction };
+            let actual_contraction = if max_contraction > reserve {
+                reserve
+            } else {
+                max_contraction
+            };
             old_supply - actual_contraction
         } else {
             old_supply
@@ -684,8 +712,7 @@ impl AlgorithmicStablecoin {
         }
 
         env.storage().instance().set(&DataKey::Paused, &true);
-        env.events()
-            .publish((Symbol::new(&env, "paused"),), admin);
+        env.events().publish((Symbol::new(&env, "paused"),), admin);
 
         Ok(())
     }
@@ -859,9 +886,18 @@ impl AlgorithmicStablecoin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Env};
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger as _},
+        Env,
+    };
 
-    fn setup() -> (Env, Address, Address, Address, AlgorithmicStablecoinClient<'static>) {
+    fn setup() -> (
+        Env,
+        Address,
+        Address,
+        Address,
+        AlgorithmicStablecoinClient<'static>,
+    ) {
         let env = Env::default();
         env.mock_all_auths();
         let id = env.register_contract(None, AlgorithmicStablecoin);
@@ -1010,7 +1046,7 @@ mod tests {
         // fee = 9_990 * 10 / 10_000 = 9 (floor)
         assert_eq!(result.fee_collected, 9);
         assert_eq!(result.amount_out, 9_981); // 9_990 - 9
-        // vault: was 10_000, released 9_981 → 19 remaining
+                                              // vault: was 10_000, released 9_981 → 19 remaining
         assert_eq!(result.vault_balance, 10_000 - 9_981);
         assert_eq!(client.balance(&user), 0);
     }

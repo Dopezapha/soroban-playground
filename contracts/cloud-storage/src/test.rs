@@ -1,6 +1,131 @@
-use soroban_sdk::{contract, contractimpl, testutils::{self, Ledger, LedgerInfo, User}, Address, Env, String, Symbol, vec};
+extern crate std;
+use std::vec::Vec as StdVec;
+
 use crate::types::{Error, FileMetadata, StorageOffer, StorageProvider};
-use crate::lib::CloudStorage;
+use crate::CloudStorage;
+use soroban_sdk::{testutils::Address as _, Address, Env, String, Symbol};
+
+struct User {
+    pub address: Address,
+}
+
+impl User {
+    fn new(env: &Env, _name: &str, _id: u32) -> Self {
+        env.mock_all_auths();
+        Self {
+            address: Address::generate(env),
+        }
+    }
+
+    fn activate_auth(&self, env: &Env) {
+        env.mock_all_auths();
+    }
+}
+
+trait CloudStorageTestExt {
+    fn initialize(&self, env: Env) -> Result<(), Error>;
+    fn set_paused(&self, env: Env, caller: Address, paused: bool) -> Result<(), Error>;
+    fn register_storage_provider(
+        &self,
+        env: Env,
+        provider: Address,
+        capacity: u64,
+        price_per_gb: i128,
+    ) -> Result<(), Error>;
+    fn remove_storage_provider(&self, env: Env, provider: Address) -> Result<(), Error>;
+    fn upload_file(
+        &self,
+        env: Env,
+        owner: Address,
+        name: String,
+        size: u64,
+        shard_count: u32,
+        redundancy_factor: u32,
+        cid: String,
+        shards_manifest_cid: String,
+    ) -> Result<(), Error>;
+    fn update_file_metadata(
+        &self,
+        env: Env,
+        caller: Address,
+        cid: String,
+        new_shard_count: Option<u32>,
+        new_redundancy_factor: Option<u32>,
+    ) -> Result<(), Error>;
+    fn delete_file_metadata(&self, env: Env, caller: Address, cid: String) -> Result<(), Error>;
+    fn get_storage_provider(&self, env: Env, provider: Address) -> Result<StorageProvider, Error>;
+    fn get_all_active_providers(&self, env: Env) -> soroban_sdk::Vec<StorageProvider>;
+    fn get_file_info(&self, env: Env, cid: String) -> Result<FileMetadata, Error>;
+    fn get_total_capacity(&self, env: Env) -> u64;
+}
+
+impl CloudStorageTestExt for CloudStorage {
+    fn initialize(&self, env: Env) -> Result<(), Error> {
+        Self::initialize(env)
+    }
+    fn set_paused(&self, env: Env, caller: Address, paused: bool) -> Result<(), Error> {
+        Self::set_paused(env, caller, paused)
+    }
+    fn register_storage_provider(
+        &self,
+        env: Env,
+        provider: Address,
+        capacity: u64,
+        price_per_gb: i128,
+    ) -> Result<(), Error> {
+        Self::register_storage_provider(env, provider, capacity, price_per_gb)
+    }
+    fn remove_storage_provider(&self, env: Env, provider: Address) -> Result<(), Error> {
+        Self::remove_storage_provider(env, provider)
+    }
+    fn upload_file(
+        &self,
+        env: Env,
+        owner: Address,
+        name: String,
+        size: u64,
+        shard_count: u32,
+        redundancy_factor: u32,
+        cid: String,
+        shards_manifest_cid: String,
+    ) -> Result<(), Error> {
+        Self::upload_file(
+            env,
+            owner,
+            name,
+            size,
+            shard_count,
+            redundancy_factor,
+            cid,
+            shards_manifest_cid,
+        )
+    }
+    fn update_file_metadata(
+        &self,
+        env: Env,
+        caller: Address,
+        cid: String,
+        new_shard_count: Option<u32>,
+        new_redundancy_factor: Option<u32>,
+    ) -> Result<(), Error> {
+        Self::update_file_metadata(env, caller, cid, new_shard_count, new_redundancy_factor)
+    }
+    fn delete_file_metadata(&self, env: Env, caller: Address, cid: String) -> Result<(), Error> {
+        Self::delete_file_metadata(env, caller, cid)
+    }
+    fn get_storage_provider(&self, env: Env, provider: Address) -> Result<StorageProvider, Error> {
+        Self::get_storage_provider(env, provider)
+    }
+    fn get_all_active_providers(&self, env: Env) -> soroban_sdk::Vec<StorageProvider> {
+        Self::get_all_active_providers(env)
+    }
+    fn get_file_info(&self, env: Env, cid: String) -> Result<FileMetadata, Error> {
+        Self::get_file_info(env, cid)
+    }
+    fn get_total_capacity(&self, env: Env) -> u64 {
+        Self::get_total_capacity(env)
+    }
+}
 
 #[test]
 fn test_initialize() {
@@ -59,12 +184,8 @@ fn test_register_storage_provider() {
     contract.initialize(env.clone());
     provider.activate_auth(&env);
 
-    let result = contract.register_storage_provider(
-        env.clone(),
-        provider.address.clone(),
-        1_000_000,
-        1,
-    );
+    let result =
+        contract.register_storage_provider(env.clone(), provider.address.clone(), 1_000_000, 1);
 
     assert!(result.is_ok());
 
@@ -90,12 +211,8 @@ fn test_register_storage_provider_when_paused() {
     contract.set_paused(env.clone(), admin.address.clone(), true);
 
     provider.activate_auth(&env);
-    let result = contract.register_storage_provider(
-        env.clone(),
-        provider.address.clone(),
-        1_000_000,
-        1,
-    );
+    let result =
+        contract.register_storage_provider(env.clone(), provider.address.clone(), 1_000_000, 1);
     assert_eq!(result, Err(Error::Paused));
 }
 
@@ -109,12 +226,9 @@ fn test_remove_storage_provider() {
     provider.activate_auth(&env);
 
     // Register provider
-    contract.register_storage_provider(
-        env.clone(),
-        provider.address.clone(),
-        1_000_000,
-        1,
-    ).unwrap();
+    contract
+        .register_storage_provider(env.clone(), provider.address.clone(), 1_000_000, 1)
+        .unwrap();
 
     // Remove provider
     let result = contract.remove_storage_provider(env.clone(), provider.address.clone());
@@ -132,7 +246,7 @@ fn test_remove_storage_provider_not_found() {
     let env = Env::default();
     let contract = CloudStorage;
     let provider = User::new(&env, "provider", 100);
-    let nonexistent = Address::random(&env, 999);
+    let nonexistent = Address::generate(&env);
 
     contract.initialize(env.clone());
     provider.activate_auth(&env);
@@ -215,16 +329,18 @@ fn test_update_file_metadata() {
     owner.activate_auth(&env);
 
     // Upload file
-    contract.upload_file(
-        env.clone(),
-        owner.address.clone(),
-        String::from_str(&env, "testfile.txt"),
-        1024,
-        2,
-        3,
-        cid.clone(),
-        String::from_str(&env, "QmManifest"),
-    ).unwrap();
+    contract
+        .upload_file(
+            env.clone(),
+            owner.address.clone(),
+            String::from_str(&env, "testfile.txt"),
+            1024,
+            2,
+            3,
+            cid.clone(),
+            String::from_str(&env, "QmManifest"),
+        )
+        .unwrap();
 
     // Update metadata
     let result = contract.update_file_metadata(
@@ -252,25 +368,22 @@ fn test_update_file_metadata_unauthorized() {
     contract.initialize(env.clone());
     owner.activate_auth(&env);
 
-    contract.upload_file(
-        env.clone(),
-        owner.address.clone(),
-        String::from_str(&env, "testfile.txt"),
-        1024,
-        2,
-        3,
-        cid.clone(),
-        String::from_str(&env, "QmManifest"),
-    ).unwrap();
+    contract
+        .upload_file(
+            env.clone(),
+            owner.address.clone(),
+            String::from_str(&env, "testfile.txt"),
+            1024,
+            2,
+            3,
+            cid.clone(),
+            String::from_str(&env, "QmManifest"),
+        )
+        .unwrap();
 
     attacker.activate_auth(&env);
-    let result = contract.update_file_metadata(
-        env.clone(),
-        attacker.address.clone(),
-        cid,
-        Some(4),
-        Some(5),
-    );
+    let result =
+        contract.update_file_metadata(env.clone(), attacker.address.clone(), cid, Some(4), Some(5));
     assert_eq!(result, Err(Error::FileNotOwnedByCaller));
 }
 
@@ -284,16 +397,18 @@ fn test_delete_file_metadata() {
     contract.initialize(env.clone());
     owner.activate_auth(&env);
 
-    contract.upload_file(
-        env.clone(),
-        owner.address.clone(),
-        String::from_str(&env, "testfile.txt"),
-        1024,
-        2,
-        3,
-        cid.clone(),
-        String::from_str(&env, "QmManifest"),
-    ).unwrap();
+    contract
+        .upload_file(
+            env.clone(),
+            owner.address.clone(),
+            String::from_str(&env, "testfile.txt"),
+            1024,
+            2,
+            3,
+            cid.clone(),
+            String::from_str(&env, "QmManifest"),
+        )
+        .unwrap();
 
     let result = contract.delete_file_metadata(env.clone(), owner.address.clone(), cid.clone());
     assert!(result.is_ok());
@@ -315,16 +430,18 @@ fn test_delete_file_metadata_unauthorized() {
     contract.initialize(env.clone());
     owner.activate_auth(&env);
 
-    contract.upload_file(
-        env.clone(),
-        owner.address.clone(),
-        String::from_str(&env, "testfile.txt"),
-        1024,
-        2,
-        3,
-        cid,
-        String::from_str(&env, "QmManifest"),
-    ).unwrap();
+    contract
+        .upload_file(
+            env.clone(),
+            owner.address.clone(),
+            String::from_str(&env, "testfile.txt"),
+            1024,
+            2,
+            3,
+            cid,
+            String::from_str(&env, "QmManifest"),
+        )
+        .unwrap();
 
     attacker.activate_auth(&env);
     let result = contract.delete_file_metadata(
@@ -339,7 +456,7 @@ fn test_delete_file_metadata_unauthorized() {
 fn test_get_storage_provider_not_found() {
     let env = Env::default();
     let contract = CloudStorage;
-    let provider = Address::random(&env, 999);
+    let provider = Address::generate(&env);
 
     contract.initialize(env.clone());
 
@@ -369,21 +486,27 @@ fn test_get_all_active_providers_populated() {
     contract.initialize(env.clone());
 
     p1.activate_auth(&env);
-    contract.register_storage_provider(env.clone(), p1.address.clone(), 1_000, 1).unwrap();
+    contract
+        .register_storage_provider(env.clone(), p1.address.clone(), 1_000, 1)
+        .unwrap();
 
     p2.activate_auth(&env);
-    contract.register_storage_provider(env.clone(), p2.address.clone(), 2_000, 2).unwrap();
+    contract
+        .register_storage_provider(env.clone(), p2.address.clone(), 2_000, 2)
+        .unwrap();
 
     p3.activate_auth(&env);
-    contract.register_storage_provider(env.clone(), p3.address.clone(), 3_000, 3).unwrap();
+    contract
+        .register_storage_provider(env.clone(), p3.address.clone(), 3_000, 3)
+        .unwrap();
 
     let providers = contract.get_all_active_providers(env.clone());
     assert_eq!(providers.len(), 3);
 
     // Verify we got all three providers
-    let mut capacities: Vec<u64> = providers.iter().map(|p| p.capacity).collect();
+    let mut capacities: StdVec<u64> = providers.iter().map(|p| p.capacity).collect();
     capacities.sort();
-    assert_eq!(capacities, vec![1_000, 2_000, 3_000]);
+    assert_eq!(capacities, std::vec![1_000, 2_000, 3_000]);
 }
 
 #[test]
@@ -396,11 +519,15 @@ fn test_get_total_capacity() {
     contract.initialize(env.clone());
 
     p1.activate_auth(&env);
-    contract.register_storage_provider(env.clone(), p1.address.clone(), 1_000, 1).unwrap();
+    contract
+        .register_storage_provider(env.clone(), p1.address.clone(), 1_000, 1)
+        .unwrap();
     assert_eq!(contract.get_total_capacity(env.clone()), 1_000);
 
     p2.activate_auth(&env);
-    contract.register_storage_provider(env.clone(), p2.address.clone(), 2_000, 2).unwrap();
+    contract
+        .register_storage_provider(env.clone(), p2.address.clone(), 2_000, 2)
+        .unwrap();
     assert_eq!(contract.get_total_capacity(env.clone()), 3_000);
 }
 
@@ -416,11 +543,15 @@ fn test_inactive_provider_not_returned() {
     admin.activate_auth(&env);
     provider.activate_auth(&env);
 
-    contract.register_storage_provider(env.clone(), provider.address.clone(), 1_000, 1).unwrap();
+    contract
+        .register_storage_provider(env.clone(), provider.address.clone(), 1_000, 1)
+        .unwrap();
     assert_eq!(contract.get_all_active_providers(env.clone()).len(), 1);
 
     // Remove provider (sets inactive)
-    contract.remove_storage_provider(env.clone(), provider.address.clone()).unwrap();
+    contract
+        .remove_storage_provider(env.clone(), provider.address.clone())
+        .unwrap();
 
     // Should not appear in active list
     let active = contract.get_all_active_providers(env.clone());

@@ -1,9 +1,9 @@
 // Copyright (c) 2026 StellarDevTools
-SPDLS-License-ID: MIT
+// SPDX-License-Identifier: MIT
 
 import {
   createCipheriv,
- createDecipheriv,
+  createDecipheriv,
   randomBytes,
   createSign,
   createVerify,
@@ -11,7 +11,13 @@ import {
   createHash,
 } from 'crypto';
 
-import { Keypair, TransactionBuilder, Networks, Operation, Account } from '@stellar/stellar-sdk';
+import {
+  Keypair,
+  TransactionBuilder,
+  Networks,
+  Operation,
+  Account,
+} from '@stellar/stellar-sdk';
 
 const AES_ALGORITHM = 'aes-256-gcm';
 const AES_IV_LENGTH = 12; // 96-bit IV recommended for GCM
@@ -19,7 +25,8 @@ const AES_KEY_LENGTH = 32; // 256-bit key
 const AES_TAG_LENGTH = 16;
 
 // SEP-0010 ManageData name (home domain)
-const SEP10_MANAGE_DATA_NAME = process.env.SEP10_MANAGE_DATA_NAME || 'soraban-playground';
+const SEP10_MANAGE_DATA_NAME =
+  process.env.SEP10_MANAGE_DATA_NAME || 'soraban-playground';
 
 /***
  * Generate a random 256-bit AES session key.
@@ -134,25 +141,32 @@ export function verifySignature(
  * @param {Buffer} [opts.nonce] - 64-byte random nonce to use (default generated)
  * @returns {string} base64-encoded challenge transaction XDR
  */
-export function generateSep10Challenge(serverKeypair, clientPublicKey, opts = {}) {
+export function generateSep10Challenge(
+  serverKeypair,
+  clientPublicKey,
+  opts = {}
+) {
   const network = opts.networkPassphrase || Networks.TESTNET;
   const now = Math.floor(Date.now() / 1000);
   const minTime = opts.minTime ?? now - 60;
   const maxTime = opts.maxTime ?? now + 240;
   const nonce = opts.nonce || randomBytes(64);
-  const serverKp = typeof serverKeypair === 'string'
-    ? Keypair.fromSecret(serverKeypair)
-    : serverKeypair;
+  const serverKp =
+    typeof serverKeypair === 'string'
+      ? Keypair.fromSecret(serverKeypair)
+      : serverKeypair;
   const source = new Account(serverKp.publicKey(), '0');
   const tx = new TransactionBuilder(source, {
     fee: '100',
     networkPassphrase: network,
   })
-    .addOperation(Operation.manageData({
-      source: clientPublicKey,
-      name: SEP10_MANAGE_DATA_NAME,
-      value: nonce,
-    }))
+    .addOperation(
+      Operation.manageData({
+        source: clientPublicKey,
+        name: SEP10_MANAGE_DATA_NAME,
+        value: nonce,
+      })
+    )
     .setTimebounds({ minTime, maxTime })
     .build();
   tx.sign(serverKp);
@@ -168,7 +182,12 @@ export function generateSep10Challenge(serverKeypair, clientPublicKey, opts = {}
  * @param {string} [opts.networkPassphrase] - Stellar network passphrase
  * @returns {boolean}
  */
-export function verifySep10ChallengeSignature(challengeXdr, clientPublicKey, signature, opts = {}) {
+export function verifySep10ChallengeSignature(
+  challengeXdr,
+  clientPublicKey,
+  signature,
+  opts = {}
+) {
   const network = opts.networkPassphrase || Networks.TESTNET;
   try {
     const tx = TransactionBuilder.fromXDR(challengeXdr, network);
@@ -177,12 +196,13 @@ export function verifySep10ChallengeSignature(challengeXdr, clientPublicKey, sig
     if (minTime && now < minTime) return false;
     if (maxTime && now > maxTime) return false;
     // SEP-0010 requires maxTime - minTime <= 300 seconds (5 minutes)
-    if (maxTime && minTime && (maxTime - minTime > 300)) return false;
+    if (maxTime && minTime && maxTime - minTime > 300) return false;
     const ops = tx.operations || [];
     if (ops.length !== 1) return false;
     const op = ops[0];
     if (op.type !== 'manageData') return false;
-    if (op.source !== clientPublicKey || op.name !== SEP10_MANAGE_DATA_NAME) return false;
+    if (op.source !== clientPublicKey || op.name !== SEP10_MANAGE_DATA_NAME)
+      return false;
     const txHash = tx.hash();
     const sigBuffer = Buffer.from(signature, 'base64');
     return Keypair.fromPublicKey(clientPublicKey).verify(txHash, sigBuffer);

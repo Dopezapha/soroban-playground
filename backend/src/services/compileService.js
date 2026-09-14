@@ -25,8 +25,11 @@ async function initializeCacheService(hashes = []) {
     const art = artifacts.get(h);
     if (art) {
       try {
-        // eslint-disable-next-line no-await-in-loop
-        await redisService.set(`wasm:artifact:${h}`, JSON.stringify(art), COMPILE_CACHE_TTL_SECONDS);
+        await redisService.set(
+          `wasm:artifact:${h}`,
+          JSON.stringify(art),
+          COMPILE_CACHE_TTL_SECONDS
+        );
       } catch (err) {
         // ignore warming errors
       }
@@ -44,7 +47,8 @@ async function loadCacheEntryFromCache(hash) {
   try {
     const redisHit = await redisService.get(`${CACHE_KEY_PREFIX}${hash}`);
     if (redisHit) {
-      const parsed = typeof redisHit === 'string' ? JSON.parse(redisHit) : redisHit;
+      const parsed =
+        typeof redisHit === 'string' ? JSON.parse(redisHit) : redisHit;
       if (parsed?.path) {
         const exists = await fs
           .stat(parsed.path)
@@ -63,7 +67,10 @@ async function loadCacheEntryFromCache(hash) {
   // Fall back to the artifacts Map (survives LRU eviction)
   const artifactHit = artifacts.get(hash);
   if (artifactHit?.path) {
-    const exists = await fs.stat(artifactHit.path).then(() => true).catch(() => false);
+    const exists = await fs
+      .stat(artifactHit.path)
+      .then(() => true)
+      .catch(() => false);
     if (exists) {
       cacheIndex.set(hash, artifactHit);
       return artifactHit;
@@ -77,7 +84,10 @@ async function loadCacheEntryFromCache(hash) {
       if (raw) {
         const parsed = JSON.parse(raw);
         // Verify file still exists on disk
-        const exists = await fs.stat(parsed.path).then(() => true).catch(() => false);
+        const exists = await fs
+          .stat(parsed.path)
+          .then(() => true)
+          .catch(() => false);
         if (exists) {
           cacheIndex.set(hash, parsed);
           artifacts.set(hash, parsed);
@@ -98,7 +108,11 @@ async function storeCacheEntry(entry) {
   cacheIndex.set(entry.hash, entry);
   try {
     if (redisService && !redisService.isFallbackMode) {
-      await redisService.set(`wasm:artifact:${entry.hash}`, JSON.stringify(entry), COMPILE_CACHE_TTL_SECONDS);
+      await redisService.set(
+        `wasm:artifact:${entry.hash}`,
+        JSON.stringify(entry),
+        COMPILE_CACHE_TTL_SECONDS
+      );
     }
   } catch (err) {
     // swallow cache persistence errors

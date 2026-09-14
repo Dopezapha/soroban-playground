@@ -37,10 +37,14 @@ export default function Editor({ code, setCode }: EditorProps) {
         <span className="font-mono text-[11px] font-semibold tracking-wide text-slate-300">
           lib.rs (Soroban Smart Contract)
         </span>
-        <CollaborativeHeaderIndicator peers={peers} isConnected={isConnected} next="" />
+        <CollaborativeHeaderIndicator peers={peers} isConnected={isConnected} />
       </div>
       <div className="flex-1 w-full relative">
-        <div ref={containerRef} className="h-full w-full" />
+        <div
+          ref={containerRef}
+          className="h-full w-full"
+          data-testid="monaco-editor"
+        />
         {!isEditorReady && <EditorLoadingState />}
       </div>
     </div>

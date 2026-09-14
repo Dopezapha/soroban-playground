@@ -20,7 +20,7 @@ mod storage;
 mod test;
 mod types;
 
-use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
 
 use crate::storage::{
     get_admin, get_data_count, get_outlier_threshold, get_source, get_source_count, get_threshold,
@@ -28,7 +28,10 @@ use crate::storage::{
     set_circuit_breaker, set_data_count, set_initialized, set_outlier_threshold, set_paused,
     set_source, set_source_count, set_threshold, set_weather_data, source_exists,
 };
-use crate::types::{DataSource, DataSourceType, Error, OutlierThreshold, WeatherData, WeatherDataStatus};
+use crate::types::{
+    DataSource, DataSourceType, Error, OutlierThreshold, WeatherData, WeatherDataStatus,
+    WeatherMeasurements,
+};
 
 #[contract]
 pub struct WeatherDataOracle;
@@ -138,12 +141,7 @@ impl WeatherDataOracle {
         location: String,
         latitude: i64,
         longitude: i64,
-        temperature: i32,
-        humidity: u32,
-        pressure: u32,
-        wind_speed: u32,
-        wind_direction: u32,
-        precipitation: u32,
+        measurements: WeatherMeasurements,
         source_type: DataSourceType,
     ) -> Result<u32, Error> {
         ensure_initialized(&env)?;
@@ -159,16 +157,22 @@ impl WeatherDataOracle {
         // Validate inputs
         validate_location(&location)?;
         validate_coordinates(latitude, longitude)?;
-        validate_temperature(temperature)?;
-        validate_humidity(humidity)?;
-        validate_pressure(pressure)?;
-        validate_wind_speed(wind_speed)?;
-        validate_wind_direction(wind_direction)?;
-        validate_precipitation(precipitation)?;
+        validate_temperature(measurements.temperature)?;
+        validate_humidity(measurements.humidity)?;
+        validate_pressure(measurements.pressure)?;
+        validate_wind_speed(measurements.wind_speed)?;
+        validate_wind_direction(measurements.wind_direction)?;
+        validate_precipitation(measurements.precipitation)?;
 
         // Outlier detection
         let outlier_threshold = get_outlier_threshold(&env);
-        if is_outlier(&outlier_threshold, temperature, humidity, pressure, wind_speed) {
+        if is_outlier(
+            &outlier_threshold,
+            measurements.temperature,
+            measurements.humidity,
+            measurements.pressure,
+            measurements.wind_speed,
+        ) {
             return Err(Error::OutlierDetected);
         }
 
@@ -178,12 +182,12 @@ impl WeatherDataOracle {
             location,
             latitude,
             longitude,
-            temperature,
-            humidity,
-            pressure,
-            wind_speed,
-            wind_direction,
-            precipitation,
+            temperature: measurements.temperature,
+            humidity: measurements.humidity,
+            pressure: measurements.pressure,
+            wind_speed: measurements.wind_speed,
+            wind_direction: measurements.wind_direction,
+            precipitation: measurements.precipitation,
             timestamp: env.ledger().timestamp(),
             status: WeatherDataStatus::Pending,
             submitter: submitter.clone(),
@@ -197,7 +201,7 @@ impl WeatherDataOracle {
         set_source(&env, &ds);
 
         env.events().publish(
-            (symbol_short!("WeatherDataSubmitted"),),
+            (Symbol::new(&env, "WeatherDataSubmitted"),),
             (id, submitter, data.temperature),
         );
         Ok(id)
@@ -225,7 +229,8 @@ impl WeatherDataOracle {
         let threshold = get_threshold(&env);
         if data.confirmations >= threshold {
             data.status = WeatherDataStatus::Verified;
-            env.events().publish((symbol_short!("WeatherDataVerified"),), data_id);
+            env.events()
+                .publish((Symbol::new(&env, "WeatherDataVerified"),), data_id);
         }
         set_weather_data(&env, &data);
         Ok(())
@@ -242,7 +247,8 @@ impl WeatherDataOracle {
         }
         data.status = WeatherDataStatus::Finalized;
         set_weather_data(&env, &data);
-        env.events().publish((symbol_short!("WeatherDataFinalized"),), data_id);
+        env.events()
+            .publish((Symbol::new(&env, "WeatherDataFinalized"),), data_id);
         Ok(())
     }
 
@@ -253,9 +259,11 @@ impl WeatherDataOracle {
         require_admin(&env, &admin)?;
         set_circuit_breaker(&env, active);
         if active {
-            env.events().publish((symbol_short!("CircuitBreakerActivated"),), &());
+            env.events()
+                .publish((Symbol::new(&env, "CircuitBreakerActivated"),), ());
         } else {
-            env.events().publish((symbol_short!("CircuitBreakerDeactivated"),), &());
+            env.events()
+                .publish((Symbol::new(&env, "CircuitBreakerDeactivated"),), ());
         }
         Ok(())
     }
@@ -294,6 +302,7 @@ impl WeatherDataOracle {
         to_timestamp: u64,
     ) -> Result<u32, Error> {
         ensure_initialized(&env)?;
+        validate_location(&location)?;
         // Returns count of data points in range (actual data would need indexed storage)
         let total = get_data_count(&env);
         if from_timestamp > to_timestamp {
@@ -368,7 +377,7 @@ fn check_circuit_breaker(env: &Env) -> Result<(), Error> {
 }
 
 fn validate_location(location: &String) -> Result<(), Error> {
-    if location.is_empty() || location.to_bytes().len() > 64 {
+    if location.is_empty() || location.len() > 64 {
         return Err(Error::InvalidLocation);
     }
     Ok(())

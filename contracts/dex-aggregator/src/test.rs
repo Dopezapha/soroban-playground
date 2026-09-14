@@ -20,11 +20,7 @@ fn s(env: &Env, v: &str) -> String {
     String::from_str(env, v)
 }
 
-fn add_usdc_xlm_pool(
-    env: &Env,
-    client: &DexAggregatorContractClient,
-    admin: &Address,
-) -> u32 {
+fn add_usdc_xlm_pool(env: &Env, client: &DexAggregatorContractClient, admin: &Address) -> u32 {
     client.add_pool(
         admin,
         &s(env, "USDC/XLM"),

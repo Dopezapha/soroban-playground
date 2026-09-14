@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{SupplyChainDataOracle, SupplyChainDataOracleClient};
 use crate::types::{Error, LogisticsStatus};
+use crate::{SupplyChainDataOracle, SupplyChainDataOracleClient};
 
 fn setup() -> (Env, SupplyChainDataOracleClient<'static>, Address) {
     let env = Env::default();
@@ -17,7 +17,9 @@ fn setup() -> (Env, SupplyChainDataOracleClient<'static>, Address) {
     (env, client, admin)
 }
 
-fn s(env: &Env, v: &str) -> String { String::from_str(env, v) }
+fn s(env: &Env, v: &str) -> String {
+    String::from_str(env, v)
+}
 
 fn submit(client: &SupplyChainDataOracleClient, env: &Env, source: &Address, ship_id: &str) -> u32 {
     client.submit_logistics_data(
@@ -45,7 +47,10 @@ fn test_initialize() {
 fn test_initialize_twice_fails() {
     let (_, client, admin) = setup();
     client.initialize(&admin, &None);
-    assert_eq!(client.try_initialize(&admin, &None), Err(Ok(Error::AlreadyInitialized)));
+    assert_eq!(
+        client.try_initialize(&admin, &None),
+        Err(Ok(Error::AlreadyInitialized))
+    );
 }
 
 #[test]
@@ -58,7 +63,10 @@ fn test_initialize_with_threshold() {
 #[test]
 fn test_initialize_zero_threshold_fails() {
     let (_, client, admin) = setup();
-    assert_eq!(client.try_initialize(&admin, &Some(0)), Err(Ok(Error::InvalidThreshold)));
+    assert_eq!(
+        client.try_initialize(&admin, &Some(0)),
+        Err(Ok(Error::InvalidThreshold))
+    );
 }
 
 // ── Data Sources ──────────────────────────────────────────────────────────────
@@ -99,7 +107,10 @@ fn test_remove_nonexistent_source_fails() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let src = Address::generate(&env);
-    assert_eq!(client.try_remove_data_source(&admin, &src), Err(Ok(Error::SourceNotFound)));
+    assert_eq!(
+        client.try_remove_data_source(&admin, &src),
+        Err(Ok(Error::SourceNotFound))
+    );
 }
 
 #[test]
@@ -144,8 +155,14 @@ fn test_submit_unknown_source_fails() {
     let unknown = Address::generate(&env);
     assert_eq!(
         client.try_submit_logistics_data(
-            &unknown, &s(&env, "S1"), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &50u32,
+            &unknown,
+            &s(&env, "S1"),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &50u32,
         ),
         Err(Ok(Error::SourceNotFound))
     );
@@ -160,8 +177,14 @@ fn test_submit_inactive_source_fails() {
     client.remove_data_source(&admin, &src);
     assert_eq!(
         client.try_submit_logistics_data(
-            &src, &s(&env, "S1"), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &50u32,
+            &src,
+            &s(&env, "S1"),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &50u32,
         ),
         Err(Ok(Error::SourceInactive))
     );
@@ -175,8 +198,14 @@ fn test_submit_empty_shipment_id_fails() {
     client.add_data_source(&admin, &src, &s(&env, "IoT-1"));
     assert_eq!(
         client.try_submit_logistics_data(
-            &src, &s(&env, ""), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &50u32,
+            &src,
+            &s(&env, ""),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &50u32,
         ),
         Err(Ok(Error::InvalidShipmentId))
     );
@@ -190,8 +219,14 @@ fn test_submit_invalid_humidity_fails() {
     client.add_data_source(&admin, &src, &s(&env, "IoT-1"));
     assert_eq!(
         client.try_submit_logistics_data(
-            &src, &s(&env, "S1"), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &101u32,
+            &src,
+            &s(&env, "S1"),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &101u32,
         ),
         Err(Ok(Error::InvalidHumidity))
     );
@@ -209,7 +244,10 @@ fn test_confirm_auto_verifies() {
     client.add_data_source(&admin, &src2, &s(&env, "IoT-2"));
     let id = submit(&client, &env, &src1, "SHIP001");
     client.confirm_logistics_data(&src2, &id);
-    assert_eq!(client.get_logistics_data(&id).status, LogisticsStatus::Verified);
+    assert_eq!(
+        client.get_logistics_data(&id).status,
+        LogisticsStatus::Verified
+    );
 }
 
 #[test]
@@ -238,7 +276,10 @@ fn test_finalize() {
     client.add_data_source(&admin, &src, &s(&env, "IoT-1"));
     let id = submit(&client, &env, &src, "SHIP001");
     client.finalize_logistics_data(&admin, &id);
-    assert_eq!(client.get_logistics_data(&id).status, LogisticsStatus::Finalized);
+    assert_eq!(
+        client.get_logistics_data(&id).status,
+        LogisticsStatus::Finalized
+    );
 }
 
 #[test]
@@ -290,8 +331,14 @@ fn test_circuit_breaker_blocks_submit() {
     client.set_circuit_breaker(&admin, &true);
     assert_eq!(
         client.try_submit_logistics_data(
-            &src, &s(&env, "S1"), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &50u32,
+            &src,
+            &s(&env, "S1"),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &50u32,
         ),
         Err(Ok(Error::CircuitBreakerActive))
     );
@@ -318,8 +365,14 @@ fn test_pause_blocks_submit() {
     client.pause(&admin);
     assert_eq!(
         client.try_submit_logistics_data(
-            &src, &s(&env, "S1"), &s(&env, "O"), &s(&env, "D"),
-            &s(&env, "C"), &LogisticsStatus::InTransit, &0i32, &50u32,
+            &src,
+            &s(&env, "S1"),
+            &s(&env, "O"),
+            &s(&env, "D"),
+            &s(&env, "C"),
+            &LogisticsStatus::InTransit,
+            &0i32,
+            &50u32,
         ),
         Err(Ok(Error::ContractPaused))
     );

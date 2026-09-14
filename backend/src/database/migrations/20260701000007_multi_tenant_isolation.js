@@ -83,7 +83,10 @@ export async function up(knex) {
   // Rebuild popular_searches with (tenant_id, query) unique constraint
   const hasPop = await knex.schema.hasTable('popular_searches');
   if (hasPop) {
-    const hasTenantCol = await knex.schema.hasColumn('popular_searches', 'tenant_id');
+    const hasTenantCol = await knex.schema.hasColumn(
+      'popular_searches',
+      'tenant_id'
+    );
     if (!hasTenantCol) {
       // Create new table, migrate data, then rename
       await knex.schema.createTable('popular_searches_new', (table) => {
@@ -92,7 +95,9 @@ export async function up(knex) {
         table.string('query', 1000).notNullable();
         table.integer('search_count').defaultTo(1);
         table.timestamp('last_updated').defaultTo(knex.fn.now());
-        table.unique(['tenant_id', 'query'], { indexName: 'uq_popular_searches_tenant_query' });
+        table.unique(['tenant_id', 'query'], {
+          indexName: 'uq_popular_searches_tenant_query',
+        });
       });
 
       await knex.raw(`
@@ -116,7 +121,9 @@ export async function up(knex) {
         table.string('wallet_address', 255).notNullable();
         table.text('favorites').notNullable().defaultTo('[]');
         table.timestamp('updated_at').defaultTo(knex.fn.now());
-        table.unique(['tenant_id', 'wallet_address'], { indexName: 'uq_favorites_tenant_wallet' });
+        table.unique(['tenant_id', 'wallet_address'], {
+          indexName: 'uq_favorites_tenant_wallet',
+        });
       });
 
       await knex.raw(`
@@ -131,15 +138,39 @@ export async function up(knex) {
 
   // Tenant-scoped indexes
   const indexSpecs = [
-    { table: 'projects',              cols: ['tenant_id'],                                 name: 'idx_projects_tenant' },
-    { table: 'files',                 cols: ['tenant_id'],                                 name: 'idx_files_tenant' },
-    { table: 'search_analytics',      cols: ['tenant_id', 'timestamp'],                    name: 'idx_search_analytics_tenant_ts' },
-    { table: 'popular_searches',      cols: ['tenant_id', 'search_count'],                 name: 'idx_popular_searches_tenant_count' },
-    { table: 'api_keys',              cols: ['tenant_id'],                                 name: 'idx_api_keys_tenant_id' },
-    { table: 'rate_limit_usage',      cols: ['tenant_id', 'window_start', 'window_end'],   name: 'idx_rate_limit_usage_tenant_window' },
-    { table: 'audit_log',             cols: ['tenant_id', 'timestamp'],                    name: 'idx_audit_log_tenant_ts' },
-    { table: 'webhook_subscriptions', cols: ['tenant_id', 'active'],                       name: 'idx_webhook_subs_tenant_active' },
-    { table: 'webhook_deliveries',    cols: ['tenant_id', 'created_at'],                   name: 'idx_webhook_del_tenant_created' },
+    { table: 'projects', cols: ['tenant_id'], name: 'idx_projects_tenant' },
+    { table: 'files', cols: ['tenant_id'], name: 'idx_files_tenant' },
+    {
+      table: 'search_analytics',
+      cols: ['tenant_id', 'timestamp'],
+      name: 'idx_search_analytics_tenant_ts',
+    },
+    {
+      table: 'popular_searches',
+      cols: ['tenant_id', 'search_count'],
+      name: 'idx_popular_searches_tenant_count',
+    },
+    { table: 'api_keys', cols: ['tenant_id'], name: 'idx_api_keys_tenant_id' },
+    {
+      table: 'rate_limit_usage',
+      cols: ['tenant_id', 'window_start', 'window_end'],
+      name: 'idx_rate_limit_usage_tenant_window',
+    },
+    {
+      table: 'audit_log',
+      cols: ['tenant_id', 'timestamp'],
+      name: 'idx_audit_log_tenant_ts',
+    },
+    {
+      table: 'webhook_subscriptions',
+      cols: ['tenant_id', 'active'],
+      name: 'idx_webhook_subs_tenant_active',
+    },
+    {
+      table: 'webhook_deliveries',
+      cols: ['tenant_id', 'created_at'],
+      name: 'idx_webhook_del_tenant_created',
+    },
   ];
 
   for (const { table, cols, name } of indexSpecs) {
@@ -147,48 +178,56 @@ export async function up(knex) {
     if (!exists) continue;
 
     // Check that all columns actually exist before creating the index
-    const colChecks = await Promise.all(cols.map((c) => knex.schema.hasColumn(table, c)));
+    const colChecks = await Promise.all(
+      cols.map((c) => knex.schema.hasColumn(table, c))
+    );
     if (colChecks.every(Boolean)) {
-      await knex.schema.table(table, (t) => {
-        t.index(cols, name);
-      }).catch(() => {
-        // Index may already exist — swallow the error
-      });
+      await knex.schema
+        .table(table, (t) => {
+          t.index(cols, name);
+        })
+        .catch(() => {
+          // Index may already exist — swallow the error
+        });
     }
   }
 
   // Unique index on rate_limit_usage to prevent duplicate windows
   const hasRlu = await knex.schema.hasTable('rate_limit_usage');
   if (hasRlu) {
-    await knex.schema.table('rate_limit_usage', (t) => {
-      t.unique(['api_key_id', 'endpoint', 'window_start', 'window_end'], {
-        indexName: 'idx_rate_limit_usage_unique',
-      });
-    }).catch(() => {});
+    await knex.schema
+      .table('rate_limit_usage', (t) => {
+        t.unique(['api_key_id', 'endpoint', 'window_start', 'window_end'], {
+          indexName: 'idx_rate_limit_usage_unique',
+        });
+      })
+      .catch(() => {});
   }
 }
 
 export async function down(knex) {
   // Drop tenant-scoped indexes first
   const indexDrops = [
-    { table: 'projects',              name: 'idx_projects_tenant' },
-    { table: 'files',                 name: 'idx_files_tenant' },
-    { table: 'search_analytics',      name: 'idx_search_analytics_tenant_ts' },
-    { table: 'popular_searches',      name: 'idx_popular_searches_tenant_count' },
-    { table: 'api_keys',              name: 'idx_api_keys_tenant_id' },
-    { table: 'rate_limit_usage',      name: 'idx_rate_limit_usage_tenant_window' },
-    { table: 'rate_limit_usage',      name: 'idx_rate_limit_usage_unique' },
-    { table: 'audit_log',             name: 'idx_audit_log_tenant_ts' },
+    { table: 'projects', name: 'idx_projects_tenant' },
+    { table: 'files', name: 'idx_files_tenant' },
+    { table: 'search_analytics', name: 'idx_search_analytics_tenant_ts' },
+    { table: 'popular_searches', name: 'idx_popular_searches_tenant_count' },
+    { table: 'api_keys', name: 'idx_api_keys_tenant_id' },
+    { table: 'rate_limit_usage', name: 'idx_rate_limit_usage_tenant_window' },
+    { table: 'rate_limit_usage', name: 'idx_rate_limit_usage_unique' },
+    { table: 'audit_log', name: 'idx_audit_log_tenant_ts' },
     { table: 'webhook_subscriptions', name: 'idx_webhook_subs_tenant_active' },
-    { table: 'webhook_deliveries',    name: 'idx_webhook_del_tenant_created' },
+    { table: 'webhook_deliveries', name: 'idx_webhook_del_tenant_created' },
   ];
 
   for (const { table, name } of indexDrops) {
     const exists = await knex.schema.hasTable(table);
     if (exists) {
-      await knex.schema.table(table, (t) => {
-        t.dropIndex([], name);
-      }).catch(() => {});
+      await knex.schema
+        .table(table, (t) => {
+          t.dropIndex([], name);
+        })
+        .catch(() => {});
     }
   }
 
@@ -202,17 +241,21 @@ export async function down(knex) {
       table.timestamp('updated_at').defaultTo(knex.fn.now());
     });
 
-    await knex.raw(`
+    await knex
+      .raw(
+        `
       INSERT OR IGNORE INTO favorites_old (id, wallet_address, favorites, updated_at)
       SELECT id, wallet_address, favorites, updated_at FROM favorites
-    `).catch(() => {
-      // PostgreSQL uses ON CONFLICT instead
-      return knex.raw(`
+    `
+      )
+      .catch(() => {
+        // PostgreSQL uses ON CONFLICT instead
+        return knex.raw(`
         INSERT INTO favorites_old (id, wallet_address, favorites, updated_at)
         SELECT id, wallet_address, favorites, updated_at FROM favorites
         ON CONFLICT DO NOTHING
       `);
-    });
+      });
 
     await knex.schema.dropTable('favorites');
     await knex.schema.renameTable('favorites_old', 'favorites');
@@ -227,16 +270,20 @@ export async function down(knex) {
       table.timestamp('last_updated').defaultTo(knex.fn.now());
     });
 
-    await knex.raw(`
+    await knex
+      .raw(
+        `
       INSERT OR IGNORE INTO popular_searches_old (query, search_count, last_updated)
       SELECT query, search_count, last_updated FROM popular_searches
-    `).catch(() => {
-      return knex.raw(`
+    `
+      )
+      .catch(() => {
+        return knex.raw(`
         INSERT INTO popular_searches_old (query, search_count, last_updated)
         SELECT query, search_count, last_updated FROM popular_searches
         ON CONFLICT DO NOTHING
       `);
-    });
+      });
 
     await knex.schema.dropTable('popular_searches');
     await knex.schema.renameTable('popular_searches_old', 'popular_searches');

@@ -874,10 +874,14 @@ fn test_dispute_resolution_bond_repayment_math() {
     fixture.env.ledger().set_timestamp(fixture.deadline);
     fixture.client.propose_resolution(&fixture.market_id, &0);
 
-    let result = fixture.client.try_dispute_resolution(&challenger, &fixture.market_id, &9);
+    let result = fixture
+        .client
+        .try_dispute_resolution(&challenger, &fixture.market_id, &9);
     assert!(result.is_err());
 
-    fixture.client.dispute_resolution(&challenger, &fixture.market_id, &15);
+    fixture
+        .client
+        .dispute_resolution(&challenger, &fixture.market_id, &15);
     fixture.client.resolve_dispute(&fixture.market_id, &1);
 
     assert_eq!(fixture.token_client.balance(&challenger), 1_000);
@@ -917,7 +921,10 @@ fn test_mint_complete_set_credits_every_outcome_and_merges_back() {
         .redeem_complete_set(&minter, &fixture.market_id, &200);
     assert_eq!(fixture.token_client.balance(&minter), 400);
     assert_eq!(
-        fixture.client.get_conditional_market(&fixture.market_id).collateral_locked,
+        fixture
+            .client
+            .get_conditional_market(&fixture.market_id)
+            .collateral_locked,
         1_000
     );
 }

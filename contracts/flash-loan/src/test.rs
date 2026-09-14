@@ -106,4 +106,3 @@ fn test_calculate_fee() {
     assert_eq!(fee, 500);
     assert!(client.try_calculate_fee(&0i128).is_err());
 }
-

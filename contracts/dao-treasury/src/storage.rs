@@ -34,7 +34,9 @@ pub fn get_threshold(env: &Env) -> u32 {
 }
 
 pub fn set_threshold(env: &Env, threshold: u32) {
-    env.storage().instance().set(&DataKey::Threshold, &threshold);
+    env.storage()
+        .instance()
+        .set(&DataKey::Threshold, &threshold);
 }
 
 // ── Signer count ──────────────────────────────────────────────────────────────

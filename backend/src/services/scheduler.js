@@ -49,7 +49,6 @@ import logger from '../utils/logger.js';
  */
 function tryGetRedis() {
   try {
-    // eslint-disable-next-line no-undef
     const Redis = require('ioredis');
     const url = process.env.REDIS_URL || 'redis://localhost:6379';
     const client = new Redis(url, {
@@ -152,7 +151,10 @@ async function releaseLock(lockKey, token) {
 const _jobs = new Map();
 let _started = false;
 
-const DEFAULT_LOCK_TTL_MS = parseInt(process.env.SCHEDULER_LOCK_TTL || '55000', 10);
+const DEFAULT_LOCK_TTL_MS = parseInt(
+  process.env.SCHEDULER_LOCK_TTL || '55000',
+  10
+);
 
 /**
  * Register a job. Must be called before `startScheduler()`, or the job will
@@ -161,12 +163,26 @@ const DEFAULT_LOCK_TTL_MS = parseInt(process.env.SCHEDULER_LOCK_TTL || '55000', 
  * @param {JobDefinition} definition
  */
 export function registerJob(definition) {
-  const { name, schedule, handler, lockTtlMs = DEFAULT_LOCK_TTL_MS, enabled = true } = definition;
+  const {
+    name,
+    schedule,
+    handler,
+    lockTtlMs = DEFAULT_LOCK_TTL_MS,
+    enabled = true,
+  } = definition;
 
-  if (!name || typeof name !== 'string') throw new TypeError('scheduler: job name must be a non-empty string');
-  if (!schedule || typeof schedule !== 'string') throw new TypeError(`scheduler[${name}]: schedule must be a cron expression`);
-  if (typeof handler !== 'function') throw new TypeError(`scheduler[${name}]: handler must be a function`);
-  if (!cron.validate(schedule)) throw new Error(`scheduler[${name}]: invalid cron expression "${schedule}"`);
+  if (!name || typeof name !== 'string')
+    throw new TypeError('scheduler: job name must be a non-empty string');
+  if (!schedule || typeof schedule !== 'string')
+    throw new TypeError(
+      `scheduler[${name}]: schedule must be a cron expression`
+    );
+  if (typeof handler !== 'function')
+    throw new TypeError(`scheduler[${name}]: handler must be a function`);
+  if (!cron.validate(schedule))
+    throw new Error(
+      `scheduler[${name}]: invalid cron expression "${schedule}"`
+    );
 
   if (_jobs.has(name)) {
     logger.warn(`scheduler: job "${name}" already registered — overwriting`);
@@ -174,7 +190,10 @@ export function registerJob(definition) {
     if (existing.task) existing.task.stop();
   }
 
-  _jobs.set(name, { definition: { name, schedule, handler, lockTtlMs, enabled }, task: null });
+  _jobs.set(name, {
+    definition: { name, schedule, handler, lockTtlMs, enabled },
+    task: null,
+  });
 
   // If the scheduler is already running, schedule this job immediately.
   if (_started && enabled) {
@@ -213,12 +232,13 @@ function _scheduleJob(name) {
   const { definition } = entry;
   if (!definition.enabled) return;
 
-  const task = cron.schedule(definition.schedule, () =>
-    _runJob(definition)
-  );
+  const task = cron.schedule(definition.schedule, () => _runJob(definition));
 
   entry.task = task;
-  logger.info('scheduler:job:scheduled', { name, schedule: definition.schedule });
+  logger.info('scheduler:job:scheduled', {
+    name,
+    schedule: definition.schedule,
+  });
 }
 
 async function _runJob(definition) {
@@ -228,7 +248,9 @@ async function _runJob(definition) {
 
   const acquired = await acquireLock(lockKey, token, lockTtlMs);
   if (!acquired) {
-    logger.debug('scheduler:job:skipped (lock held by another replica)', { name });
+    logger.debug('scheduler:job:skipped (lock held by another replica)', {
+      name,
+    });
     return;
   }
 

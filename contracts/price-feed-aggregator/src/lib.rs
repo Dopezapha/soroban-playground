@@ -59,13 +59,26 @@ impl PriceFeedAggregator {
         }
         admin.require_auth();
         set_admin(&env, &admin);
-        env.storage().instance().set(&crate::types::InstanceKey::Asset, &asset);
-        if let Some(d) = decimals { set_decimals(&env, d); }
-        if let Some(a) = max_price_age { set_max_price_age(&env, a); }
-        if let Some(o) = outlier_bps { set_outlier_bps(&env, o); }
-        if let Some(c) = circuit_breaker_bps { set_circuit_breaker_bps(&env, c); }
-        if let Some(s) = strategy { set_strategy(&env, s); }
-        env.events().publish((symbol_short!("init"),), (admin, asset));
+        env.storage()
+            .instance()
+            .set(&crate::types::InstanceKey::Asset, &asset);
+        if let Some(d) = decimals {
+            set_decimals(&env, d);
+        }
+        if let Some(a) = max_price_age {
+            set_max_price_age(&env, a);
+        }
+        if let Some(o) = outlier_bps {
+            set_outlier_bps(&env, o);
+        }
+        if let Some(c) = circuit_breaker_bps {
+            set_circuit_breaker_bps(&env, c);
+        }
+        if let Some(s) = strategy {
+            set_strategy(&env, s);
+        }
+        env.events()
+            .publish((symbol_short!("init"),), (admin, asset));
         Ok(())
     }
 
@@ -118,7 +131,8 @@ impl PriceFeedAggregator {
         };
         set_source(&env, id, &source);
         set_source_count(&env, id + 1);
-        env.events().publish((symbol_short!("srcadd"),), (id, reporter));
+        env.events()
+            .publish((symbol_short!("srcadd"),), (id, reporter));
         Ok(id)
     }
 
@@ -135,12 +149,7 @@ impl PriceFeedAggregator {
     }
 
     /// Update the weight of a source (1–100).
-    pub fn set_weight(
-        env: Env,
-        admin: Address,
-        source_id: u32,
-        weight: u32,
-    ) -> Result<(), Error> {
+    pub fn set_weight(env: Env, admin: Address, source_id: u32, weight: u32) -> Result<(), Error> {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
@@ -197,7 +206,8 @@ impl PriceFeedAggregator {
         source.last_updated = env.ledger().timestamp();
         set_source(&env, source_id, &source);
 
-        env.events().publish((symbol_short!("priceupd"),), (source_id, price));
+        env.events()
+            .publish((symbol_short!("priceupd"),), (source_id, price));
         Ok(())
     }
 
@@ -273,12 +283,20 @@ impl PriceFeedAggregator {
             }
         };
 
-        Ok(AggregatedPrice { price, num_sources, timestamp: now })
+        Ok(AggregatedPrice {
+            price,
+            num_sources,
+            timestamp: now,
+        })
     }
 
     // ── Admin: config setters ─────────────────────────────────────────────────
 
-    pub fn set_strategy(env: Env, admin: Address, strategy: AggregationStrategy) -> Result<(), Error> {
+    pub fn set_strategy(
+        env: Env,
+        admin: Address,
+        strategy: AggregationStrategy,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
@@ -290,7 +308,9 @@ impl PriceFeedAggregator {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
-        if max_age == 0 { return Err(Error::InvalidParameter); }
+        if max_age == 0 {
+            return Err(Error::InvalidParameter);
+        }
         set_max_price_age(&env, max_age);
         Ok(())
     }
@@ -299,7 +319,9 @@ impl PriceFeedAggregator {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
-        if bps == 0 || bps > 10_000 { return Err(Error::InvalidParameter); }
+        if bps == 0 || bps > 10_000 {
+            return Err(Error::InvalidParameter);
+        }
         set_outlier_bps(&env, bps);
         Ok(())
     }
@@ -308,7 +330,9 @@ impl PriceFeedAggregator {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
-        if bps == 0 || bps > 10_000 { return Err(Error::InvalidParameter); }
+        if bps == 0 || bps > 10_000 {
+            return Err(Error::InvalidParameter);
+        }
         set_circuit_breaker_bps(&env, bps);
         Ok(())
     }
@@ -331,22 +355,32 @@ impl PriceFeedAggregator {
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 fn ensure_initialized(env: &Env) -> Result<(), Error> {
-    if !is_initialized(env) { return Err(Error::NotInitialized); }
+    if !is_initialized(env) {
+        return Err(Error::NotInitialized);
+    }
     Ok(())
 }
 
 fn not_paused(env: &Env) -> Result<(), Error> {
-    if is_paused(env) { return Err(Error::ContractPaused); }
+    if is_paused(env) {
+        return Err(Error::ContractPaused);
+    }
     Ok(())
 }
 
 fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
-    if get_admin(env)? != *caller { return Err(Error::Unauthorized); }
+    if get_admin(env)? != *caller {
+        return Err(Error::Unauthorized);
+    }
     Ok(())
 }
 
 fn abs_diff(a: i128, b: i128) -> i128 {
-    if a > b { a - b } else { b - a }
+    if a > b {
+        a - b
+    } else {
+        b - a
+    }
 }
 
 /// In-place insertion sort (small N, no_std safe). Uses u32 indices (soroban Vec::len returns u32).
@@ -390,7 +424,9 @@ fn weighted_average(prices: &Vec<i128>, weights: &Vec<u32>) -> i128 {
         total_weight += w;
         i += 1;
     }
-    if total_weight == 0 { return 0; }
+    if total_weight == 0 {
+        return 0;
+    }
     sum / total_weight
 }
 
@@ -405,11 +441,17 @@ fn trimmed_mean(prices: &Vec<i128>, trim_pct: u32) -> i128 {
         // fallback: plain average
         let mut sum: i128 = 0;
         let mut i: u32 = 0;
-        while i < n { sum += sorted.get(i).unwrap(); i += 1; }
+        while i < n {
+            sum += sorted.get(i).unwrap();
+            i += 1;
+        }
         return sum / n as i128;
     }
     let mut sum: i128 = 0;
     let mut i = lo;
-    while i < hi { sum += sorted.get(i).unwrap(); i += 1; }
+    while i < hi {
+        sum += sorted.get(i).unwrap();
+        i += 1;
+    }
     sum / (hi - lo) as i128
 }

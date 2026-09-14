@@ -38,8 +38,7 @@ impl WarrantyManagement {
         }
         admin.require_auth();
         set_admin(&env, &admin);
-        env.events()
-            .publish((symbol_short!("init"),), (admin,));
+        env.events().publish((symbol_short!("init"),), (admin,));
         Ok(())
     }
 
@@ -143,8 +142,10 @@ impl WarrantyManagement {
         set_warranty(&env, id, &warranty);
         set_warranty_count(&env, id);
 
-        env.events()
-            .publish((symbol_short!("war_iss"), id), (owner, product_id, serial_number));
+        env.events().publish(
+            (symbol_short!("war_iss"), id),
+            (owner, product_id, serial_number),
+        );
         Ok(id)
     }
 

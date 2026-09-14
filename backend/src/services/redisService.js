@@ -120,14 +120,17 @@ class RedisService {
           this.reconnectBackoffMs * Math.pow(2, times - 1) + jitter,
           30000
         );
-        console.log(`Redis reconnection attempt ${times}, retrying in ${Math.round(delay)}ms`);
+        console.log(
+          `Redis reconnection attempt ${times}, retrying in ${Math.round(delay)}ms`
+        );
         return delay;
       },
     };
 
     if (REDIS_TLS) {
       baseOptions.tls = {
-        rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
+        rejectUnauthorized:
+          process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
       };
     }
 
@@ -204,7 +207,9 @@ class RedisService {
       setTimeout(() => {
         this.circuitBreakerState = 'HALF_OPEN';
         this.circuitBreakerHalfOpenAttempts = 0;
-        console.log('Circuit breaker entering HALF_OPEN state, testing connection...');
+        console.log(
+          'Circuit breaker entering HALF_OPEN state, testing connection...'
+        );
       }, CIRCUIT_BREAKER_TIMEOUT_MS);
     }
   }
@@ -226,7 +231,9 @@ class RedisService {
 
     if (this.circuitBreakerState === 'HALF_OPEN') {
       this.circuitBreakerHalfOpenAttempts++;
-      if (this.circuitBreakerHalfOpenAttempts > CIRCUIT_BREAKER_HALF_OPEN_ATTEMPTS) {
+      if (
+        this.circuitBreakerHalfOpenAttempts > CIRCUIT_BREAKER_HALF_OPEN_ATTEMPTS
+      ) {
         this.openCircuitBreaker();
         throw new Error('Circuit breaker half-open test failed, reopening');
       }
@@ -360,7 +367,12 @@ class RedisService {
       return await this.executeWithCircuitBreaker(async () => {
         let result;
         if (strategy === 'SlidingWindowLog') {
-          result = await this.client.slidingWindowLog(key, limit, windowMs, now);
+          result = await this.client.slidingWindowLog(
+            key,
+            limit,
+            windowMs,
+            now
+          );
         } else if (strategy === 'SlidingWindowCounter') {
           const windowIdx = Math.floor(now / windowMs);
           const currentKey = `${key}:${windowIdx}`;
@@ -413,7 +425,8 @@ class RedisService {
   }
 
   async publish(channel, message) {
-    const serialized = typeof message === 'string' ? message : JSON.stringify(message);
+    const serialized =
+      typeof message === 'string' ? message : JSON.stringify(message);
     if (this.isFallbackMode || !this.client) {
       this._emitLocal(channel, serialized);
       return 'local';
@@ -486,7 +499,11 @@ class RedisService {
     }
   }
 
-  async tryAcquireConnection(ip, limit = WS_MAX_CONNECTIONS_PER_IP, ttlSeconds = WS_CONNECTION_TTL_SECONDS) {
+  async tryAcquireConnection(
+    ip,
+    limit = WS_MAX_CONNECTIONS_PER_IP,
+    ttlSeconds = WS_CONNECTION_TTL_SECONDS
+  ) {
     const key = `ws:conn:${ip}`;
     if (this.isFallbackMode || !this.client) {
       const count = this.localConnectionCounts.get(ip) || 0;
@@ -498,7 +515,11 @@ class RedisService {
       return { allowed: true, current, fallback: true };
     }
     try {
-      const result = await this.client.acquireConnection(key, limit, ttlSeconds);
+      const result = await this.client.acquireConnection(
+        key,
+        limit,
+        ttlSeconds
+      );
       const [allowed, current] = result;
       return { allowed: allowed === 1, current, fallback: false };
     } catch (err) {
@@ -545,7 +566,11 @@ class RedisService {
   }
 
   startHeartbeat(ws, interval = WS_HEARTBEAT_INTERVAL_MS) {
-    if (!ws || typeof ws.ping !== 'function' || typeof ws.terminate !== 'function') {
+    if (
+      !ws ||
+      typeof ws.ping !== 'function' ||
+      typeof ws.terminate !== 'function'
+    ) {
       console.warn('Invalid WebSocket for heartbeat');
       return;
     }
@@ -575,7 +600,11 @@ class RedisService {
   }
 
   async handleWebSocketConnection(ws, ip) {
-    if (!ws || typeof ws.ping !== 'function' || typeof ws.terminate !== 'function') {
+    if (
+      !ws ||
+      typeof ws.ping !== 'function' ||
+      typeof ws.terminate !== 'function'
+    ) {
       return { allowed: false, current: 0, fallback: true };
     }
     const result = await this.tryAcquireConnection(ip);
@@ -836,7 +865,9 @@ class RedisService {
   }
 
   get isConnected() {
-    return !this.isFallbackMode && this.client && this.client.status === 'ready';
+    return (
+      !this.isFallbackMode && this.client && this.client.status === 'ready'
+    );
   }
   /**
    * Stores a SEP-0010 challenge nonce for replay protection.
@@ -881,7 +912,12 @@ class RedisService {
   /**
    * Stores a refresh token binding its jti to a user and opaque token hash.
    */
-  async setRefreshToken(jti, userId, tokenHash, ttlSeconds = 60 * 60 * 24 * 30) {
+  async setRefreshToken(
+    jti,
+    userId,
+    tokenHash,
+    ttlSeconds = 60 * 60 * 24 * 30
+  ) {
     const value = JSON.stringify({ userId, tokenHash });
     return this.set(`refresh:${jti}`, value, ttlSeconds);
   }
@@ -921,8 +957,7 @@ class RedisService {
           .del(`refresh:${oldJti}`)
           .exec();
         return (
-          Array.isArray(results) &&
-          results.every((entry) => entry && !entry[0])
+          Array.isArray(results) && results.every((entry) => entry && !entry[0])
         );
       } catch (err) {
         console.warn(
@@ -1186,7 +1221,9 @@ class RedisService {
   async getCacheAdminSnapshot() {
     return {
       cacheVersion: 'v1',
-      memoryEntries: this.isConnected ? await this.dbsize() : this.localCache.size,
+      memoryEntries: this.isConnected
+        ? await this.dbsize()
+        : this.localCache.size,
       isConnected: this.isConnected,
       isFallbackMode: this.isFallbackMode,
       circuitBreakerState: this.circuitBreakerState,

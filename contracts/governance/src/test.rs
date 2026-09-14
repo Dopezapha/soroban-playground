@@ -20,11 +20,7 @@ fn setup() -> (Env, Address, GovernanceClient<'static>) {
     (env, admin, client)
 }
 
-fn mint_and_propose(
-    env: &Env,
-    admin: &Address,
-    client: &GovernanceClient,
-) -> (Address, u32) {
+fn mint_and_propose(env: &Env, admin: &Address, client: &GovernanceClient) -> (Address, u32) {
     let proposer = Address::generate(env);
     client.mint(admin, &proposer, &1_000_000);
     let id = client.propose(
@@ -134,9 +130,24 @@ fn test_propose_increments_count() {
     let (env, admin, client) = setup();
     let proposer = Address::generate(&env);
     client.mint(&admin, &proposer, &1_000_000);
-    client.propose(&proposer, &String::from_str(&env, "P1"), &String::from_str(&env, "d"), &0);
-    client.propose(&proposer, &String::from_str(&env, "P2"), &String::from_str(&env, "d"), &0);
-    client.propose(&proposer, &String::from_str(&env, "P3"), &String::from_str(&env, "d"), &0);
+    client.propose(
+        &proposer,
+        &String::from_str(&env, "P1"),
+        &String::from_str(&env, "d"),
+        &0,
+    );
+    client.propose(
+        &proposer,
+        &String::from_str(&env, "P2"),
+        &String::from_str(&env, "d"),
+        &0,
+    );
+    client.propose(
+        &proposer,
+        &String::from_str(&env, "P3"),
+        &String::from_str(&env, "d"),
+        &0,
+    );
     assert_eq!(client.get_proposal_count(), 3);
 }
 
@@ -341,7 +352,7 @@ fn test_revoke_delegation() {
     client.mint(&admin, &voter, &100);
     client.delegate(&voter, &Some(other.clone()));
     client.delegate(&voter, &None); // revoke
-    // After revoke, effective delegate is self
+                                    // After revoke, effective delegate is self
     assert_eq!(client.get_delegate(&voter), voter);
 }
 
@@ -684,8 +695,6 @@ fn test_get_pending_upgrade_none_when_not_scheduled() {
     let (_env, _admin, client) = setup();
     assert_eq!(client.get_pending_upgrade(), None);
 }
-
-
 
 #[test]
 fn test_full_proposal_lifecycle() {

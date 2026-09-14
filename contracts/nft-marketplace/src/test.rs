@@ -37,7 +37,8 @@ fn setup() -> TestSetup {
 
     // Deploy payment token (SAC)
     let payment_token_admin = Address::generate(&env);
-    let payment_token_contract = env.register_stellar_asset_contract_v2(payment_token_admin.clone());
+    let payment_token_contract =
+        env.register_stellar_asset_contract_v2(payment_token_admin.clone());
     let payment_token = payment_token_contract.address();
     let payment_sac = StellarAssetClient::new(&env, &payment_token);
 
@@ -74,7 +75,12 @@ fn create_fixed_listing(s: &TestSetup, seller: &Address, price: i128, duration: 
     )
 }
 
-fn create_auction_listing(s: &TestSetup, seller: &Address, start_price: i128, duration: u64) -> u64 {
+fn create_auction_listing(
+    s: &TestSetup,
+    seller: &Address,
+    start_price: i128,
+    duration: u64,
+) -> u64 {
     let royalty_recipient = Address::generate(&s.env);
     s.nft_sac.mint(seller, &1);
     s.client.list_nft(
@@ -113,9 +119,33 @@ fn test_list_nft_increments_count() {
     let seller = Address::generate(&s.env);
     s.nft_sac.mint(&seller, &3);
     let royalty_recipient = Address::generate(&s.env);
-    let id1 = s.client.list_nft(&seller, &s.nft_contract, &100, &false, &3600, &royalty_recipient, &0u32);
-    let id2 = s.client.list_nft(&seller, &s.nft_contract, &200, &false, &3600, &royalty_recipient, &0u32);
-    let id3 = s.client.list_nft(&seller, &s.nft_contract, &300, &false, &3600, &royalty_recipient, &0u32);
+    let id1 = s.client.list_nft(
+        &seller,
+        &s.nft_contract,
+        &100,
+        &false,
+        &3600,
+        &royalty_recipient,
+        &0u32,
+    );
+    let id2 = s.client.list_nft(
+        &seller,
+        &s.nft_contract,
+        &200,
+        &false,
+        &3600,
+        &royalty_recipient,
+        &0u32,
+    );
+    let id3 = s.client.list_nft(
+        &seller,
+        &s.nft_contract,
+        &300,
+        &false,
+        &3600,
+        &royalty_recipient,
+        &0u32,
+    );
     assert_eq!(id1, 1);
     assert_eq!(id2, 2);
     assert_eq!(id3, 3);
@@ -166,14 +196,18 @@ fn test_buy_fixed_price_ok() {
 
     let seller_balance_before = payment_client.balance(&seller);
 
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     // Buyer should now own the NFT
     assert_eq!(nft_client.balance(&buyer), 1);
     // Seller should have received payment minus fees
     let marketplace_fee = price * 25 / 1000; // 2.5%
     let expected_seller = price - marketplace_fee;
-    assert_eq!(payment_client.balance(&seller), seller_balance_before + expected_seller);
+    assert_eq!(
+        payment_client.balance(&seller),
+        seller_balance_before + expected_seller
+    );
     // Fee recipient should have received the fee
     assert_eq!(payment_client.balance(&s.fee_recipient), marketplace_fee);
 }
@@ -188,7 +222,9 @@ fn test_buy_insufficient_payment_panics() {
     let listing_id = create_fixed_listing(&s, &seller, price, 3600);
     s.payment_sac.mint(&buyer, &500_000); // less than price
 
-    let result = s.client.try_buy_or_bid(&buyer, &listing_id, &s.payment_token, &500_000);
+    let result = s
+        .client
+        .try_buy_or_bid(&buyer, &listing_id, &s.payment_token, &500_000);
     assert!(result.is_err());
 }
 
@@ -213,7 +249,8 @@ fn test_buy_with_royalty() {
     );
 
     s.payment_sac.mint(&buyer, &price);
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     let payment_client = TokenClient::new(&s.env, &s.payment_token);
     let royalty_amount = price * royalty_percent as i128 / 1000;
@@ -231,12 +268,15 @@ fn test_buy_inactive_listing_panics() {
     s.payment_sac.mint(&buyer, &price);
 
     // First buy succeeds
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     // Second buy on inactive listing should panic
     let buyer2 = Address::generate(&s.env);
     s.payment_sac.mint(&buyer2, &price);
-    let result = s.client.try_buy_or_bid(&buyer2, &listing_id, &s.payment_token, &price);
+    let result = s
+        .client
+        .try_buy_or_bid(&buyer2, &listing_id, &s.payment_token, &price);
     assert!(result.is_err());
 }
 
@@ -253,7 +293,8 @@ fn test_auction_bid_ok() {
     let listing_id = create_auction_listing(&s, &seller, start_price, 3600);
     s.payment_sac.mint(&bidder, &bid);
 
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
 
     let payment_client = TokenClient::new(&s.env, &s.payment_token);
     // Bid is escrowed in the contract
@@ -270,7 +311,9 @@ fn test_auction_bid_too_low_panics() {
     let listing_id = create_auction_listing(&s, &seller, start_price, 3600);
     s.payment_sac.mint(&bidder, &50_000);
 
-    let result = s.client.try_buy_or_bid(&bidder, &listing_id, &s.payment_token, &50_000);
+    let result = s
+        .client
+        .try_buy_or_bid(&bidder, &listing_id, &s.payment_token, &50_000);
     assert!(result.is_err());
 }
 
@@ -288,8 +331,10 @@ fn test_auction_outbid_refunds_previous_bidder() {
     s.payment_sac.mint(&bidder1, &bid1);
     s.payment_sac.mint(&bidder2, &bid2);
 
-    s.client.buy_or_bid(&bidder1, &listing_id, &s.payment_token, &bid1);
-    s.client.buy_or_bid(&bidder2, &listing_id, &s.payment_token, &bid2);
+    s.client
+        .buy_or_bid(&bidder1, &listing_id, &s.payment_token, &bid1);
+    s.client
+        .buy_or_bid(&bidder2, &listing_id, &s.payment_token, &bid2);
 
     let payment_client = TokenClient::new(&s.env, &s.payment_token);
     // bidder1 should be refunded
@@ -311,7 +356,9 @@ fn test_auction_bid_after_end_panics() {
     // Advance past auction end
     s.env.ledger().with_mut(|l| l.timestamp += 3601);
 
-    let result = s.client.try_buy_or_bid(&bidder, &listing_id, &s.payment_token, &200_000);
+    let result = s
+        .client
+        .try_buy_or_bid(&bidder, &listing_id, &s.payment_token, &200_000);
     assert!(result.is_err());
 }
 
@@ -327,7 +374,8 @@ fn test_settle_auction_with_winner() {
 
     let listing_id = create_auction_listing(&s, &seller, start_price, 3600);
     s.payment_sac.mint(&bidder, &bid);
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
 
     // Advance past auction end
     s.env.ledger().with_mut(|l| l.timestamp += 3601);
@@ -424,7 +472,8 @@ fn test_cancel_listing_already_inactive_panics() {
 
     let listing_id = create_fixed_listing(&s, &seller, price, 3600);
     s.payment_sac.mint(&buyer, &price);
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     // Listing is now inactive
     let result = s.client.try_cancel_listing(&seller, &listing_id);
@@ -439,7 +488,8 @@ fn test_cancel_auction_with_bids_panics() {
 
     let listing_id = create_auction_listing(&s, &seller, 100_000, 3600);
     s.payment_sac.mint(&bidder, &200_000);
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &200_000);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &200_000);
 
     let result = s.client.try_cancel_listing(&seller, &listing_id);
     assert!(result.is_err());
@@ -508,7 +558,8 @@ fn test_buy_at_exact_price_succeeds() {
 
     // The guard is `bid_amount < price`, so paying exactly the asking price is
     // the boundary between success and `Insufficient payment`.
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     let nft_client = TokenClient::new(&s.env, &s.nft_contract);
     assert_eq!(nft_client.balance(&buyer), 1);
@@ -525,13 +576,19 @@ fn test_bid_one_stroop_above_previous_is_accepted() {
     s.payment_sac.mint(&first, &200_000);
     s.payment_sac.mint(&second, &200_000);
 
-    s.client.buy_or_bid(&first, &listing_id, &s.payment_token, &100_000);
+    s.client
+        .buy_or_bid(&first, &listing_id, &s.payment_token, &100_000);
     // The guard is `bid_amount <= highest_bid`, so a single stroop more is the
     // smallest valid raise.
-    s.client.buy_or_bid(&second, &listing_id, &s.payment_token, &100_001);
+    s.client
+        .buy_or_bid(&second, &listing_id, &s.payment_token, &100_001);
 
     let listing: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap()
     });
     assert_eq!(listing.highest_bid, 100_001);
     assert_eq!(listing.highest_bidder, Some(second));
@@ -548,12 +605,16 @@ fn test_bid_equal_to_previous_is_rejected() {
     s.payment_sac.mint(&first, &200_000);
     s.payment_sac.mint(&second, &200_000);
 
-    s.client.buy_or_bid(&first, &listing_id, &s.payment_token, &150_000);
+    s.client
+        .buy_or_bid(&first, &listing_id, &s.payment_token, &150_000);
     let result = s
         .client
         .try_buy_or_bid(&second, &listing_id, &s.payment_token, &150_000);
 
-    assert!(result.is_err(), "matching the highest bid must not win the auction");
+    assert!(
+        result.is_err(),
+        "matching the highest bid must not win the auction"
+    );
 }
 
 // ── Arithmetic conservation ───────────────────────────────────────────────────
@@ -579,7 +640,8 @@ fn test_fixed_price_payment_splits_exactly_with_no_remainder_lost() {
     );
     s.payment_sac.mint(&buyer, &price);
 
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     let token = TokenClient::new(&s.env, &s.payment_token);
     let fee = token.balance(&s.fee_recipient);
@@ -589,7 +651,11 @@ fn test_fixed_price_payment_splits_exactly_with_no_remainder_lost() {
     // Every stroop the buyer paid must land somewhere. Truncation in the fee
     // and royalty calculations is absorbed by seller_revenue, so the three
     // payouts must reconstruct the price exactly.
-    assert_eq!(fee + royalty + revenue, price, "payment was not fully distributed");
+    assert_eq!(
+        fee + royalty + revenue,
+        price,
+        "payment was not fully distributed"
+    );
     assert_eq!(token.balance(&buyer), 0);
     assert_eq!(fee, price * 25 / 1000);
     assert_eq!(royalty, price * 75 / 1000);
@@ -614,7 +680,8 @@ fn test_auction_settlement_splits_escrowed_bid_exactly() {
         &50u32, // 5%
     );
     s.payment_sac.mint(&bidder, &bid);
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &bid);
 
     s.env.ledger().with_mut(|l| l.timestamp += 4000);
     s.client.settle_auction(&listing_id, &s.payment_token);
@@ -624,9 +691,17 @@ fn test_auction_settlement_splits_escrowed_bid_exactly() {
     let royalty = token.balance(&royalty_recipient);
     let revenue = token.balance(&seller);
 
-    assert_eq!(fee + royalty + revenue, bid, "escrowed bid was not fully paid out");
+    assert_eq!(
+        fee + royalty + revenue,
+        bid,
+        "escrowed bid was not fully paid out"
+    );
     // The contract must not retain any of the escrow after settling.
-    assert_eq!(token.balance(&s.client.address), 0, "escrow left dust in the contract");
+    assert_eq!(
+        token.balance(&s.client.address),
+        0,
+        "escrow left dust in the contract"
+    );
 }
 
 #[test]
@@ -640,7 +715,8 @@ fn test_overpayment_is_distributed_not_refunded() {
     let listing_id = create_fixed_listing(&s, &seller, price, 3600);
     s.payment_sac.mint(&buyer, &paid);
 
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &paid);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &paid);
 
     let token = TokenClient::new(&s.env, &s.payment_token);
     // Fees and revenue are computed from the amount paid, not the asking
@@ -663,15 +739,24 @@ fn test_late_bid_extends_auction_end_time() {
     s.payment_sac.mint(&bidder, &200_000);
 
     let before: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap()
     });
 
     // Move to within the 10-minute anti-sniping window.
     s.env.ledger().with_mut(|l| l.timestamp += 3300);
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
 
     let after: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap()
     });
 
     assert_eq!(
@@ -691,15 +776,24 @@ fn test_early_bid_does_not_extend_auction_end_time() {
     s.payment_sac.mint(&bidder, &200_000);
 
     let before: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap()
     });
 
     // Well outside the anti-sniping window — extending here would let a bidder
     // stretch an auction indefinitely with cheap early bids.
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
 
     let after: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap()
     });
 
     assert_eq!(after.end_time, before.end_time);
@@ -719,7 +813,10 @@ fn test_zero_duration_auction_is_immediately_closed_to_bids() {
         .client
         .try_buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
 
-    assert!(result.is_err(), "a zero-duration auction cannot accept bids");
+    assert!(
+        result.is_err(),
+        "a zero-duration auction cannot accept bids"
+    );
 }
 
 #[test]
@@ -744,7 +841,8 @@ fn test_settle_auction_twice_panics() {
 
     let listing_id = create_auction_listing(&s, &seller, 100_000, 3600);
     s.payment_sac.mint(&bidder, &200_000);
-    s.client.buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
+    s.client
+        .buy_or_bid(&bidder, &listing_id, &s.payment_token, &150_000);
 
     s.env.ledger().with_mut(|l| l.timestamp += 4000);
     s.client.settle_auction(&listing_id, &s.payment_token);
@@ -766,7 +864,10 @@ fn test_settle_cancelled_auction_panics() {
     let result = s.client.try_settle_auction(&listing_id, &s.payment_token);
 
     // Cancelling already returned the NFT; settling must not move it again.
-    assert!(result.is_err(), "a cancelled auction must not be settleable");
+    assert!(
+        result.is_err(),
+        "a cancelled auction must not be settleable"
+    );
 }
 
 #[test]
@@ -781,7 +882,8 @@ fn test_buy_after_sale_completes_panics() {
     s.payment_sac.mint(&first_buyer, &price);
     s.payment_sac.mint(&second_buyer, &price);
 
-    s.client.buy_or_bid(&first_buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&first_buyer, &listing_id, &s.payment_token, &price);
 
     // The NFT is already gone; a second buyer must not be able to pay for it.
     let result = s
@@ -799,7 +901,8 @@ fn test_cancel_after_sale_panics() {
 
     let listing_id = create_fixed_listing(&s, &seller, price, 3600);
     s.payment_sac.mint(&buyer, &price);
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &price);
 
     let result = s.client.try_cancel_listing(&seller, &listing_id);
     assert!(result.is_err(), "a sold listing must not be cancellable");
@@ -815,7 +918,9 @@ fn test_buy_nonexistent_listing_panics() {
 
     // The contract unwraps the storage read, so an unknown id is a panic
     // rather than a typed error.
-    let result = s.client.try_buy_or_bid(&buyer, &9_999u64, &s.payment_token, &500_000);
+    let result = s
+        .client
+        .try_buy_or_bid(&buyer, &9_999u64, &s.payment_token, &500_000);
     assert!(result.is_err());
 }
 
@@ -848,11 +953,16 @@ fn test_listings_are_independent() {
     assert_ne!(id_a, id_b);
 
     s.payment_sac.mint(&buyer, &100_000);
-    s.client.buy_or_bid(&buyer, &id_a, &s.payment_token, &100_000);
+    s.client
+        .buy_or_bid(&buyer, &id_a, &s.payment_token, &100_000);
 
     // Buying one listing must not disturb another.
     let listing_b: Listing = s.env.as_contract(&s.client.address, || {
-        s.env.storage().persistent().get(&DataKey::Listing(id_b)).unwrap()
+        s.env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(id_b))
+            .unwrap()
     });
     assert!(listing_b.active, "unrelated listing was deactivated");
     assert_eq!(listing_b.price, 200_000);
@@ -873,7 +983,11 @@ fn test_gap_init_can_be_called_twice_and_overwrites_admin() {
     s.client.init(&new_admin, &new_fee_recipient);
 
     let stored: Address = s.env.as_contract(&s.client.address, || {
-        s.env.storage().instance().get(&DataKey::FeeRecipient).unwrap()
+        s.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeeRecipient)
+            .unwrap()
     });
     assert_eq!(
         stored, new_fee_recipient,
@@ -908,7 +1022,8 @@ fn test_gap_zero_price_fixed_listing_is_accepted() {
     // GAP: `list_nft` does not validate `price`, so a zero-price listing is
     // accepted and anyone can take the NFT for nothing.
     let listing_id = create_fixed_listing(&s, &seller, 0, 3600);
-    s.client.buy_or_bid(&buyer, &listing_id, &s.payment_token, &0);
+    s.client
+        .buy_or_bid(&buyer, &listing_id, &s.payment_token, &0);
 
     let nft_client = TokenClient::new(&s.env, &s.nft_contract);
     assert_eq!(
@@ -930,7 +1045,8 @@ fn test_gap_seller_can_buy_own_listing() {
     // GAP: nothing stops a seller buying their own listing, which is the
     // standard wash-trading primitive — it inflates volume while costing the
     // seller only the 2.5% fee.
-    s.client.buy_or_bid(&seller, &listing_id, &s.payment_token, &price);
+    s.client
+        .buy_or_bid(&seller, &listing_id, &s.payment_token, &price);
 
     let nft_client = TokenClient::new(&s.env, &s.nft_contract);
     assert_eq!(nft_client.balance(&seller), 1);

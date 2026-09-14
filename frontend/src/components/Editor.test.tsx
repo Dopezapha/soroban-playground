@@ -14,9 +14,10 @@ jest.mock('monaco-editor', () => {
     dispose: jest.fn(),
     getModel: jest.fn().mockReturnValue(model),
     setModel: jest.fn(),
-    onDieChangeModelContent: jest.fn(),
+    onDidChangeModelContent: jest.fn(),
   };
   return {
+    __esModule: true,
     editor: {
       create: jest.fn().mockReturnValue(editor),
       setModelMarkers: jest.fn(),

@@ -6,9 +6,7 @@ mod types;
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{
-    contract, contractimpl, contracttype, token, Address, Env, Bytes, BytesN, Vec,
-};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Bytes, BytesN, Env, Vec};
 
 use crate::storage::{
     get_admin, get_airdrop_info, is_claimed, is_initialized, set_admin, set_airdrop_info,
@@ -80,7 +78,12 @@ impl Airdrop {
         Ok(())
     }
 
-    pub fn claim(env: Env, user: Address, amount: i128, proof: Vec<BytesN<32>>) -> Result<(), Error> {
+    pub fn claim(
+        env: Env,
+        user: Address,
+        amount: i128,
+        proof: Vec<BytesN<32>>,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         user.require_auth();
 

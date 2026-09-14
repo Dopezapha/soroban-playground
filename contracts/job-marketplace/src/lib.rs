@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Symbol, token};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, String, Symbol};
 
 #[contracttype]
 #[derive(Clone)]
@@ -56,7 +56,11 @@ impl JobMarketplace {
         let token_client = token::Client::new(&env, &payment_token);
         token_client.transfer(&client, &env.current_contract_address(), &total_escrow);
 
-        let mut count: u64 = env.storage().instance().get(&DataKey::JobCount).unwrap_or(0);
+        let mut count: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::JobCount)
+            .unwrap_or(0);
         count += 1;
 
         let job = Job {
@@ -78,7 +82,11 @@ impl JobMarketplace {
 
     pub fn accept_job(env: Env, freelancer: Address, job_id: u64) {
         freelancer.require_auth();
-        let mut job: Job = env.storage().persistent().get(&DataKey::Job(job_id)).unwrap();
+        let mut job: Job = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Job(job_id))
+            .unwrap();
         if job.status != JobStatus::Open {
             panic!("Job not open");
         }
@@ -93,7 +101,11 @@ impl JobMarketplace {
 
     pub fn release_milestone(env: Env, client: Address, job_id: u64, amount: i128) {
         client.require_auth();
-        let mut job: Job = env.storage().persistent().get(&DataKey::Job(job_id)).unwrap();
+        let mut job: Job = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Job(job_id))
+            .unwrap();
         if job.status != JobStatus::InProgress {
             panic!("Job not in progress");
         }
@@ -105,7 +117,11 @@ impl JobMarketplace {
         }
 
         let token_client = token::Client::new(&env, &job.payment_token);
-        token_client.transfer(&env.current_contract_address(), job.freelancer.as_ref().unwrap(), &amount);
+        token_client.transfer(
+            &env.current_contract_address(),
+            job.freelancer.as_ref().unwrap(),
+            &amount,
+        );
 
         job.active_milestone += 1;
         if job.active_milestone == job.total_milestones {
@@ -117,7 +133,11 @@ impl JobMarketplace {
 
     pub fn cancel_job(env: Env, client: Address, job_id: u64) {
         client.require_auth();
-        let mut job: Job = env.storage().persistent().get(&DataKey::Job(job_id)).unwrap();
+        let mut job: Job = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Job(job_id))
+            .unwrap();
         if job.client != client {
             panic!("Not the client");
         }

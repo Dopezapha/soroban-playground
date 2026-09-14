@@ -235,11 +235,7 @@ impl TokenizedReitContract {
     }
 
     /// Claim pro-rata dividend income. Returns amount claimed in stroops.
-    pub fn claim_dividends(
-        env: Env,
-        investor: Address,
-        trust_id: u32,
-    ) -> Result<i128, Error> {
+    pub fn claim_dividends(env: Env, investor: Address, trust_id: u32) -> Result<i128, Error> {
         Self::assert_not_paused(&env)?;
         Self::assert_initialized(&env)?;
         investor.require_auth();
@@ -272,11 +268,7 @@ impl TokenizedReitContract {
     }
 
     /// Return claimable dividends for an investor without mutating state.
-    pub fn claimable_dividends(
-        env: Env,
-        investor: Address,
-        trust_id: u32,
-    ) -> Result<i128, Error> {
+    pub fn claimable_dividends(env: Env, investor: Address, trust_id: u32) -> Result<i128, Error> {
         let trust = get_trust(&env, trust_id)?;
         let holding = get_holding(&env, trust_id, &investor)?;
         Ok(Self::compute_claimable(&holding, &trust))
@@ -311,9 +303,7 @@ impl TokenizedReitContract {
         if new_dividends <= 0 {
             return 0;
         }
-        new_dividends
-            .saturating_mul(holding.shares as i128)
-            / (trust.total_shares as i128)
+        new_dividends.saturating_mul(holding.shares as i128) / (trust.total_shares as i128)
     }
 
     fn assert_initialized(env: &Env) -> Result<(), Error> {

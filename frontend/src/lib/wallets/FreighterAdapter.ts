@@ -120,7 +120,7 @@ export class FreighterAdapter implements WalletAdapter {
       options?.networkPassphrase ?? "Test SDF Network ; November 2015";
     const result = await freighterApi.signTransaction(xdr, {
       networkPassphrase,
-      accountToSign: options?.accountToSign,
+      address: options?.accountToSign,
     });
 
     if (!result) return null;
@@ -152,23 +152,15 @@ export class FreighterAdapter implements WalletAdapter {
   }
 
   onAccountChange(callback: (address: string) => void): () => void {
-    if (
-      typeof freighterApi.watchAddress === "function"
-    ) {
+    if (typeof freighterApi.WatchWalletChanges === "function") {
       try {
-        const unsubscribe = freighterApi.watchAddress((addressOrObj: unknown) => {
-          if (typeof addressOrObj === "string") {
-            callback(addressOrObj);
-          } else if (
-            addressOrObj &&
-            typeof addressOrObj === "object" &&
-            "address" in addressOrObj &&
-            typeof (addressOrObj as { address: unknown }).address === "string"
-          ) {
-            callback((addressOrObj as { address: string }).address);
+        const watcher = new freighterApi.WatchWalletChanges();
+        watcher.watch((params) => {
+          if (params && typeof params.address === "string") {
+            callback(params.address);
           }
         });
-        if (typeof unsubscribe === "function") return unsubscribe;
+        return () => watcher.stop();
       } catch {
         // Fall back to event listener
       }
@@ -192,23 +184,15 @@ export class FreighterAdapter implements WalletAdapter {
   }
 
   onNetworkChange(callback: (network: string) => void): () => void {
-    if (
-      typeof freighterApi.watchNetwork === "function"
-    ) {
+    if (typeof freighterApi.WatchWalletChanges === "function") {
       try {
-        const unsubscribe = freighterApi.watchNetwork((networkOrObj: unknown) => {
-          if (typeof networkOrObj === "string") {
-            callback(networkOrObj);
-          } else if (
-            networkOrObj &&
-            typeof networkOrObj === "object" &&
-            "network" in networkOrObj &&
-            typeof (networkOrObj as { network: unknown }).network === "string"
-          ) {
-            callback((networkOrObj as { network: string }).network);
+        const watcher = new freighterApi.WatchWalletChanges();
+        watcher.watch((params) => {
+          if (params && typeof params.network === "string") {
+            callback(params.network);
           }
         });
-        if (typeof unsubscribe === "function") return unsubscribe;
+        return () => watcher.stop();
       } catch {
         // Fall back to window listener
       }

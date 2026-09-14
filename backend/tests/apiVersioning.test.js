@@ -77,6 +77,7 @@ app.use(errorHandler);
 
 function mockCompileResult() {
   compileQueued.mockResolvedValue({
+    success: true,
     cached: false,
     hash: 'abc123',
     durationMs: 12,

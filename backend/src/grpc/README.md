@@ -22,13 +22,13 @@ This document describes the gRPC communication layer added to `backend/src/grpc/
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `soroban_indexer.proto` | Protocol Buffer definitions for all messages and the `IndexerService` |
-| `server.js` | gRPC server — implements `IndexerService` handlers and exposes `grpcEventBus` |
-| `client.js` | `GrpcClient` — promise-wrapped stub with exponential-backoff retry |
-| `serviceRegistry.js` | `ServiceRegistry` — health-polling, round-robin load balancing, TTL eviction |
-| `index.js` | Re-exports: `startGrpcServer`, `shutdownGrpcServer`, `grpcEventBus`, `GrpcClient`, `ServiceRegistry`, `serviceRegistry` |
+| File                    | Purpose                                                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `soroban_indexer.proto` | Protocol Buffer definitions for all messages and the `IndexerService`                                                   |
+| `server.js`             | gRPC server — implements `IndexerService` handlers and exposes `grpcEventBus`                                           |
+| `client.js`             | `GrpcClient` — promise-wrapped stub with exponential-backoff retry                                                      |
+| `serviceRegistry.js`    | `ServiceRegistry` — health-polling, round-robin load balancing, TTL eviction                                            |
+| `index.js`              | Re-exports: `startGrpcServer`, `shutdownGrpcServer`, `grpcEventBus`, `GrpcClient`, `ServiceRegistry`, `serviceRegistry` |
 
 ---
 
@@ -54,7 +54,7 @@ service IndexerService {
 import { startGrpcServer } from './grpc/index.js';
 
 const compileJobStore = new Map();
-const deployJobStore  = new Map();
+const deployJobStore = new Map();
 
 await startGrpcServer(compileJobStore, deployJobStore, {
   host: '0.0.0.0',
@@ -69,9 +69,9 @@ import { grpcEventBus } from './grpc/index.js';
 
 grpcEventBus.emit('contract_event', {
   contract_id: 'C...',
-  event_type:  'transfer',
-  ledger_seq:  '1234567',
-  timestamp:   Math.floor(Date.now() / 1000),
+  event_type: 'transfer',
+  ledger_seq: '1234567',
+  timestamp: Math.floor(Date.now() / 1000),
   payload_json: JSON.stringify({ from, to, amount }),
 });
 ```
@@ -108,11 +108,11 @@ const endpoint = serviceRegistry.resolve('indexer');
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GRPC_PORT` | `50051` | Port the gRPC server binds to |
+| Variable            | Default     | Description                     |
+| ------------------- | ----------- | ------------------------------- |
+| `GRPC_PORT`         | `50051`     | Port the gRPC server binds to   |
 | `GRPC_INDEXER_HOST` | `localhost` | Indexer host used by GrpcClient |
-| `GRPC_INDEXER_PORT` | `50051` | Indexer port used by GrpcClient |
+| `GRPC_INDEXER_PORT` | `50051`     | Indexer port used by GrpcClient |
 
 ---
 
@@ -126,9 +126,9 @@ const endpoint = serviceRegistry.resolve('indexer');
 
 ## Performance Settings
 
-| Setting | Value | Notes |
-|---------|-------|-------|
-| Max message size | 64 MB | Accommodates large WASM binaries |
-| Keepalive ping interval | 10 s | Detects dead connections quickly |
-| Keepalive timeout | 5 s | |
-| Client retry limit | 3 | Exponential backoff, UNAVAILABLE / DEADLINE_EXCEEDED only |
+| Setting                 | Value | Notes                                                     |
+| ----------------------- | ----- | --------------------------------------------------------- |
+| Max message size        | 64 MB | Accommodates large WASM binaries                          |
+| Keepalive ping interval | 10 s  | Detects dead connections quickly                          |
+| Keepalive timeout       | 5 s   |                                                           |
+| Client retry limit      | 3     | Exponential backoff, UNAVAILABLE / DEADLINE_EXCEEDED only |

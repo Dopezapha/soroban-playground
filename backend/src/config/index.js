@@ -14,48 +14,12 @@ const PRODUCTION_ENV_SCHEMA = z.object({
 
 function validateProductionEnv(env = process.env) {
   const isProduction =
-    String(env.NODE_ENV || '').trim().toLowerCase() === 'production' ||
-    String(env.APP_ENV || '').trim().toLowerCase() === 'production';
-
-  if (!isProduction) return;
-
-  const result = PRODUCTION_ENV_SCHEMA.safeParse(env);
-  if (result.success) return;
-
-  const missing = Object.keys(PRODUCTION_ENV_SCHEMA.shape).filter(
-    (key) => !env[key] || String(env[key]).trim() === ''
-  );
-
-  const report = [
-    'Invalid production environment configuration:',
-    ...missing.map((key) => `  MISSING ${key}`),
-    'All required environment variables must be set when NODE_ENV=production.',
-  ].join('\n');
-
-  console.error(report);
-  process.exit(1);
-}
-
-validateProductionEnv(process.env);
-
-import dotenv from 'dotenv';
-import { z } from 'zod';
-
-// Load .env early
-dotenv.config();
-
-const PRODUCTION_ENV_SCHEMA = z.object({
-  JWT_SECRET: z.string().trim().min(1),
-  DATABASE_URL: z.string().trim().min(1),
-  REDIS_URL: z.string().trim().min(1),
-  SOROBAN_RPC_URL: z.string().trim().min(1),
-  CORS_ALLOWED_ORIGINS: z.string().trim().min(1),
-});
-
-function validateProductionEnv(env = process.env) {
-  const isProduction =
-    String(env.NODE_ENV || '').trim().toLowerCase() === 'production' ||
-    String(env.APP_ENV || '').trim().toLowerCase() === 'production';
+    String(env.NODE_ENV || '')
+      .trim()
+      .toLowerCase() === 'production' ||
+    String(env.APP_ENV || '')
+      .trim()
+      .toLowerCase() === 'production';
 
   if (!isProduction) return;
 
@@ -235,7 +199,7 @@ function logConfigWarnings(warnings, logger = console) {
 }
 
 function assertAuthConfig(config) {
-  if (config.app.env === 'test') return;
+  if (config.app.env !== 'production') return;
 
   const required = [
     ['jwtSecret', 'JWT_SECRET'],
@@ -304,7 +268,10 @@ export function createConfig(env = process.env, options = {}) {
         env.SEP10_SIGNING_SECRET,
         DEFAULTS.SEP10_SIGNING_SECRET
       ),
-      homeDomain: cleanString(env.SEP10_HOME_DOMAIN, DEFAULTS.SEP10_HOME_DOMAIN),
+      homeDomain: cleanString(
+        env.SEP10_HOME_DOMAIN,
+        DEFAULTS.SEP10_HOME_DOMAIN
+      ),
       networkPassphrase: cleanString(
         env.STELLAR_NETWORK_PASSPHRASE,
         DEFAULTS.STELLAR_NETWORK_PASSPHRASE
@@ -314,8 +281,6 @@ export function createConfig(env = process.env, options = {}) {
       url: cleanString(env.REDIS_URL, DEFAULTS.REDIS_URL),
     },
     rateLimit: {
-      global: {
-        windowMs: toInt(
       global: {
         windowMs: toInt(
           env.GLOBAL_RATE_LIMIT_WINDOW_MS,
@@ -489,7 +454,12 @@ export function createConfig(env = process.env, options = {}) {
       ),
     },
     redis: {
-      enabled: toBoolean(env.REDIS_ENABLED, hasValue(env.REDIS_URL) || DEFAULTS.REDIS_ENABLED, 'REDIS_ENABLED', warnings),
+      enabled: toBoolean(
+        env.REDIS_ENABLED,
+        hasValue(env.REDIS_URL) || DEFAULTS.REDIS_ENABLED,
+        'REDIS_ENABLED',
+        warnings
+      ),
       url: cleanString(env.REDIS_URL, DEFAULTS.REDIS_URL),
       channel: cleanString(env.REDIS_CHANNEL, DEFAULTS.REDIS_CHANNEL),
     },

@@ -7,6 +7,7 @@ The backend Redis infrastructure has been unified to eliminate dual disjoint Red
 ## What Changed
 
 ### Before
+
 - **Two separate Redis clients**: `redisService.js` and `cacheService.js`
 - `cacheService` connected unconditionally to localhost without shared pooling
 - No circuit breaker or intelligent fallback
@@ -15,6 +16,7 @@ The backend Redis infrastructure has been unified to eliminate dual disjoint Red
 - Limited retry logic (3 attempts, linear backoff)
 
 ### After
+
 - **Single unified Redis client** in `redisService.js`
 - Exponential backoff with jitter (up to 10 attempts, max 30s delay)
 - Circuit breaker pattern with CLOSED → OPEN → HALF_OPEN states
@@ -47,22 +49,26 @@ REDIS_CLUSTER_NODES=
 ```
 
 ### Standalone Redis (default)
+
 ```bash
 REDIS_URL=redis://localhost:6379
 ```
 
 ### Redis with Authentication
+
 ```bash
 REDIS_URL=redis://:your-password@redis-host:6379
 ```
 
 ### Redis Cluster
+
 ```bash
 REDIS_CLUSTER_NODES=node1.redis:6379,node2.redis:6379,node3.redis:6379
 REDIS_TLS=false
 ```
 
 ### AWS ElastiCache with TLS
+
 ```bash
 REDIS_URL=rediss://your-elasticache-endpoint:6380
 REDIS_TLS=true
@@ -70,6 +76,7 @@ REDIS_TLS_REJECT_UNAUTHORIZED=true
 ```
 
 ### Azure Cache for Redis
+
 ```bash
 REDIS_URL=rediss://your-cache.redis.cache.windows.net:6380
 REDIS_TLS=true
@@ -84,12 +91,15 @@ The unified Redis service implements a circuit breaker to prevent cascading fail
 3. **HALF_OPEN** (testing recovery): Limited test operations to Redis
 
 ### Circuit Breaker Thresholds
+
 - **Failure threshold**: 5 consecutive failures
 - **Open timeout**: 60 seconds before entering HALF_OPEN
 - **Half-open attempts**: 3 test attempts before reopening or closing
 
 ### Observability
+
 Monitor circuit breaker state via:
+
 ```javascript
 const snapshot = await redisService.getCacheAdminSnapshot();
 console.log(snapshot.circuitBreakerState); // CLOSED, OPEN, or HALF_OPEN
@@ -166,6 +176,7 @@ console.log(health.status); // 'connected', 'fallback', 'disconnected'
 ### Benchmark Results
 
 With unified connection pool and circuit breaker:
+
 - Rate limiting: 50,000 req/s (vs 5,000 req/s before)
 - Analytics logging: 30,000 writes/s batched
 - Compile cache hits: <5ms latency
@@ -204,6 +215,7 @@ curl http://localhost:5000/health
 ```
 
 Response:
+
 ```json
 {
   "status": "healthy",
@@ -222,6 +234,7 @@ Response:
 **Symptom**: Logs show "ECONNREFUSED" errors
 
 **Solution**:
+
 1. Verify `REDIS_URL` is correct
 2. Ensure Redis is running: `redis-cli ping`
 3. Check firewall rules allow port 6379
@@ -232,6 +245,7 @@ Response:
 **Symptom**: "SSL routines" or "certificate verify failed"
 
 **Solution**:
+
 1. Set `REDIS_TLS=true`
 2. For self-signed certs: `REDIS_TLS_REJECT_UNAUTHORIZED=false`
 3. Verify TLS endpoint port (usually 6380)
@@ -241,6 +255,7 @@ Response:
 **Symptom**: Operations use fallback despite Redis being available
 
 **Solution**:
+
 1. Wait 60 seconds for HALF_OPEN state
 2. Check Redis logs for errors
 3. Restart the backend service to reset circuit breaker
@@ -250,6 +265,7 @@ Response:
 **Symptom**: Memory usage grows during Redis outage
 
 **Solution**:
+
 1. LRU cache is capped at 100MB
 2. Entries expire after 1 hour
 3. Restore Redis connection to offload to Redis
@@ -257,6 +273,7 @@ Response:
 ## Future Enhancements
 
 Planned improvements:
+
 - Redis Sentinel support for automatic failover
 - Configurable circuit breaker thresholds
 - Prometheus metrics for circuit breaker state

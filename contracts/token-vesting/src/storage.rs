@@ -14,7 +14,9 @@ pub fn is_initialized(env: &Env) -> bool {
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
-    env.storage().instance().set(&Symbol::new(env, ADMIN_KEY), admin);
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, ADMIN_KEY), admin);
 }
 
 pub fn get_admin(env: &Env) -> Result<Address, Error> {
@@ -31,7 +33,9 @@ pub fn next_id(env: &Env) -> u32 {
         .get(&Symbol::new(env, COUNT_KEY))
         .unwrap_or(0u32)
         + 1;
-    env.storage().instance().set(&Symbol::new(env, COUNT_KEY), &count);
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, COUNT_KEY), &count);
     count
 }
 

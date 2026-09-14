@@ -49,9 +49,13 @@ impl MockOracle {
     /// Any previous stale flag is cleared (the feed is considered fresh
     /// after a `set_price` call).
     pub fn set_price(env: Env, asset: Symbol, price: i128) {
-        let data = PriceData { price, stale: false };
+        let data = PriceData {
+            price,
+            stale: false,
+        };
         env.storage().instance().set(&asset, &data);
-        env.events().publish((symbol_short!("price_set"), asset), price);
+        env.events()
+            .publish((symbol_short!("price_set"), asset), price);
     }
 
     /// Returns the current price for `asset`.
@@ -65,9 +69,7 @@ impl MockOracle {
             .storage()
             .instance()
             .get(&asset)
-            .unwrap_or_else(|| {
-                panic!("MockOracle: price not set for asset '{:?}'", asset)
-            });
+            .unwrap_or_else(|| panic!("MockOracle: price not set for asset '{:?}'", asset));
         data.price
     }
 
@@ -81,13 +83,17 @@ impl MockOracle {
             .storage()
             .instance()
             .get(&asset)
-            .unwrap_or_else(|| PriceData { price: 0, stale: true });
+            .unwrap_or_else(|| PriceData {
+                price: 0,
+                stale: true,
+            });
         let updated = PriceData {
             price: data.price,
             stale: true,
         };
         env.storage().instance().set(&asset, &updated);
-        env.events().publish((symbol_short!("stale_set"), asset), true);
+        env.events()
+            .publish((symbol_short!("stale_set"), asset), true);
     }
 
     /// Returns `true` if `asset` was marked stale via [`set_stale`](Self::set_stale).
@@ -102,5 +108,3 @@ impl MockOracle {
             .unwrap_or(false)
     }
 }
-
-

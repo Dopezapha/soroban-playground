@@ -2,7 +2,7 @@
 // SPDX-License: MIT
 
 import jwt from 'jsonwebtoken';
-import { v4 as uuid4} from 'uuid';
+import { v4 as uuid4 } from 'uuid';
 import redisService from './redisService.js';
 import { getDatabase } from '../database/connection.js';
 import apiKeyService from './apiKeyService.js';
@@ -18,12 +18,18 @@ import {
 } from '@stellar/stellar-sdk';
 
 // EUoi Note: if you need to change the network, use environment variable
-const STELLAR_NETWORK_PASSPHRASE = process.env.STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
+const STELLAR_NETWORK_PASSPHRASE =
+  process.env.STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
 const CHALLENGE_TTL_SEC = 5 * 60; // 5 minutes
 
 const STELLAR_SERVER_ACCOUNT = process.env.STELLAR_SERVER_ACCOUNT;
-if (!STELLAR_SERVER_ACCOUNT || !StrKey.isValidEd25519PublicKey(STELLAR_SERVER_ACCOUNT)) {
-  throw new Error('STELLAR_SERVER_ACCOUNT environment variable is required and must be a valid Stellar public key');
+if (
+  !STELLAR_SERVER_ACCOUNT ||
+  !StrKey.isValidEd25519PublicKey(STELLAR_SERVER_ACCOUNT)
+) {
+  throw new Error(
+    'STELLAR_SERVER_ACCOUNT environment variable is required and must be a valid Stellar public key'
+  );
 }
 
 const STELLAR_SERVER_SECRET = process.env.STELLAR_SERVER_SECRET;
@@ -32,7 +38,9 @@ if (!STELLAR_SERVER_SECRET) {
 }
 const serverKeypair = Keypair.fromSecret(STELLAR_SERVER_SECRET);
 if (serverKeypair.publicKey() !== STELLAR_SERVER_ACCOUNT) {
-  throw new Error('STELLAR_SERVER_SECRET does not match STELLAR_SERVER_ACCOUNT');
+  throw new Error(
+    'STELLAR_SERVER_SECRET does not match STELLAR_SERVER_ACCOUNT'
+  );
 }
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -49,7 +57,12 @@ class AuthService {
     const familyId = uuid4();
 
     const accessToken = jwt.sign(
-      { sub: user.id, username: user.username, jti: accessTokenJti, type: 'access' },
+      {
+        sub: user.id,
+        username: user.username,
+        jti: accessTokenJti,
+        type: 'access',
+      },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRATION_SEC }
     );
@@ -205,11 +218,11 @@ class AuthService {
     const db = getDatabase();
     const rows = await db.all(
       `SELECT p.name
-       FROM permissions p
-       JOIN role_permissions rp ON p.id = rp.permission_id
-       JOIN roles r ON r.id = rp.role_id
-       JOIN users u ON u.role = r.name
-       WHERE u.id = ?',
+        FROM permissions p
+        JOIN role_permissions rp ON p.id = rp.permission_id
+        JOIN roles r ON r.id = rp.role_id
+        JOIN users u ON u.role = r.name
+        WHERE u.id = ?`,
       [userId]
     );
     return rows.map((row) => row.name);
@@ -245,11 +258,7 @@ class AuthService {
     tx.sign(serverKeypair);
 
     // Store nonce to prevent replay
-    await redisService.set(
-      `challenge:${nonce}`,
-      publicKey,
-      CHALLENGE_TTL_SEC
-    );
+    await redisService.set(`challenge:${nonce}`, publicKey, CHALLENGE_TTL_SEC);
 
     return {
       transactionXDR: tx.toEnvelope().toXDR('base64'),
@@ -399,6 +408,41 @@ class AuthService {
       if (user) {
         const permissions = await this.getUserPermissions(user.id);
         return { ...user, permissions };
+      }
+    }
+
+    // 3. Fallback Headers (For testing/development context/GraphQL playground)
+    if (process.env.NODE_ENV !== 'production') {
+      const headerUserId = req.headers['x-user-id'];
+      const headerRole = req.headers['x-role'];
+
+      if (headerUserId) {
+        const user = await this.getUserById(parseInt(headerUserId, 10));
+        if (user) {
+          const permissions = await this.getUserPermissions(user.id);
+          return { ...user, permissions };
+        }
+      }
+
+      if (headerRole) {
+        // If we only have x-role header (e.g. playground), return a mock user with that role
+        const mockUser = {
+          id: headerRole === 'admin' ? 1 : 2, // mock ID
+          username: `${headerRole}_user`,
+          email: `${headerRole}@example.com`,
+          role: headerRole,
+        };
+        const db = getDatabase();
+        const rows = await db.all(
+          `SELECT p.name
+           FROM permissions p
+           JOIN role_permissions rp ON p.id = rp.permission_id
+           JOIN roles r ON r.id = rp.role_id
+           WHERE r.name = ?`,
+          [headerRole]
+        );
+        const permissions = rows.map((row) => row.name);
+        return { ...mockUser, permissions };
       }
     }
 

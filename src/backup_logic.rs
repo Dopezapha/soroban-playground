@@ -75,6 +75,7 @@ impl BackupService {
         }
     }
 
+    #[allow(deprecated)]
     pub async fn run_backup(&self, db_url: &str) -> Result<(), String> {
         let output = Command::new("pg_dump")
             .arg(db_url)

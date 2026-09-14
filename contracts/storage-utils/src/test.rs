@@ -5,8 +5,8 @@
 
 use soroban_sdk::{symbol_short, Env, Symbol};
 
-use crate::{StorageUtils, StorageUtilsClient};
 use crate::types::Error;
+use crate::{StorageUtils, StorageUtilsClient};
 
 fn setup() -> (Env, StorageUtilsClient<'static>) {
     let env = Env::default();

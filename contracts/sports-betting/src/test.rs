@@ -51,15 +51,14 @@ fn setup() -> Fixture {
 }
 
 fn create_market(f: &Fixture, threshold: u32) -> u64 {
-    f.client
-        .create_market(
-            &String::from_str(&f.env, "match-2026-001"),
-            &f.token,
-            &3,
-            &200,
-            &300,
-            &threshold,
-        )
+    f.client.create_market(
+        &String::from_str(&f.env, "match-2026-001"),
+        &f.token,
+        &3,
+        &200,
+        &300,
+        &threshold,
+    )
 }
 
 fn fund(f: &Fixture, bettor: &Address, amount: i128) {
@@ -120,10 +119,7 @@ fn requires_multi_oracle_consensus_and_rejects_duplicate_vote() {
         Err(Ok(Error::AlreadyVoted))
     );
     assert!(f.client.submit_result(&f.oracles[1], &id, &0));
-    assert_eq!(
-        f.client.get_market(&id).status,
-        MarketStatus::Resolved
-    );
+    assert_eq!(f.client.get_market(&id).status, MarketStatus::Resolved);
 }
 
 #[test]
@@ -159,7 +155,10 @@ fn winners_receive_parimutuel_payout_and_fee_is_separate() {
     assert_eq!(f.token_client.balance(&winner), 1_280);
     assert_eq!(f.client.claim_fee(&id), 20);
     assert_eq!(f.token_client.balance(&f.fee_recipient), 20);
-    assert_eq!(f.client.try_claim(&winner, &id, &0), Err(Ok(Error::NothingToClaim)));
+    assert_eq!(
+        f.client.try_claim(&winner, &id, &0),
+        Err(Ok(Error::NothingToClaim))
+    );
     assert_eq!(f.client.try_claim_fee(&id), Err(Ok(Error::AlreadyClaimed)));
 }
 
@@ -188,10 +187,7 @@ fn outcome_without_stake_cancels_instead_of_locking_funds() {
     f.client.submit_result(&f.oracles[0], &id, &2);
     f.client.submit_result(&f.oracles[1], &id, &2);
 
-    assert_eq!(
-        f.client.get_market(&id).status,
-        MarketStatus::Cancelled
-    );
+    assert_eq!(f.client.get_market(&id).status, MarketStatus::Cancelled);
     assert_eq!(f.client.claim(&bettor, &id, &0), 100);
 }
 
@@ -203,7 +199,10 @@ fn pause_blocks_new_risk_but_not_refunds() {
     fund(&f, &bettor, 100);
     f.client.place_bet(&bettor, &id, &0, &100);
     f.client.set_paused(&true);
-    assert_eq!(f.client.try_place_bet(&bettor, &id, &0, &1), Err(Ok(Error::Paused)));
+    assert_eq!(
+        f.client.try_place_bet(&bettor, &id, &0, &1),
+        Err(Ok(Error::Paused))
+    );
     f.env.ledger().set_timestamp(301);
     f.client.cancel_expired(&id);
     assert_eq!(f.client.claim(&bettor, &id, &0), 100);

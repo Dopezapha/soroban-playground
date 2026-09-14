@@ -5,7 +5,13 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{DataSourceType, Error, OutlierThreshold, WeatherData, WeatherDataOracle, WeatherDataOracleClient, WeatherDataStatus};
+extern crate std;
+use std::format;
+
+use crate::{
+    DataSourceType, Error, OutlierThreshold, WeatherData, WeatherDataOracle,
+    WeatherDataOracleClient, WeatherDataStatus, WeatherMeasurements,
+};
 
 fn setup() -> (Env, WeatherDataOracleClient<'static>, Address) {
     let env = Env::default();
@@ -18,6 +24,17 @@ fn setup() -> (Env, WeatherDataOracleClient<'static>, Address) {
 
 fn str(env: &Env, s: &str) -> String {
     String::from_str(env, s)
+}
+
+fn default_measurements() -> WeatherMeasurements {
+    WeatherMeasurements {
+        temperature: 2345,
+        humidity: 6500,
+        pressure: 10132,
+        wind_speed: 125,
+        wind_direction: 180,
+        precipitation: 55,
+    }
 }
 
 // ── Initialization ────────────────────────────────────────────────────────────
@@ -58,7 +75,12 @@ fn test_add_data_source() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
     let ds = client.get_data_source(&source);
     assert!(ds.active);
     assert_eq!(ds.submissions, 0);
@@ -69,8 +91,18 @@ fn test_add_duplicate_source_fails() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    let result = client.try_add_data_source(&admin, &source, &str(&env, "WeatherAPI2"), &DataSourceType::Satellite);
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+    let result = client.try_add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI2"),
+        &DataSourceType::Satellite,
+    );
     assert_eq!(result, Err(Ok(Error::SourceAlreadyExists)));
 }
 
@@ -79,7 +111,12 @@ fn test_remove_data_source() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
     client.remove_data_source(&admin, &source);
     let ds = client.get_data_source(&source);
     assert!(!ds.active);
@@ -100,7 +137,12 @@ fn test_non_admin_cannot_add_source() {
     client.initialize(&admin, &None);
     let unauthorized = Address::generate(&env);
     let source = Address::generate(&env);
-    let result = client.try_add_data_source(&unauthorized, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
+    let result = client.try_add_data_source(
+        &unauthorized,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
 }
 
@@ -108,7 +150,12 @@ fn test_non_admin_cannot_add_source() {
 fn test_add_source_not_initialized_fails() {
     let (env, client, admin) = setup();
     let source = Address::generate(&env);
-    let result = client.try_add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
+    let result = client.try_add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
     assert_eq!(result, Err(Ok(Error::NotInitialized)));
 }
 
@@ -119,10 +166,20 @@ fn test_max_sources_exceeded() {
     // Add 50 sources (max)
     for i in 0..50 {
         let source = Address::generate(&env);
-        client.add_data_source(&admin, &source, &str(&env, &format!("Source{}", i)), &DataSourceType::WeatherAPI);
+        client.add_data_source(
+            &admin,
+            &source,
+            &str(&env, &format!("Source{}", i)),
+            &DataSourceType::WeatherAPI,
+        );
     }
     let extra_source = Address::generate(&env);
-    let result = client.try_add_data_source(&admin, &extra_source, &str(&env, "Extra"), &DataSourceType::WeatherAPI);
+    let result = client.try_add_data_source(
+        &admin,
+        &extra_source,
+        &str(&env, "Extra"),
+        &DataSourceType::WeatherAPI,
+    );
     assert_eq!(result, Err(Ok(Error::MaxSourcesExceeded)));
 }
 
@@ -189,22 +246,22 @@ fn test_submit_weather_data() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     assert_eq!(id, 0);
     assert_eq!(client.get_data_count(), 1);
 }
@@ -214,18 +271,13 @@ fn test_submit_unauthorized_source() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let unauthorized = Address::generate(&env);
-    
+
     let result = client.try_submit_weather_data(
         &unauthorized,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::SourceNotFound)));
@@ -236,20 +288,20 @@ fn test_submit_inactive_source() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
     client.remove_data_source(&admin, &source);
-    
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::SourceInactive)));
@@ -260,19 +312,19 @@ fn test_submit_invalid_location() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, ""),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidLocation)));
@@ -283,19 +335,19 @@ fn test_submit_invalid_coordinates() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &910000, // Invalid latitude
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidCoordinates)));
@@ -306,19 +358,22 @@ fn test_submit_invalid_temperature() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &11000, // Invalid temperature
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &WeatherMeasurements {
+            temperature: 11000,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidTemperature)));
@@ -329,19 +384,22 @@ fn test_submit_invalid_humidity() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &11000, // Invalid humidity
-        &10132,
-        &125,
-        &180,
-        &55,
+        &WeatherMeasurements {
+            humidity: 11000,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidHumidity)));
@@ -352,19 +410,22 @@ fn test_submit_invalid_pressure() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &4000, // Invalid pressure
-        &125,
-        &180,
-        &55,
+        &WeatherMeasurements {
+            pressure: 4000,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidPressure)));
@@ -375,19 +436,22 @@ fn test_submit_invalid_wind_speed() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &11000, // Invalid wind speed
-        &180,
-        &55,
+        &WeatherMeasurements {
+            wind_speed: 11000,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidWindSpeed)));
@@ -398,19 +462,22 @@ fn test_submit_invalid_wind_direction() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &400, // Invalid wind direction
-        &55,
+        &WeatherMeasurements {
+            wind_direction: 400,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidWindDirection)));
@@ -421,19 +488,22 @@ fn test_submit_invalid_precipitation() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &60000, // Invalid precipitation
+        &WeatherMeasurements {
+            precipitation: 60000,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::InvalidPrecipitation)));
@@ -444,8 +514,13 @@ fn test_submit_outlier_detected() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "WeatherAPI1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "WeatherAPI1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let threshold = OutlierThreshold {
         temperature_min: 0,
         temperature_max: 3000,
@@ -456,18 +531,16 @@ fn test_submit_outlier_detected() {
         wind_speed_max: 500,
     };
     client.set_outlier_threshold(&admin, &threshold);
-    
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &3500, // Outlier temperature
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &WeatherMeasurements {
+            temperature: 3500,
+            ..default_measurements()
+        },
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::OutlierDetected)));
@@ -478,25 +551,25 @@ fn test_submission_increments_source_count() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let ds_before = client.get_data_source(&source);
     assert_eq!(ds_before.submissions, 0);
-    
+
     client.submit_weather_data(
         &source,
         &str(&env, "NYC"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     let ds_after = client.get_data_source(&source);
     assert_eq!(ds_after.submissions, 1);
 }
@@ -510,28 +583,38 @@ fn test_confirm_weather_data() {
     let source1 = Address::generate(&env);
     let source2 = Address::generate(&env);
     let source3 = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source1, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    client.add_data_source(&admin, &source2, &str(&env, "Source2"), &DataSourceType::Satellite);
-    client.add_data_source(&admin, &source3, &str(&env, "Source3"), &DataSourceType::GroundStation);
-    
+
+    client.add_data_source(
+        &admin,
+        &source1,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+    client.add_data_source(
+        &admin,
+        &source2,
+        &str(&env, "Source2"),
+        &DataSourceType::Satellite,
+    );
+    client.add_data_source(
+        &admin,
+        &source3,
+        &str(&env, "Source3"),
+        &DataSourceType::GroundStation,
+    );
+
     let id = client.submit_weather_data(
         &source1,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     client.confirm_weather_data(&source2, &id);
     client.confirm_weather_data(&source3, &id);
-    
+
     let data = client.get_weather_data(&id);
     assert_eq!(data.status, WeatherDataStatus::Verified);
 }
@@ -542,23 +625,23 @@ fn test_confirm_unauthorized() {
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
     let unauthorized = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     let result = client.try_confirm_weather_data(&unauthorized, &id);
     assert_eq!(result, Err(Ok(Error::SourceNotFound)));
 }
@@ -568,23 +651,23 @@ fn test_confirm_inactive_source() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     client.remove_data_source(&admin, &source);
     let result = client.try_confirm_weather_data(&source, &id);
     assert_eq!(result, Err(Ok(Error::SourceInactive)));
@@ -597,23 +680,23 @@ fn test_finalize_weather_data() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     client.finalize_weather_data(&admin, &id);
     let data = client.get_weather_data(&id);
     assert_eq!(data.status, WeatherDataStatus::Finalized);
@@ -625,23 +708,23 @@ fn test_finalize_unauthorized() {
     client.initialize(&admin, &None);
     let unauthorized = Address::generate(&env);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     let result = client.try_finalize_weather_data(&unauthorized, &id);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
 }
@@ -651,23 +734,23 @@ fn test_finalize_already_finalized() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     client.finalize_weather_data(&admin, &id);
     let result = client.try_finalize_weather_data(&admin, &id);
     assert_eq!(result, Err(Ok(Error::DataAlreadyFinalized)));
@@ -681,7 +764,7 @@ fn test_set_circuit_breaker() {
     client.initialize(&admin, &None);
     client.set_circuit_breaker(&admin, &true);
     assert!(client.is_circuit_breaker_active());
-    
+
     client.set_circuit_breaker(&admin, &false);
     assert!(!client.is_circuit_breaker_active());
 }
@@ -691,7 +774,7 @@ fn test_circuit_breaker_unauthorized() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let unauthorized = Address::generate(&env);
-    
+
     let result = client.try_set_circuit_breaker(&unauthorized, &true);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
 }
@@ -701,21 +784,21 @@ fn test_circuit_breaker_blocks_submission() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
     client.set_circuit_breaker(&admin, &true);
-    
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::CircuitBreakerActive)));
@@ -729,7 +812,7 @@ fn test_pause() {
     client.initialize(&admin, &None);
     client.pause(&admin);
     assert!(client.is_paused());
-    
+
     client.unpause(&admin);
     assert!(!client.is_paused());
 }
@@ -739,7 +822,7 @@ fn test_pause_unauthorized() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let unauthorized = Address::generate(&env);
-    
+
     let result = client.try_pause(&unauthorized);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
 }
@@ -749,21 +832,21 @@ fn test_pause_blocks_submission() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
     client.pause(&admin);
-    
+
     let result = client.try_submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
     assert_eq!(result, Err(Ok(Error::ContractPaused)));
@@ -776,23 +859,23 @@ fn test_get_weather_data() {
     let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let source = Address::generate(&env);
-    
-    client.add_data_source(&admin, &source, &str(&env, "Source1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &source,
+        &str(&env, "Source1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     let id = client.submit_weather_data(
         &source,
         &str(&env, "New York"),
         &407120,
         &-740060,
-        &2345,
-        &6500,
-        &10132,
-        &125,
-        &180,
-        &55,
+        &default_measurements(),
         &DataSourceType::WeatherAPI,
     );
-    
+
     let data = client.get_weather_data(&id);
     assert_eq!(data.location, str(&env, "New York"));
     assert_eq!(data.temperature, 2345);
@@ -809,7 +892,7 @@ fn test_get_weather_data_not_found() {
 
 #[test]
 fn test_get_historical_data() {
-    let (_, client, admin) = setup();
+    let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let count = client.get_historical_data(&str(&env, "NYC"), &0, &1000000);
     assert_eq!(count, 0);
@@ -817,7 +900,7 @@ fn test_get_historical_data() {
 
 #[test]
 fn test_get_historical_data_invalid_range() {
-    let (_, client, admin) = setup();
+    let (env, client, admin) = setup();
     client.initialize(&admin, &None);
     let result = client.try_get_historical_data(&str(&env, "NYC"), &1000000, &0);
     assert_eq!(result, Err(Ok(Error::InvalidTimestamp)));
@@ -832,11 +915,26 @@ fn test_multiple_source_types() {
     let satellite = Address::generate(&env);
     let ground = Address::generate(&env);
     let api = Address::generate(&env);
-    
-    client.add_data_source(&admin, &satellite, &str(&env, "Satellite1"), &DataSourceType::Satellite);
-    client.add_data_source(&admin, &ground, &str(&env, "Ground1"), &DataSourceType::GroundStation);
-    client.add_data_source(&admin, &api, &str(&env, "API1"), &DataSourceType::WeatherAPI);
-    
+
+    client.add_data_source(
+        &admin,
+        &satellite,
+        &str(&env, "Satellite1"),
+        &DataSourceType::Satellite,
+    );
+    client.add_data_source(
+        &admin,
+        &ground,
+        &str(&env, "Ground1"),
+        &DataSourceType::GroundStation,
+    );
+    client.add_data_source(
+        &admin,
+        &api,
+        &str(&env, "API1"),
+        &DataSourceType::WeatherAPI,
+    );
+
     assert_eq!(client.get_source_count(), 3);
 }
 

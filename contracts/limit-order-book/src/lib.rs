@@ -201,9 +201,7 @@ impl LimitOrderBookContract {
             None => return Err(Error::OrderNotFound),
         };
 
-        if aggressor.status == OrderStatus::Filled
-            || aggressor.status == OrderStatus::Cancelled
-        {
+        if aggressor.status == OrderStatus::Filled || aggressor.status == OrderStatus::Cancelled {
             return Ok(vec![env]);
         }
 
@@ -224,7 +222,8 @@ impl LimitOrderBookContract {
                     None => continue,
                 };
 
-                if resting.status == OrderStatus::Filled || resting.status == OrderStatus::Cancelled {
+                if resting.status == OrderStatus::Filled || resting.status == OrderStatus::Cancelled
+                {
                     continue;
                 }
 

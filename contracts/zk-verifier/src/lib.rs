@@ -7,8 +7,6 @@
 //! elements. Callers should bind every private transaction field that must not
 //! be malleable (commitment, nullifier, asset, amount, recipient, and domain)
 //! into the circuit's public inputs.
-use soroban_sdk::{contract, contractimpl, contracttype, Address, BytesN, Env, Symbol, Vec};
-
 #[cfg(test)]
 mod test;
 
@@ -148,72 +146,4 @@ fn is_canonical_scalar(value: &[u8; 32]) -> bool {
         i += 1;
     }
     false
-}
-
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VerificationKey {
-    pub alpha_1: BytesN<64>,
-    pub beta_2: BytesN<128>,
-    pub gamma_2: BytesN<128>,
-    pub delta_2: BytesN<128>,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Groth16Proof {
-    pub a: BytesN<64>,
-    pub b: BytesN<128>,
-    pub c: BytesN<64>,
-}
-
-#[contracttype]
-pub enum DataKey {
-    VerificationKey,
-}
-
-#[contract]
-pub struct ZkVerifierContract;
-
-#[contractimpl]
-impl ZkVerifierContract {
-    pub fn initialize(env: Env, admin: Address, vk: VerificationKey) {
-        admin.require_auth();
-        if env.storage().instance().has(&DataKey::VerificationKey) {
-            panic!("Verification key already initialized");
-        }
-        env.storage().instance().set(&DataKey::VerificationKey, &vk);
-        env.events().publish(
-            (Symbol::new(&env, "VkInitialized"), admin),
-            (),
-        );
-    }
-
-    pub fn verify_proof(
-        env: Env,
-        proof: Groth16Proof,
-        public_inputs: Vec<u8>,
-    ) -> bool {
-        let _vk: VerificationKey = env
-            .storage()
-            .instance()
-            .get(&DataKey::VerificationKey)
-            .unwrap_or_else(|| panic!("Verification key not set"));
-
-        // Production cryptographic pairing verification check (Groth16 over BN254)
-        let is_valid = Self::verify_pairing(proof, public_inputs);
-
-        env.events().publish(
-            (Symbol::new(&env, "ProofVerified"), is_valid),
-            (),
-        );
-
-        is_valid
-    }
-
-    fn verify_pairing(_proof: Groth16Proof, _public_inputs: Vec<u8>) -> bool {
-        // Placeholder for BN254 elliptic curve pairing evaluation check
-        true
-    }
 }

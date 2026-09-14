@@ -46,7 +46,9 @@ async function verifyRedisService() {
   // Test 2: Circuit breaker properties
   try {
     if (typeof redisService.circuitBreakerState === 'string') {
-      pass(`Circuit breaker state initialized: ${redisService.circuitBreakerState}`);
+      pass(
+        `Circuit breaker state initialized: ${redisService.circuitBreakerState}`
+      );
     } else {
       fail('Circuit breaker state property');
     }
@@ -211,9 +213,8 @@ async function verifyCompileService() {
 
   try {
     // Dynamic import to check if compileService loads correctly
-    const { initializeCompileService, getCompileStats } = await import(
-      '../src/services/compileService.js'
-    );
+    const { initializeCompileService, getCompileStats } =
+      await import('../src/services/compileService.js');
 
     if (typeof initializeCompileService === 'function') {
       pass('CompileService loads successfully');
@@ -256,7 +257,9 @@ async function main() {
   await verifyCompileService();
   await verifyCacheServiceDeprecation();
 
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║                     Test Results                           ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
   console.log(`✅ Passed:   ${TESTS.passed}`);

@@ -164,7 +164,9 @@ impl DataMarketplaceContract {
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Paused, &false);
-        env.storage().instance().set(&DataKey::DatasetCounter, &0u64);
+        env.storage()
+            .instance()
+            .set(&DataKey::DatasetCounter, &0u64);
         Ok(())
     }
 
@@ -176,7 +178,10 @@ impl DataMarketplaceContract {
     }
 
     pub fn is_paused(env: Env) -> bool {
-        env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
     }
 
     // ── Provider management ────────────────────────────────────────────────
@@ -189,7 +194,11 @@ impl DataMarketplaceContract {
     ) -> Result<(), Error> {
         Self::ensure_running(&env)?;
         provider.require_auth();
-        if env.storage().persistent().has(&DataKey::Provider(provider.clone())) {
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::Provider(provider.clone()))
+        {
             return Err(Error::ProviderAlreadyRegistered);
         }
         let profile = ProviderProfile {
@@ -198,7 +207,9 @@ impl DataMarketplaceContract {
             contact_hash,
             created_at: env.ledger().timestamp(),
         };
-        env.storage().persistent().set(&DataKey::Provider(provider.clone()), &profile);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Provider(provider.clone()), &profile);
         env.storage()
             .persistent()
             .set(&DataKey::ProviderDatasets(provider), &Vec::<u64>::new(&env));
@@ -256,7 +267,9 @@ impl DataMarketplaceContract {
 
         // effects
         env.storage().instance().set(&DataKey::DatasetCounter, &id);
-        env.storage().persistent().set(&DataKey::Dataset(id), &dataset);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Dataset(id), &dataset);
 
         let mut owned: Vec<u64> = env
             .storage()
@@ -290,7 +303,9 @@ impl DataMarketplaceContract {
         while active.len() > ACTIVE_CAP {
             active.pop_back();
         }
-        env.storage().instance().set(&DataKey::ActiveDatasets, &active);
+        env.storage()
+            .instance()
+            .set(&DataKey::ActiveDatasets, &active);
 
         env.events().publish((TOPIC_LIST, provider), id);
         Ok(id)
@@ -317,7 +332,9 @@ impl DataMarketplaceContract {
         }
         dataset.flat_price = flat_price;
         dataset.price_per_query = price_per_query;
-        env.storage().persistent().set(&DataKey::Dataset(id), &dataset);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Dataset(id), &dataset);
         Ok(())
     }
 
@@ -332,7 +349,9 @@ impl DataMarketplaceContract {
             return Ok(());
         }
         dataset.delisted = true;
-        env.storage().persistent().set(&DataKey::Dataset(id), &dataset);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Dataset(id), &dataset);
         env.events().publish((TOPIC_DELIST, provider), id);
         Ok(())
     }
@@ -356,7 +375,11 @@ impl DataMarketplaceContract {
             .unwrap_or_else(|| Vec::new(&env));
         let mut out = Vec::new(&env);
         for id in ids.iter() {
-            if let Some(d) = env.storage().persistent().get::<_, Dataset>(&DataKey::Dataset(id)) {
+            if let Some(d) = env
+                .storage()
+                .persistent()
+                .get::<_, Dataset>(&DataKey::Dataset(id))
+            {
                 if !d.delisted {
                     out.push_back(d);
                 }
@@ -457,12 +480,10 @@ impl DataMarketplaceContract {
         Ok(license)
     }
 
-    pub fn get_license(
-        env: Env,
-        dataset_id: u64,
-        buyer: Address,
-    ) -> Option<License> {
-        env.storage().persistent().get(&DataKey::License(dataset_id, buyer))
+    pub fn get_license(env: Env, dataset_id: u64, buyer: Address) -> Option<License> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::License(dataset_id, buyer))
     }
 
     // ── Privacy-preserving query ───────────────────────────────────────────
@@ -529,13 +550,17 @@ impl DataMarketplaceContract {
             .persistent()
             .set(&DataKey::BuyerStats(buyer.clone()), &b_stats);
 
-        env.events()
-            .publish((TOPIC_QUERY, dataset.provider, dataset_id), (buyer, commitment));
+        env.events().publish(
+            (TOPIC_QUERY, dataset.provider, dataset_id),
+            (buyer, commitment),
+        );
         Ok(receipt)
     }
 
     pub fn get_query_receipt(env: Env, commitment: BytesN<32>) -> Option<QueryReceipt> {
-        env.storage().persistent().get(&DataKey::QueryReceipt(commitment))
+        env.storage()
+            .persistent()
+            .get(&DataKey::QueryReceipt(commitment))
     }
 
     /// Off-chain reveal helper: anyone can verify a `(query, nonce, buyer_pk)`
@@ -552,7 +577,9 @@ impl DataMarketplaceContract {
     // ── Analytics ───────────────────────────────────────────────────────────
 
     pub fn get_dataset_stats(env: Env, dataset_id: u64) -> Option<DatasetStats> {
-        env.storage().persistent().get(&DataKey::DatasetStats(dataset_id))
+        env.storage()
+            .persistent()
+            .get(&DataKey::DatasetStats(dataset_id))
     }
 
     pub fn get_buyer_stats(env: Env, buyer: Address) -> Option<BuyerStats> {
@@ -585,7 +612,12 @@ impl DataMarketplaceContract {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
-        if env.storage().instance().get::<_, bool>(&DataKey::Paused).unwrap_or(false) {
+        if env
+            .storage()
+            .instance()
+            .get::<_, bool>(&DataKey::Paused)
+            .unwrap_or(false)
+        {
             return Err(Error::Paused);
         }
         Ok(())

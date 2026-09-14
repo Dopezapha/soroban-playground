@@ -8,7 +8,9 @@ mod test;
 
 use soroban_sdk::{contract, contractimpl, token, Address, Env, Vec};
 
-use crate::storage::{get_admin, get_count, is_initialized, load_schedule, next_id, save_schedule, set_admin};
+use crate::storage::{
+    get_admin, get_count, is_initialized, load_schedule, next_id, save_schedule, set_admin,
+};
 use crate::types::{Error, Milestone, VestingSchedule, VestingType};
 
 #[contract]
@@ -132,7 +134,11 @@ impl TokenVesting {
     }
 
     /// Admin approves a milestone, unlocking its token allocation.
-    pub fn approve_milestone(env: Env, schedule_id: u32, milestone_index: u32) -> Result<(), Error> {
+    pub fn approve_milestone(
+        env: Env,
+        schedule_id: u32,
+        milestone_index: u32,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         let admin = get_admin(&env)?;
         admin.require_auth();
@@ -189,7 +195,11 @@ impl TokenVesting {
         save_schedule(&env, &schedule);
 
         let client = token::Client::new(&env, &schedule.token);
-        client.transfer(&env.current_contract_address(), &schedule.beneficiary, &releasable);
+        client.transfer(
+            &env.current_contract_address(),
+            &schedule.beneficiary,
+            &releasable,
+        );
 
         Ok(releasable)
     }
@@ -217,7 +227,11 @@ impl TokenVesting {
 
         let client = token::Client::new(&env, &schedule.token);
         if to_beneficiary > 0 {
-            client.transfer(&env.current_contract_address(), &schedule.beneficiary, &to_beneficiary);
+            client.transfer(
+                &env.current_contract_address(),
+                &schedule.beneficiary,
+                &to_beneficiary,
+            );
         }
         if to_admin > 0 {
             client.transfer(&env.current_contract_address(), &admin, &to_admin);

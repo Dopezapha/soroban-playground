@@ -9,10 +9,10 @@ mod test;
 use soroban_sdk::{contract, contractimpl, token, Address, Env};
 
 use crate::storage::{
-    get_admin, get_stake, get_token, get_total_shares, get_total_staked,
-    get_unstake_count, get_unstake_period, get_unstake_request, is_initialized,
-    set_admin, set_initialized, set_stake, set_token, set_total_shares,
-    set_total_staked, set_unstake_period, set_unstake_count, set_unstake_request,
+    get_admin, get_stake, get_token, get_total_shares, get_total_staked, get_unstake_count,
+    get_unstake_period, get_unstake_request, is_initialized, set_admin, set_initialized, set_stake,
+    set_token, set_total_shares, set_total_staked, set_unstake_count, set_unstake_period,
+    set_unstake_request,
 };
 use crate::types::{Error, StakeInfo, UnstakeRequest};
 
@@ -21,7 +21,12 @@ pub struct Staking;
 
 #[contractimpl]
 impl Staking {
-    pub fn initialize(env: Env, admin: Address, token: Address, unstake_period: u64) -> Result<(), Error> {
+    pub fn initialize(
+        env: Env,
+        admin: Address,
+        token: Address,
+        unstake_period: u64,
+    ) -> Result<(), Error> {
         if is_initialized(&env) {
             return Err(Error::AlreadyInitialized);
         }
@@ -184,7 +189,11 @@ impl Staking {
         get_stake(&env, &user).ok_or(Error::NothingToUnstake)
     }
 
-    pub fn get_unstake_request(env: Env, user: Address, request_idx: u32) -> Result<UnstakeRequest, Error> {
+    pub fn get_unstake_request(
+        env: Env,
+        user: Address,
+        request_idx: u32,
+    ) -> Result<UnstakeRequest, Error> {
         ensure_initialized(&env)?;
         get_unstake_request(&env, &user, request_idx).ok_or(Error::RequestNotFound)
     }

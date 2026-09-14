@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{SportsResultsOracle, SportsResultsOracleClient};
 use crate::types::{Error, SportDataStatus};
+use crate::{SportsResultsOracle, SportsResultsOracleClient};
 
 fn setup() -> (Env, SportsResultsOracleClient<'static>, Address) {
     let env = Env::default();

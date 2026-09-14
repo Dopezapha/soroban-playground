@@ -24,7 +24,11 @@ impl AllowlistContract {
     /// Add a user to the allowlist. Only the admin is allowed to call this.
     pub fn add(env: Env, admin: Address, user: Address) {
         // 1. Get the current admin.
-        let current_admin: Address = env.storage().instance().get(&ADMIN).expect("not initialized");
+        let current_admin: Address = env
+            .storage()
+            .instance()
+            .get(&ADMIN)
+            .expect("not initialized");
 
         // 2. Ensure the provided admin address matches the stored admin.
         if admin != current_admin {
@@ -41,7 +45,11 @@ impl AllowlistContract {
     /// Remove a user from the allowlist. Only the admin is allowed to call this.
     pub fn remove(env: Env, admin: Address, user: Address) {
         // 1. Get the current admin.
-        let current_admin: Address = env.storage().instance().get(&ADMIN).expect("not initialized");
+        let current_admin: Address = env
+            .storage()
+            .instance()
+            .get(&ADMIN)
+            .expect("not initialized");
 
         // 2. Ensure the provided admin address matches the stored admin.
         if admin != current_admin {
@@ -62,7 +70,10 @@ impl AllowlistContract {
 
     /// Get the current admin address.
     pub fn get_admin(env: Env) -> Address {
-        env.storage().instance().get(&ADMIN).expect("not initialized")
+        env.storage()
+            .instance()
+            .get(&ADMIN)
+            .expect("not initialized")
     }
 }
 

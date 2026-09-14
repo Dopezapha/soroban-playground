@@ -127,9 +127,7 @@ impl FlashLoanProvider {
 
         // Repayment: receiver returns amount + fee.
         // For the playground we enforce repayment by restoring balance + fee.
-        let new_balance = balance
-            .checked_add(fee)
-            .ok_or(Error::ArithmeticOverflow)?;
+        let new_balance = balance.checked_add(fee).ok_or(Error::ArithmeticOverflow)?;
         set_balance(&env, new_balance);
 
         increment_loans(&env);

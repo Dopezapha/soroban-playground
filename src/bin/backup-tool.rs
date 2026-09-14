@@ -88,6 +88,7 @@ fn resolve_encryption_key() -> [u8; 32] {
 /// Encrypt `plaintext` using AES-256-GCM.
 /// The 12-byte nonce is derived from the current UTC timestamp and prepended
 /// to the ciphertext so the decryption routine can extract it.
+#[allow(deprecated)]
 fn encrypt(plaintext: &[u8], key: &[u8; 32]) -> Result<Vec<u8>, String> {
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
 
@@ -111,6 +112,7 @@ fn encrypt(plaintext: &[u8], key: &[u8; 32]) -> Result<Vec<u8>, String> {
 }
 
 /// Decrypt data produced by `encrypt`.
+#[allow(deprecated)]
 fn decrypt(encrypted: &[u8], key: &[u8; 32]) -> Result<Vec<u8>, String> {
     if encrypted.len() < 12 {
         return Err("Encrypted payload is too short to contain a nonce".into());
@@ -142,11 +144,7 @@ fn run_pg_dump(db_url: &str) -> Result<Vec<u8>, String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .map_err(|e| {
-            format!(
-                "Failed to spawn pg_dump (is it installed and in PATH?): {e}"
-            )
-        })?;
+        .map_err(|e| format!("Failed to spawn pg_dump (is it installed and in PATH?): {e}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -212,12 +210,9 @@ async fn try_s3_upload(filename: &str, data: &[u8]) {
     // AWS CLI is available and credentials are configured via IAM roles or
     // environment variables.
     let tmp_path = env::temp_dir().join(filename);
-    match fs::write(&tmp_path, data).await {
-        Err(e) => {
-            eprintln!("[WARN] S3 upload skipped: could not write temp file: {e}");
-            return;
-        }
-        Ok(_) => {}
+    if let Err(e) = fs::write(&tmp_path, data).await {
+        eprintln!("[WARN] S3 upload skipped: could not write temp file: {e}");
+        return;
     }
 
     let s3_uri = format!("s3://{}/{}", bucket, filename);
@@ -333,9 +328,7 @@ async fn action_verify(file_path: &Path, key: &[u8; 32]) -> Result<VerifySummary
         if let Ok(contents) = fs::read_to_string(&checksum_path).await {
             let expected = contents.split_whitespace().next().unwrap_or("").to_string();
             if !expected.is_empty() && expected != sha256_hex_val {
-                eprintln!(
-                    "[ERROR] Checksum MISMATCH! Expected: {expected}  Got: {sha256_hex_val}"
-                );
+                eprintln!("[ERROR] Checksum MISMATCH! Expected: {expected}  Got: {sha256_hex_val}");
             } else if decryption_ok {
                 eprintln!("[INFO] Checksum verification PASSED ✅");
             }
@@ -357,11 +350,7 @@ async fn action_verify(file_path: &Path, key: &[u8; 32]) -> Result<VerifySummary
     })
 }
 
-async fn action_restore(
-    file_path: &Path,
-    db_url: &str,
-    key: &[u8; 32],
-) -> Result<(), String> {
+async fn action_restore(file_path: &Path, db_url: &str, key: &[u8; 32]) -> Result<(), String> {
     eprintln!("[INFO] Verifying backup before restore...");
     let summary = action_verify(file_path, key).await?;
 
@@ -410,10 +399,7 @@ async fn action_retention(backup_dir: &Path, max_days: i64) -> Result<usize, Str
         .await
         .map_err(|e| format!("Directory read error: {e}"))?
     {
-        let name = entry
-            .file_name()
-            .into_string()
-            .unwrap_or_default();
+        let name = entry.file_name().into_string().unwrap_or_default();
 
         // Pattern: backup_20260826T120000Z.enc
         if !name.starts_with("backup_") || !name.ends_with(".enc") {
@@ -471,10 +457,7 @@ async fn action_list(backup_dir: &Path) -> Result<(), String> {
         .await
         .map_err(|e| format!("Directory read error: {e}"))?
     {
-        let name = entry
-            .file_name()
-            .into_string()
-            .unwrap_or_default();
+        let name = entry.file_name().into_string().unwrap_or_default();
         if name.starts_with("backup_") && name.ends_with(".enc") {
             let meta = fs::metadata(entry.path()).await;
             let size = meta.map(|m| m.len()).unwrap_or(0);

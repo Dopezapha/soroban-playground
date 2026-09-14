@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{PriceAggregator, PriceAggregatorClient};
 use crate::types::{AggregationStrategy, Error};
+use crate::{PriceAggregator, PriceAggregatorClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,15 +37,21 @@ fn p(val: i128) -> i128 {
 #[test]
 fn test_initialize_ok() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     assert_eq!(client.get_admin().unwrap(), admin);
 }
 
 #[test]
 fn test_initialize_twice_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
-    let err = client.initialize(&admin, &None, &None, &None, &None, &None).unwrap_err();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
+    let err = client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap_err();
     assert_eq!(err, Error::AlreadyInitialized);
 }
 
@@ -53,9 +59,19 @@ fn test_initialize_twice_fails() {
 fn test_initialize_custom_strategy() {
     let (env, admin, client) = setup();
     client
-        .initialize(&admin, &Some(AggregationStrategy::WeightedAverage), &None, &None, &None, &None)
+        .initialize(
+            &admin,
+            &Some(AggregationStrategy::WeightedAverage),
+            &None,
+            &None,
+            &None,
+            &None,
+        )
         .unwrap();
-    assert_eq!(client.get_strategy().unwrap(), AggregationStrategy::WeightedAverage);
+    assert_eq!(
+        client.get_strategy().unwrap(),
+        AggregationStrategy::WeightedAverage
+    );
 }
 
 // ── pause / unpause ───────────────────────────────────────────────────────────
@@ -63,7 +79,9 @@ fn test_initialize_custom_strategy() {
 #[test]
 fn test_pause_unpause() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     assert!(!client.is_paused());
     client.pause(&admin).unwrap();
     assert!(client.is_paused());
@@ -74,7 +92,9 @@ fn test_pause_unpause() {
 #[test]
 fn test_pause_blocks_add_source() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     client.pause(&admin).unwrap();
     let name = String::from_str(&env, "Oracle1");
     let err = client.add_source(&admin, &name, &50).unwrap_err();
@@ -84,7 +104,9 @@ fn test_pause_blocks_add_source() {
 #[test]
 fn test_non_admin_cannot_pause() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let other = Address::generate(&env);
     let err = client.pause(&other).unwrap_err();
     assert_eq!(err, Error::Unauthorized);
@@ -95,7 +117,9 @@ fn test_non_admin_cannot_pause() {
 #[test]
 fn test_add_source_ok() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let name = String::from_str(&env, "Chainlink");
     let id = client.add_source(&admin, &name, &50).unwrap();
     assert_eq!(id, 0);
@@ -108,7 +132,9 @@ fn test_add_source_ok() {
 #[test]
 fn test_add_source_invalid_weight_zero_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let name = String::from_str(&env, "Bad");
     let err = client.add_source(&admin, &name, &0).unwrap_err();
     assert_eq!(err, Error::InvalidWeight);
@@ -117,7 +143,9 @@ fn test_add_source_invalid_weight_zero_fails() {
 #[test]
 fn test_add_source_invalid_weight_over_100_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let name = String::from_str(&env, "Bad");
     let err = client.add_source(&admin, &name, &101).unwrap_err();
     assert_eq!(err, Error::InvalidWeight);
@@ -126,7 +154,9 @@ fn test_add_source_invalid_weight_over_100_fails() {
 #[test]
 fn test_remove_source() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let name = String::from_str(&env, "X");
     let id = client.add_source(&admin, &name, &50).unwrap();
     client.remove_source(&admin, &id).unwrap();
@@ -137,7 +167,9 @@ fn test_remove_source() {
 #[test]
 fn test_set_weight() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let name = String::from_str(&env, "Y");
     let id = client.add_source(&admin, &name, &50).unwrap();
     client.set_weight(&admin, &id, &75).unwrap();
@@ -147,7 +179,9 @@ fn test_set_weight() {
 #[test]
 fn test_non_admin_cannot_add_source() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let other = Address::generate(&env);
     let name = String::from_str(&env, "Z");
     let err = client.add_source(&other, &name, &50).unwrap_err();
@@ -160,12 +194,16 @@ fn test_non_admin_cannot_add_source() {
 fn test_update_and_get_price() {
     let (env, admin, client) = setup();
     // max_price_age = large so prices stay fresh
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "Oracle1");
     let sid = client.add_source(&admin, &name, &50).unwrap();
     let btc = asset(&env);
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
     let entry = client.get_price(&sid, &btc).unwrap();
     assert_eq!(entry.price, p(50_000));
     assert_eq!(entry.source_id, sid);
@@ -174,18 +212,24 @@ fn test_update_and_get_price() {
 #[test]
 fn test_update_price_unauthorized_source_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let btc = asset(&env);
     // source_id 99 never registered
-    let err = client.update_price(&src_addr, &99, &btc, &p(50_000)).unwrap_err();
+    let err = client
+        .update_price(&src_addr, &99, &btc, &p(50_000))
+        .unwrap_err();
     assert_eq!(err, Error::Unauthorized);
 }
 
 #[test]
 fn test_update_price_zero_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "O");
     let sid = client.add_source(&admin, &name, &50).unwrap();
@@ -197,13 +241,17 @@ fn test_update_price_zero_fails() {
 #[test]
 fn test_update_price_inactive_source_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "O");
     let sid = client.add_source(&admin, &name, &50).unwrap();
     client.remove_source(&admin, &sid).unwrap();
     let btc = asset(&env);
-    let err = client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap_err();
+    let err = client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap_err();
     assert_eq!(err, Error::SourceInactive);
 }
 
@@ -211,12 +259,16 @@ fn test_update_price_inactive_source_fails() {
 fn test_get_price_stale_fails() {
     let (env, admin, client) = setup();
     // max_price_age = 10 seconds
-    client.initialize(&admin, &None, &Some(10u64), &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &Some(10u64), &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "O");
     let sid = client.add_source(&admin, &name, &50).unwrap();
     let btc = asset(&env);
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
     // Advance ledger timestamp by 20s (beyond max_price_age)
     env.ledger().with_mut(|l| l.timestamp += 20);
     let err = client.get_price(&sid, &btc).unwrap_err();
@@ -228,12 +280,16 @@ fn test_get_price_stale_fails() {
 #[test]
 fn test_aggregated_median_single_source() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32))
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "A");
     let sid = client.add_source(&admin, &name, &50).unwrap();
     let btc = asset(&env);
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
     let agg = client.get_aggregated_price(&btc).unwrap();
     assert_eq!(agg.price, p(50_000));
     assert_eq!(agg.num_sources, 1);
@@ -242,14 +298,18 @@ fn test_aggregated_median_single_source() {
 #[test]
 fn test_aggregated_median_three_sources_odd() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32))
+        .unwrap();
     let btc = asset(&env);
 
     for (name_str, price_val) in [("A", 40_000i128), ("B", 50_000i128), ("C", 60_000i128)] {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &50).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let agg = client.get_aggregated_price(&btc).unwrap();
@@ -260,14 +320,18 @@ fn test_aggregated_median_three_sources_odd() {
 #[test]
 fn test_aggregated_median_two_sources_even() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32))
+        .unwrap();
     let btc = asset(&env);
 
     for (name_str, price_val) in [("A", 40_000i128), ("B", 60_000i128)] {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &50).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let agg = client.get_aggregated_price(&btc).unwrap();
@@ -298,7 +362,9 @@ fn test_aggregated_weighted_average() {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &w).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let agg = client.get_aggregated_price(&btc).unwrap();
@@ -328,7 +394,9 @@ fn test_aggregated_trimmed_mean_three_sources() {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &50).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let agg = client.get_aggregated_price(&btc).unwrap();
@@ -342,7 +410,9 @@ fn test_aggregated_trimmed_mean_three_sources() {
 fn test_aggregated_insufficient_sources_fails() {
     let (env, admin, client) = setup();
     // Require at least 3 sources
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(3u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(3u32))
+        .unwrap();
     let btc = asset(&env);
 
     // Only add 2
@@ -350,7 +420,9 @@ fn test_aggregated_insufficient_sources_fails() {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &50).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let err = client.get_aggregated_price(&btc).unwrap_err();
@@ -360,7 +432,9 @@ fn test_aggregated_insufficient_sources_fails() {
 #[test]
 fn test_aggregated_no_sources_fails() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &Some(1u32))
+        .unwrap();
     let btc = asset(&env);
     let err = client.get_aggregated_price(&btc).unwrap_err();
     assert_eq!(err, Error::InsufficientSources);
@@ -373,20 +447,27 @@ fn test_outlier_excluded() {
     let (env, admin, client) = setup();
     // outlier_bps = 1000 (10%), require 1 source after filtering
     client
-        .initialize(&admin, &None, &Some(86400u64), &Some(1000u32), &None, &Some(1u32))
+        .initialize(
+            &admin,
+            &None,
+            &Some(86400u64),
+            &Some(1000u32),
+            &None,
+            &Some(1u32),
+        )
         .unwrap();
     let btc = asset(&env);
 
     // Prices: [50_000, 51_000, 500_000]
     // Median raw = 51_000; 500_000 deviates ~880% → excluded
     // After filter: [50_000, 51_000]; median = 50_500
-    for (name_str, price_val) in
-        [("A", 50_000i128), ("B", 51_000i128), ("C", 500_000i128)]
-    {
+    for (name_str, price_val) in [("A", 50_000i128), ("B", 51_000i128), ("C", 500_000i128)] {
         let src_addr = Address::generate(&env);
         let name = String::from_str(&env, name_str);
         let sid = client.add_source(&admin, &name, &50).unwrap();
-        client.update_price(&src_addr, &sid, &btc, &p(price_val)).unwrap();
+        client
+            .update_price(&src_addr, &sid, &btc, &p(price_val))
+            .unwrap();
     }
 
     let agg = client.get_aggregated_price(&btc).unwrap();
@@ -402,7 +483,14 @@ fn test_circuit_breaker_trips() {
     let (env, admin, client) = setup();
     // circuit_breaker_bps = 1000 (10%)
     client
-        .initialize(&admin, &None, &Some(86400u64), &None, &Some(1000u32), &Some(1u32))
+        .initialize(
+            &admin,
+            &None,
+            &Some(86400u64),
+            &None,
+            &Some(1000u32),
+            &Some(1u32),
+        )
         .unwrap();
     let btc = asset(&env);
 
@@ -411,11 +499,15 @@ fn test_circuit_breaker_trips() {
     let sid = client.add_source(&admin, &name, &50).unwrap();
 
     // First aggregation: 50_000 → accepted, stored as last_aggregated
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
     client.get_aggregated_price(&btc).unwrap();
 
     // Now swing to 80_000: 60% change > 10% threshold → circuit breaker
-    client.update_price(&src_addr, &sid, &btc, &p(80_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(80_000))
+        .unwrap();
     let err = client.get_aggregated_price(&btc).unwrap_err();
     assert_eq!(err, Error::CircuitBreakerTripped);
 }
@@ -425,7 +517,14 @@ fn test_circuit_breaker_allows_small_swing() {
     let (env, admin, client) = setup();
     // circuit_breaker_bps = 2000 (20%)
     client
-        .initialize(&admin, &None, &Some(86400u64), &None, &Some(2000u32), &Some(1u32))
+        .initialize(
+            &admin,
+            &None,
+            &Some(86400u64),
+            &None,
+            &Some(2000u32),
+            &Some(1u32),
+        )
         .unwrap();
     let btc = asset(&env);
 
@@ -434,11 +533,15 @@ fn test_circuit_breaker_allows_small_swing() {
     let sid = client.add_source(&admin, &name, &50).unwrap();
 
     // First aggregation
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
     client.get_aggregated_price(&btc).unwrap();
 
     // 5% change – within 20% threshold
-    client.update_price(&src_addr, &sid, &btc, &p(52_500)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(52_500))
+        .unwrap();
     let agg = client.get_aggregated_price(&btc).unwrap();
     assert_eq!(agg.price, p(52_500));
 }
@@ -449,7 +552,9 @@ fn test_circuit_breaker_allows_small_swing() {
 fn test_stale_price_excluded_from_aggregation() {
     let (env, admin, client) = setup();
     // max_price_age = 10s, require 1 source
-    client.initialize(&admin, &None, &Some(10u64), &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(10u64), &None, &None, &Some(1u32))
+        .unwrap();
     let btc = asset(&env);
 
     let src1 = Address::generate(&env);
@@ -479,7 +584,9 @@ fn test_stale_price_excluded_from_aggregation() {
 #[test]
 fn test_multiple_assets_independent() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32)).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &Some(1u32))
+        .unwrap();
     let btc = asset(&env);
     let eth_asset = eth(&env);
 
@@ -487,8 +594,12 @@ fn test_multiple_assets_independent() {
     let name = String::from_str(&env, "A");
     let sid = client.add_source(&admin, &name, &50).unwrap();
 
-    client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap();
-    client.update_price(&src_addr, &sid, &eth_asset, &p(3_000)).unwrap();
+    client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap();
+    client
+        .update_price(&src_addr, &sid, &eth_asset, &p(3_000))
+        .unwrap();
 
     let btc_agg = client.get_aggregated_price(&btc).unwrap();
     let eth_agg = client.get_aggregated_price(&eth_asset).unwrap();
@@ -502,10 +613,17 @@ fn test_multiple_assets_independent() {
 #[test]
 fn test_set_strategy() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     assert_eq!(client.get_strategy().unwrap(), AggregationStrategy::Median);
-    client.set_strategy(&admin, &AggregationStrategy::TrimmedMean).unwrap();
-    assert_eq!(client.get_strategy().unwrap(), AggregationStrategy::TrimmedMean);
+    client
+        .set_strategy(&admin, &AggregationStrategy::TrimmedMean)
+        .unwrap();
+    assert_eq!(
+        client.get_strategy().unwrap(),
+        AggregationStrategy::TrimmedMean
+    );
 }
 
 // ── pause blocks update_price ─────────────────────────────────────────────────
@@ -513,13 +631,17 @@ fn test_set_strategy() {
 #[test]
 fn test_pause_blocks_update_price() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &Some(86400u64), &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &Some(86400u64), &None, &None, &None)
+        .unwrap();
     let src_addr = Address::generate(&env);
     let name = String::from_str(&env, "A");
     let sid = client.add_source(&admin, &name, &50).unwrap();
     client.pause(&admin).unwrap();
     let btc = asset(&env);
-    let err = client.update_price(&src_addr, &sid, &btc, &p(50_000)).unwrap_err();
+    let err = client
+        .update_price(&src_addr, &sid, &btc, &p(50_000))
+        .unwrap_err();
     assert_eq!(err, Error::ContractPaused);
 }
 
@@ -528,10 +650,22 @@ fn test_pause_blocks_update_price() {
 #[test]
 fn test_source_count_increments() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     assert_eq!(client.get_source_count().unwrap(), 0);
     for i in 0..5u32 {
-        let label = if i == 0 { "A" } else if i == 1 { "B" } else if i == 2 { "C" } else if i == 3 { "D" } else { "E" };
+        let label = if i == 0 {
+            "A"
+        } else if i == 1 {
+            "B"
+        } else if i == 2 {
+            "C"
+        } else if i == 3 {
+            "D"
+        } else {
+            "E"
+        };
         let name = String::from_str(&env, label);
         client.add_source(&admin, &name, &50).unwrap();
     }
@@ -543,7 +677,9 @@ fn test_source_count_increments() {
 #[test]
 fn test_get_source_not_found() {
     let (env, admin, client) = setup();
-    client.initialize(&admin, &None, &None, &None, &None, &None).unwrap();
+    client
+        .initialize(&admin, &None, &None, &None, &None, &None)
+        .unwrap();
     let err = client.get_source(&99).unwrap_err();
     assert_eq!(err, Error::SourceNotFound);
 }

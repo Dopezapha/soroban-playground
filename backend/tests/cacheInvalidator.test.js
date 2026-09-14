@@ -106,9 +106,11 @@ describe('CacheInvalidator', () => {
     });
 
     expect(result.tags).toContain('contract:CABC');
-    expect(CONTRACT_CACHE_PREFIXES.every((prefix) =>
-      deleted.includes(`pattern:${prefix}`)
-    )).toBe(true);
+    expect(
+      CONTRACT_CACHE_PREFIXES.every((prefix) =>
+        deleted.includes(`pattern:${prefix}`)
+      )
+    ).toBe(true);
     expect(published[0].payload.reason).toBe('ledger-event');
   });
 

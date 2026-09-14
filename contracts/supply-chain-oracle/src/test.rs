@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{SupplyChainOracle, SupplyChainOracleClient};
 use crate::types::{Error, ShipmentStatus};
+use crate::{SupplyChainOracle, SupplyChainOracleClient};
 
 fn setup() -> (Env, SupplyChainOracleClient<'static>, Address) {
     let env = Env::default();
@@ -17,10 +17,17 @@ fn setup() -> (Env, SupplyChainOracleClient<'static>, Address) {
     (env, client, admin)
 }
 
-fn s(env: &Env, v: &str) -> String { String::from_str(env, v) }
+fn s(env: &Env, v: &str) -> String {
+    String::from_str(env, v)
+}
 
 fn submit(client: &SupplyChainOracleClient, env: &Env, source: &Address, ship_ref: &str) -> u32 {
-    client.submit_logistics_data(source, &s(env, ship_ref), &s(env, "Origin"), &s(env, "Dest"))
+    client.submit_logistics_data(
+        source,
+        &s(env, ship_ref),
+        &s(env, "Origin"),
+        &s(env, "Dest"),
+    )
 }
 
 // ── Initialization ────────────────────────────────────────────────────────────
@@ -36,7 +43,10 @@ fn test_initialize() {
 fn test_initialize_twice_fails() {
     let (_, client, admin) = setup();
     client.initialize(&admin, &None);
-    assert_eq!(client.try_initialize(&admin, &None), Err(Ok(Error::AlreadyInitialized)));
+    assert_eq!(
+        client.try_initialize(&admin, &None),
+        Err(Ok(Error::AlreadyInitialized))
+    );
 }
 
 #[test]
@@ -49,7 +59,10 @@ fn test_initialize_with_threshold() {
 #[test]
 fn test_initialize_zero_threshold_fails() {
     let (_, client, admin) = setup();
-    assert_eq!(client.try_initialize(&admin, &Some(0)), Err(Ok(Error::InvalidThreshold)));
+    assert_eq!(
+        client.try_initialize(&admin, &Some(0)),
+        Err(Ok(Error::InvalidThreshold))
+    );
 }
 
 // ── Data Sources ──────────────────────────────────────────────────────────────
@@ -172,7 +185,10 @@ fn test_confirm_auto_delivers() {
     client.add_data_source(&admin, &src2, &s(&env, "C2"));
     let id = submit(&client, &env, &src1, "REF001");
     client.confirm_shipment(&src2, &id, &s(&env, "Port A"));
-    assert_eq!(client.get_logistics_data(&id).status, ShipmentStatus::Delivered);
+    assert_eq!(
+        client.get_logistics_data(&id).status,
+        ShipmentStatus::Delivered
+    );
 }
 
 #[test]
@@ -214,7 +230,10 @@ fn test_update_status() {
     client.add_data_source(&admin, &src, &s(&env, "C1"));
     let id = submit(&client, &env, &src, "REF001");
     client.update_status(&src, &id, &ShipmentStatus::InTransit, &s(&env, "Hub"));
-    assert_eq!(client.get_logistics_data(&id).status, ShipmentStatus::InTransit);
+    assert_eq!(
+        client.get_logistics_data(&id).status,
+        ShipmentStatus::InTransit
+    );
 }
 
 #[test]
@@ -251,7 +270,10 @@ fn test_finalize_shipment() {
     client.add_data_source(&admin, &src, &s(&env, "C1"));
     let id = submit(&client, &env, &src, "REF001");
     client.finalize_shipment(&admin, &id);
-    assert_eq!(client.get_logistics_data(&id).status, ShipmentStatus::Finalized);
+    assert_eq!(
+        client.get_logistics_data(&id).status,
+        ShipmentStatus::Finalized
+    );
 }
 
 #[test]

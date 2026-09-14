@@ -12,39 +12,59 @@ pub fn set_admin(env: &Env, a: &Address) {
     env.storage().instance().set(&InstanceKey::Admin, a);
 }
 pub fn get_admin(env: &Env) -> Result<Address, Error> {
-    env.storage().instance().get(&InstanceKey::Admin).ok_or(Error::NotInitialized)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::Admin)
+        .ok_or(Error::NotInitialized)
 }
 
 pub fn is_paused(env: &Env) -> bool {
-    env.storage().instance().get(&InstanceKey::Paused).unwrap_or(false)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::Paused)
+        .unwrap_or(false)
 }
 pub fn set_paused(env: &Env, v: bool) {
     env.storage().instance().set(&InstanceKey::Paused, &v);
 }
 
 pub fn get_proposal_count(env: &Env) -> u32 {
-    env.storage().instance().get(&InstanceKey::ProposalCount).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::ProposalCount)
+        .unwrap_or(0)
 }
 pub fn set_proposal_count(env: &Env, v: u32) {
-    env.storage().instance().set(&InstanceKey::ProposalCount, &v);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::ProposalCount, &v);
 }
 
 pub fn get_voting_period(env: &Env) -> u64 {
-    env.storage().instance().get(&InstanceKey::VotingPeriod).unwrap_or(604_800)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::VotingPeriod)
+        .unwrap_or(604_800)
 }
 pub fn set_voting_period(env: &Env, v: u64) {
     env.storage().instance().set(&InstanceKey::VotingPeriod, &v);
 }
 
 pub fn get_total_supply(env: &Env) -> i128 {
-    env.storage().instance().get(&InstanceKey::TotalSupply).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::TotalSupply)
+        .unwrap_or(0)
 }
 pub fn set_total_supply(env: &Env, v: i128) {
     env.storage().instance().set(&InstanceKey::TotalSupply, &v);
 }
 
 pub fn get_quorum_bps(env: &Env) -> i128 {
-    env.storage().instance().get(&InstanceKey::QuorumBps).unwrap_or(400)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::QuorumBps)
+        .unwrap_or(400)
 }
 pub fn set_quorum_bps(env: &Env, v: i128) {
     env.storage().instance().set(&InstanceKey::QuorumBps, &v);
@@ -54,26 +74,43 @@ pub fn set_proposal(env: &Env, p: &Proposal) {
     env.storage().persistent().set(&DataKey::Proposal(p.id), p);
 }
 pub fn get_proposal(env: &Env, id: u32) -> Result<Proposal, Error> {
-    env.storage().persistent().get(&DataKey::Proposal(id)).ok_or(Error::ProposalNotFound)
+    env.storage()
+        .persistent()
+        .get(&DataKey::Proposal(id))
+        .ok_or(Error::ProposalNotFound)
 }
 
 pub fn is_whitelisted(env: &Env, addr: &Address) -> bool {
-    env.storage().persistent().get(&DataKey::Whitelisted(addr.clone())).unwrap_or(false)
+    env.storage()
+        .persistent()
+        .get(&DataKey::Whitelisted(addr.clone()))
+        .unwrap_or(false)
 }
 pub fn set_whitelisted(env: &Env, addr: &Address, v: bool) {
-    env.storage().persistent().set(&DataKey::Whitelisted(addr.clone()), &v);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Whitelisted(addr.clone()), &v);
 }
 
 pub fn get_balance(env: &Env, addr: &Address) -> i128 {
-    env.storage().persistent().get(&DataKey::Balance(addr.clone())).unwrap_or(0)
+    env.storage()
+        .persistent()
+        .get(&DataKey::Balance(addr.clone()))
+        .unwrap_or(0)
 }
 pub fn set_balance(env: &Env, addr: &Address, v: i128) {
-    env.storage().persistent().set(&DataKey::Balance(addr.clone()), &v);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Balance(addr.clone()), &v);
 }
 
 pub fn has_voted(env: &Env, proposal_id: u32, voter: &Address) -> bool {
-    env.storage().persistent().has(&DataKey::Voted(proposal_id, voter.clone()))
+    env.storage()
+        .persistent()
+        .has(&DataKey::Voted(proposal_id, voter.clone()))
 }
 pub fn record_vote(env: &Env, proposal_id: u32, voter: &Address) {
-    env.storage().persistent().set(&DataKey::Voted(proposal_id, voter.clone()), &true);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Voted(proposal_id, voter.clone()), &true);
 }

@@ -20,11 +20,11 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, BytesN, Env, St
 
 use crate::storage::{
     clear_pending_upgrade, get_balance, get_deposit, get_exec_delay,
-    get_pending_upgrade as storage_get_pending_upgrade,
-    get_proposal, get_proposal_count, get_quorum_bps, get_total_supply, get_voting_period,
-    has_voted, is_initialized, record_vote, remove_delegate, resolve_delegate, set_admin,
-    set_balance, set_delegate, set_deposit, set_exec_delay, set_pending_upgrade, set_proposal,
-    set_proposal_count, set_quorum_bps, set_total_supply, set_voting_period,
+    get_pending_upgrade as storage_get_pending_upgrade, get_proposal, get_proposal_count,
+    get_quorum_bps, get_total_supply, get_voting_period, has_voted, is_initialized, record_vote,
+    remove_delegate, resolve_delegate, set_admin, set_balance, set_delegate, set_deposit,
+    set_exec_delay, set_pending_upgrade, set_proposal, set_proposal_count, set_quorum_bps,
+    set_total_supply, set_voting_period,
 };
 use crate::types::{Error, Proposal, ProposalStatus, UpgradePending, VoteChoice};
 
@@ -48,10 +48,18 @@ impl Governance {
         }
         admin.require_auth();
         set_admin(&env, &admin);
-        if let Some(q) = quorum_bps { set_quorum_bps(&env, q); }
-        if let Some(v) = voting_period { set_voting_period(&env, v); }
-        if let Some(e) = exec_delay { set_exec_delay(&env, e); }
-        if let Some(d) = required_deposit { set_deposit(&env, d); }
+        if let Some(q) = quorum_bps {
+            set_quorum_bps(&env, q);
+        }
+        if let Some(v) = voting_period {
+            set_voting_period(&env, v);
+        }
+        if let Some(e) = exec_delay {
+            set_exec_delay(&env, e);
+        }
+        if let Some(d) = required_deposit {
+            set_deposit(&env, d);
+        }
         Ok(())
     }
 
@@ -121,7 +129,12 @@ impl Governance {
     }
 
     /// Cast a vote on an active proposal.
-    pub fn vote(env: Env, voter: Address, proposal_id: u32, choice: VoteChoice) -> Result<(), Error> {
+    pub fn vote(
+        env: Env,
+        voter: Address,
+        proposal_id: u32,
+        choice: VoteChoice,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         voter.require_auth();
 
@@ -171,19 +184,21 @@ impl Governance {
         }
 
         let total_votes = proposal.votes_for + proposal.votes_against + proposal.votes_abstain;
-        let quorum_needed = proposal.total_supply_snapshot
-            .saturating_mul(get_quorum_bps(&env)) / 10_000;
+        let quorum_needed = proposal
+            .total_supply_snapshot
+            .saturating_mul(get_quorum_bps(&env))
+            / 10_000;
 
-        proposal.status = if total_votes >= quorum_needed
-            && proposal.votes_for > proposal.votes_against
-        {
-            ProposalStatus::Passed
-        } else {
-            ProposalStatus::Defeated
-        };
+        proposal.status =
+            if total_votes >= quorum_needed && proposal.votes_for > proposal.votes_against {
+                ProposalStatus::Passed
+            } else {
+                ProposalStatus::Defeated
+            };
 
         set_proposal(&env, &proposal);
-        env.events().publish((symbol_short!("finalised"),), proposal_id);
+        env.events()
+            .publish((symbol_short!("finalised"),), proposal_id);
         Ok(proposal.status)
     }
 
@@ -205,7 +220,8 @@ impl Governance {
         proposal.status = ProposalStatus::Executed;
         set_proposal(&env, &proposal);
 
-        env.events().publish((symbol_short!("executed"),), proposal_id);
+        env.events()
+            .publish((symbol_short!("executed"),), proposal_id);
         Ok(())
     }
 
@@ -394,12 +410,16 @@ impl Governance {
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 fn ensure_initialized(env: &Env) -> Result<(), Error> {
-    if !is_initialized(env) { return Err(Error::NotInitialized); }
+    if !is_initialized(env) {
+        return Err(Error::NotInitialized);
+    }
     Ok(())
 }
 
 fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
-    if storage::get_admin(env)? != *caller { return Err(Error::Unauthorized); }
+    if storage::get_admin(env)? != *caller {
+        return Err(Error::Unauthorized);
+    }
     Ok(())
 }
 

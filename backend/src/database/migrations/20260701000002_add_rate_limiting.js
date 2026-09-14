@@ -22,8 +22,15 @@ export async function up(knex) {
   // API keys table
   await knex.schema.createTable('api_keys', (table) => {
     table.increments('id').primary();
-    table.string('key_hash', 64).notNullable().unique().comment('SHA-256 hash of the API key');
-    table.string('key_prefix', 16).notNullable().comment('First 8 characters for lookup');
+    table
+      .string('key_hash', 64)
+      .notNullable()
+      .unique()
+      .comment('SHA-256 hash of the API key');
+    table
+      .string('key_prefix', 16)
+      .notNullable()
+      .comment('First 8 characters for lookup');
     table.string('name', 255).notNullable();
     table.text('description');
     table
@@ -37,8 +44,18 @@ export async function up(knex) {
       })
       .notNullable()
       .defaultTo('active');
-    table.integer('user_id').unsigned().references('id').inTable('users').onDelete('SET NULL');
-    table.integer('organization_id').unsigned().references('id').inTable('organizations').onDelete('SET NULL');
+    table
+      .integer('user_id')
+      .unsigned()
+      .references('id')
+      .inTable('users')
+      .onDelete('SET NULL');
+    table
+      .integer('organization_id')
+      .unsigned()
+      .references('id')
+      .inTable('organizations')
+      .onDelete('SET NULL');
     table.timestamps(true, true);
     table.timestamp('expires_at').nullable();
     table.timestamp('last_used_at').nullable();
@@ -52,7 +69,12 @@ export async function up(knex) {
   // Rate limit usage tracking
   await knex.schema.createTable('rate_limit_usage', (table) => {
     table.increments('id').primary();
-    table.integer('api_key_id').unsigned().notNullable().references('id').inTable('api_keys');
+    table
+      .integer('api_key_id')
+      .unsigned()
+      .notNullable()
+      .references('id')
+      .inTable('api_keys');
     table.string('endpoint', 500).notNullable();
     table.integer('request_count').notNullable().defaultTo(1);
     table.timestamp('window_start').notNullable();
@@ -63,7 +85,10 @@ export async function up(knex) {
       })
       .notNullable();
 
-    table.index(['api_key_id', 'window_start', 'window_end'], 'idx_rate_limit_usage_api_key_window');
+    table.index(
+      ['api_key_id', 'window_start', 'window_end'],
+      'idx_rate_limit_usage_api_key_window'
+    );
   });
 
   // Tier limits configuration
@@ -85,9 +110,22 @@ export async function up(knex) {
   // Audit log for API access
   await knex.schema.createTable('audit_log', (table) => {
     table.increments('id').primary();
-    table.integer('api_key_id').unsigned().nullable().references('id').inTable('api_keys');
-    table.integer('user_id').unsigned().nullable().references('id').inTable('users');
-    table.string('action', 100).notNullable().comment('request, key_generated, key_revoked, etc.');
+    table
+      .integer('api_key_id')
+      .unsigned()
+      .nullable()
+      .references('id')
+      .inTable('api_keys');
+    table
+      .integer('user_id')
+      .unsigned()
+      .nullable()
+      .references('id')
+      .inTable('users');
+    table
+      .string('action', 100)
+      .notNullable()
+      .comment('request, key_generated, key_revoked, etc.');
     table.string('endpoint', 500).nullable();
     table.string('ip_address', 45).nullable();
     table.text('user_agent').nullable();
@@ -102,10 +140,34 @@ export async function up(knex) {
 
   // Seed default tier limits
   await knex('tier_limits').insert([
-    { tier: 'free',     requests_per_minute: 10,    requests_per_hour: 100,    requests_per_day: 1000,    burst_limit: 20 },
-    { tier: 'standard', requests_per_minute: 100,   requests_per_hour: 1000,   requests_per_day: 10000,   burst_limit: 200 },
-    { tier: 'premium',  requests_per_minute: 1000,  requests_per_hour: 10000,  requests_per_day: 100000,  burst_limit: 2000 },
-    { tier: 'admin',    requests_per_minute: 10000, requests_per_hour: 100000, requests_per_day: 1000000, burst_limit: 20000 },
+    {
+      tier: 'free',
+      requests_per_minute: 10,
+      requests_per_hour: 100,
+      requests_per_day: 1000,
+      burst_limit: 20,
+    },
+    {
+      tier: 'standard',
+      requests_per_minute: 100,
+      requests_per_hour: 1000,
+      requests_per_day: 10000,
+      burst_limit: 200,
+    },
+    {
+      tier: 'premium',
+      requests_per_minute: 1000,
+      requests_per_hour: 10000,
+      requests_per_day: 100000,
+      burst_limit: 2000,
+    },
+    {
+      tier: 'admin',
+      requests_per_minute: 10000,
+      requests_per_hour: 100000,
+      requests_per_day: 1000000,
+      burst_limit: 20000,
+    },
   ]);
 }
 

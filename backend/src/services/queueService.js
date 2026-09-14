@@ -18,10 +18,10 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 // Distributed-worker concurrency (issue #1333): each queue worker process can
 // process this many jobs in parallel. Tune per environment.
-const COMPILE_WORKER_CONCURRENCY = config.compile.workerConcurrency;
-const DEPLOY_WORKER_CONCURRENCY = config.deployment.workerConcurrency;
-const QUEUE_JOB_ATTEMPTS = config.queue.jobAttempts;
-const QUEUE_RETRY_BACKOFF_MS = config.queue.retryBackoffMs;
+const COMPILE_WORKER_CONCURRENCY = config.compile?.workerConcurrency ?? 4;
+const DEPLOY_WORKER_CONCURRENCY = config.deployment?.workerConcurrency ?? 4;
+const QUEUE_JOB_ATTEMPTS = config.queue?.jobAttempts ?? 3;
+const QUEUE_RETRY_BACKOFF_MS = config.queue?.retryBackoffMs ?? 5000;
 
 // Track connections to prevent leaks
 const activeConnections = [];

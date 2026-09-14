@@ -23,8 +23,8 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Sy
 
 use crate::storage::{
     get_access_count, get_admin, get_analytics, get_membership_by_token, get_token_id_for_owner,
-    increment_access_count, is_initialized, is_paused, next_token_id, remove_membership,
-    set_admin, set_analytics, set_membership, set_paused,
+    increment_access_count, is_initialized, is_paused, next_token_id, remove_membership, set_admin,
+    set_analytics, set_membership, set_paused,
 };
 use crate::types::{Analytics, Error, Membership, Tier};
 
@@ -131,9 +131,21 @@ impl TokenGatedAccess {
             stats.total_members -= 1;
         }
         match m.tier {
-            Tier::Basic => { if stats.basic_count > 0 { stats.basic_count -= 1; } }
-            Tier::Premium => { if stats.premium_count > 0 { stats.premium_count -= 1; } }
-            Tier::Elite => { if stats.elite_count > 0 { stats.elite_count -= 1; } }
+            Tier::Basic => {
+                if stats.basic_count > 0 {
+                    stats.basic_count -= 1;
+                }
+            }
+            Tier::Premium => {
+                if stats.premium_count > 0 {
+                    stats.premium_count -= 1;
+                }
+            }
+            Tier::Elite => {
+                if stats.elite_count > 0 {
+                    stats.elite_count -= 1;
+                }
+            }
         }
         stats.last_updated = env.ledger().timestamp();
         set_analytics(&env, &stats);
@@ -155,9 +167,21 @@ impl TokenGatedAccess {
         let mut stats = get_analytics(&env);
         // Decrement old tier count
         match old_tier {
-            Tier::Basic => { if stats.basic_count > 0 { stats.basic_count -= 1; } }
-            Tier::Premium => { if stats.premium_count > 0 { stats.premium_count -= 1; } }
-            Tier::Elite => { if stats.elite_count > 0 { stats.elite_count -= 1; } }
+            Tier::Basic => {
+                if stats.basic_count > 0 {
+                    stats.basic_count -= 1;
+                }
+            }
+            Tier::Premium => {
+                if stats.premium_count > 0 {
+                    stats.premium_count -= 1;
+                }
+            }
+            Tier::Elite => {
+                if stats.elite_count > 0 {
+                    stats.elite_count -= 1;
+                }
+            }
         }
         // Increment new tier count
         match new_tier {

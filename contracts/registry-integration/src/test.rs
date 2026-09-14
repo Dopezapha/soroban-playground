@@ -28,7 +28,9 @@ fn register_contract(
     metadata: &str,
 ) {
     let metadata = String::from_str(env, metadata);
-    client.register_with_registry(owner, owner, &metadata).unwrap();
+    client
+        .register_with_registry(owner, owner, &metadata)
+        .unwrap();
 }
 
 fn update_metadata(
@@ -38,7 +40,9 @@ fn update_metadata(
     metadata: &str,
 ) {
     let metadata = String::from_str(env, metadata);
-    client.set_registry_metadata(owner, owner, &metadata).unwrap();
+    client
+        .set_registry_metadata(owner, owner, &metadata)
+        .unwrap();
 }
 
 #[test]
@@ -61,7 +65,10 @@ fn test_register_with_registry_stores_entry() {
     let info = client.get_registry_info(&owner).unwrap();
     assert_eq!(info.contract_address, owner);
     assert_eq!(info.owner, owner);
-    assert_eq!(info.metadata, String::from_str(&env, "Registry metadata v1"));
+    assert_eq!(
+        info.metadata,
+        String::from_str(&env, "Registry metadata v1")
+    );
     assert!(info.active);
 }
 

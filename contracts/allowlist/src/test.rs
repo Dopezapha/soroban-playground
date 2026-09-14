@@ -44,7 +44,7 @@ fn test_unauthorized_add() {
     let user = Address::generate(&env);
 
     client.initialize(&admin);
-    
+
     env.mock_all_auths();
     client.add(&non_admin, &user); // Should panic
 }

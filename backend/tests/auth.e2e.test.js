@@ -33,6 +33,17 @@ jest.mock('../src/services/redisService.js', () => ({
       mockStore.delete(key);
       return existed ? 1 : 0;
     }),
+    del: jest.fn().mockImplementation(async (key) => {
+      const existed = mockStore.has(key);
+      mockStore.delete(key);
+      return existed ? 1 : 0;
+    }),
+    checkRateLimit: jest.fn().mockResolvedValue({
+      allowed: true,
+      remaining: 100,
+      resetTime: Date.now() + 60000,
+      total: 1,
+    }),
     client: {
       quit: jest.fn().mockResolvedValue('OK'),
     },

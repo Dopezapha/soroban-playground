@@ -9,26 +9,26 @@ use soroban_sdk::{contracterror, contracttype};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    AlreadyInitialized             = 1,
-    NotInitialized                 = 2,
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
     /// Amount must be greater than zero.
-    InvalidAmount                  = 3,
+    InvalidAmount = 3,
     /// User does not have enough deposited balance for this operation.
-    InsufficientBalance            = 4,
+    InsufficientBalance = 4,
     /// Borrow or withdrawal would breach the minimum collateral ratio.
-    InsufficientCollateral         = 5,
+    InsufficientCollateral = 5,
     /// Liquidation attempted on a healthy (sufficiently collateralised) position.
     PositionNotUndercollateralized = 6,
     /// Caller is not the contract admin.
-    Unauthorized                   = 7,
+    Unauthorized = 7,
     /// Repay amount exceeds the outstanding borrow balance.
-    RepayExceedsBorrow             = 8,
+    RepayExceedsBorrow = 8,
     /// Liquidation amount exceeds the borrower's outstanding debt.
-    LiquidationExceedsBorrow       = 9,
+    LiquidationExceedsBorrow = 9,
     /// Borrower has no outstanding debt to liquidate.
-    NothingToLiquidate             = 10,
+    NothingToLiquidate = 10,
     /// A position cannot liquidate itself.
-    SelfLiquidationNotAllowed      = 11,
+    SelfLiquidationNotAllowed = 11,
 }
 
 // ── Data types ────────────────────────────────────────────────────────────────

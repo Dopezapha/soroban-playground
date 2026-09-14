@@ -16,12 +16,12 @@ fn setup() -> (Env, ReentrancyGuardContractClient<'static>) {
 fn test_guarded_action_succeeds() {
     let (_, client) = setup();
     client.initialize();
-    assert_eq!(client.guarded_action(), Ok(42));
+    assert_eq!(client.guarded_action(), 42);
 }
 
 #[test]
 fn test_reentrancy_is_blocked() {
     let (_, client) = setup();
     client.initialize();
-    assert_eq!(client.reentrant_call(), Err(Ok(Error::ReentrantCall)));
+    assert_eq!(client.try_reentrant_call(), Err(Ok(Error::ReentrantCall)));
 }

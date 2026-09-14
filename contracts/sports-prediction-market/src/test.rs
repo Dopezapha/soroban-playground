@@ -2,8 +2,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{SportsPredictionMarket, SportsPredictionMarketClient};
 use crate::types::{Error, MarketStatus};
+use crate::{SportsPredictionMarket, SportsPredictionMarketClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,11 +18,7 @@ fn setup() -> (Env, Address, Address, SportsPredictionMarketClient<'static>) {
     (env, admin, oracle, client)
 }
 
-fn make_market(
-    env: &Env,
-    client: &SportsPredictionMarketClient,
-    oracle: &Address,
-) -> u32 {
+fn make_market(env: &Env, client: &SportsPredictionMarketClient, oracle: &Address) -> u32 {
     let creator = Address::generate(env);
     let deadline = env.ledger().timestamp() + 3600;
     client.create_market(
@@ -207,7 +203,7 @@ fn test_payout_winner_takes_all() {
     client.place_bet(&home_bettor, &id, &0u32, &600i128);
     client.place_bet(&away_bettor, &id, &2u32, &400i128);
     client.resolve_market(&id, &0u32); // Home wins
-    // home_bettor: 600 * 1000 / 600 = 1000
+                                       // home_bettor: 600 * 1000 / 600 = 1000
     let payout = client.calculate_payout(&id, &home_bettor);
     assert_eq!(payout, 1000);
     let loser = client.calculate_payout(&id, &away_bettor);

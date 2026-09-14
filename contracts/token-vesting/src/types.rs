@@ -44,9 +44,9 @@ pub struct VestingSchedule {
     pub token: Address,
     pub total_amount: i128,
     pub released_amount: i128,
-    pub cliff_timestamp: u64,   // unix timestamp when cliff ends
-    pub start_timestamp: u64,   // vesting start
-    pub end_timestamp: u64,     // vesting end (linear only)
+    pub cliff_timestamp: u64, // unix timestamp when cliff ends
+    pub start_timestamp: u64, // vesting start
+    pub end_timestamp: u64,   // vesting end (linear only)
     pub vesting_type: VestingType,
     pub milestones: Vec<Milestone>,
     pub revoked: bool,

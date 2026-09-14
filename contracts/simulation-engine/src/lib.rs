@@ -1,8 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol, Vec, Map,
-    String, U256,
+    contract, contractimpl, contracttype, symbol_short, Address, Env, Map, String, Symbol, Vec,
+    U256,
 };
 
 /// Simulation state for tracking mock environment conditions
@@ -107,7 +107,8 @@ impl SimulationEngine {
         amount: u128,
         data: Vec<u8>,
     ) -> u32 {
-        let mut counter: u32 = env.storage()
+        let mut counter: u32 = env
+            .storage()
             .instance()
             .get(&TRANSACTION_COUNTER)
             .unwrap_or(0);
@@ -133,7 +134,7 @@ impl SimulationEngine {
     /// Execute a mock transaction and return simulation result
     pub fn execute_mock_transaction(env: Env, tx_id: u32) -> SimulationResult {
         let key = Symbol::new(&env, &format!("TXN_{}", tx_id));
-        
+
         let mut tx: MockTransaction = match env.storage().instance().get(&key) {
             Some(t) => t,
             None => {
@@ -148,15 +149,16 @@ impl SimulationEngine {
         };
 
         let start_time = env.ledger().timestamp();
-        let config: SimulationConfig = env.storage()
-            .instance()
-            .get(&SIMULATION_CONFIG)
-            .unwrap_or(SimulationConfig {
-                max_gas: 1_000_000,
-                timeout_ms: 30_000,
-                enable_state_tracking: true,
-                enable_gas_tracking: true,
-            });
+        let config: SimulationConfig =
+            env.storage()
+                .instance()
+                .get(&SIMULATION_CONFIG)
+                .unwrap_or(SimulationConfig {
+                    max_gas: 1_000_000,
+                    timeout_ms: 30_000,
+                    enable_state_tracking: true,
+                    enable_gas_tracking: true,
+                });
 
         // Simulate transaction execution
         let gas_used = Self::calculate_gas_usage(&env, &tx);
@@ -207,15 +209,16 @@ impl SimulationEngine {
 
     /// Simulate state change and track it
     pub fn simulate_state_change(env: Env, key: Symbol, value: u128) -> bool {
-        let config: SimulationConfig = env.storage()
-            .instance()
-            .get(&SIMULATION_CONFIG)
-            .unwrap_or(SimulationConfig {
-                max_gas: 1_000_000,
-                timeout_ms: 30_000,
-                enable_state_tracking: true,
-                enable_gas_tracking: true,
-            });
+        let config: SimulationConfig =
+            env.storage()
+                .instance()
+                .get(&SIMULATION_CONFIG)
+                .unwrap_or(SimulationConfig {
+                    max_gas: 1_000_000,
+                    timeout_ms: 30_000,
+                    enable_state_tracking: true,
+                    enable_gas_tracking: true,
+                });
 
         if !config.enable_state_tracking {
             return false;
@@ -233,7 +236,7 @@ impl SimulationEngine {
     /// Reset simulation to initial state
     pub fn reset_simulation(env: Env) {
         let caller = Self::get_state(&env).caller;
-        
+
         let state = SimulationState {
             is_active: true,
             timestamp: env.ledger().timestamp(),
@@ -295,7 +298,8 @@ impl SimulationEngine {
     /// Get simulation metrics
     pub fn get_metrics(env: Env) -> (u64, u32, u64) {
         let state = Self::get_state(&env);
-        let counter: u32 = env.storage()
+        let counter: u32 = env
+            .storage()
             .instance()
             .get(&TRANSACTION_COUNTER)
             .unwrap_or(0);
@@ -313,9 +317,9 @@ mod tests {
     fn test_init() {
         let env = soroban_sdk::Env::default();
         let caller = TestAddress::random(&env);
-        
+
         let state = SimulationEngine::init(env.clone(), caller.clone());
-        
+
         assert!(state.is_active);
         assert_eq!(state.gas_available, 1_000_000);
     }
@@ -329,13 +333,8 @@ mod tests {
 
         SimulationEngine::init(env.clone(), caller);
 
-        let tx_id = SimulationEngine::create_mock_transaction(
-            env.clone(),
-            from,
-            to,
-            1000,
-            Vec::new(&env),
-        );
+        let tx_id =
+            SimulationEngine::create_mock_transaction(env.clone(), from, to, 1000, Vec::new(&env));
 
         assert_eq!(tx_id, 1);
     }
@@ -349,13 +348,8 @@ mod tests {
 
         SimulationEngine::init(env.clone(), caller);
 
-        let tx_id = SimulationEngine::create_mock_transaction(
-            env.clone(),
-            from,
-            to,
-            1000,
-            Vec::new(&env),
-        );
+        let tx_id =
+            SimulationEngine::create_mock_transaction(env.clone(), from, to, 1000, Vec::new(&env));
 
         let result = SimulationEngine::execute_mock_transaction(env.clone(), tx_id);
 

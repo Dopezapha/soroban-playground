@@ -6,8 +6,8 @@ use soroban_sdk::{
     Address, Env, Vec,
 };
 
-use crate::{TokenVesting, TokenVestingClient};
 use crate::types::{Error, VestingType};
+use crate::{TokenVesting, TokenVestingClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,13 @@ fn setup() -> Setup<'static> {
     // Mint tokens to admin for use in tests
     sac.mint(&admin, &1_000_000i128);
 
-    Setup { env, admin, client, token: token_addr, token_client }
+    Setup {
+        env,
+        admin,
+        client,
+        token: token_addr,
+        token_client,
+    }
 }
 
 fn set_time(env: &Env, ts: u64) {
@@ -95,8 +101,13 @@ fn test_linear_cliff_not_reached() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &5000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &5000u64,
     );
 
     // Still before cliff
@@ -112,8 +123,13 @@ fn test_linear_partial_release_at_midpoint() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &4000u64, // cliff=2000, end=4000 → duration=2000
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &4000u64, // cliff=2000, end=4000 → duration=2000
     );
 
     // At t=3000: elapsed=1000/2000 → 50% vested = 5000
@@ -133,8 +149,13 @@ fn test_linear_full_release_after_end() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &4000u64,
     );
 
     set_time(&s.env, 5000); // past end
@@ -150,8 +171,13 @@ fn test_linear_nothing_to_release_twice() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &4000u64,
     );
 
     set_time(&s.env, 5000);
@@ -169,8 +195,13 @@ fn test_linear_invalid_schedule_params() {
 
     // cliff before start
     let result = s.client.try_create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &500u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &500u64,
+        &1000u64,
+        &4000u64,
     );
     assert_eq!(result, Err(Ok(Error::InvalidSchedule)));
 }
@@ -189,8 +220,13 @@ fn make_milestone_schedule(s: &Setup, beneficiary: &Address) -> u32 {
     bps.push_back(4000u32); // 40%
 
     s.client.create_milestone_schedule(
-        &s.admin, beneficiary, &s.token, &10_000i128,
-        &2000u64, &hashes, &bps,
+        &s.admin,
+        beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &hashes,
+        &bps,
     )
 }
 
@@ -218,8 +254,13 @@ fn test_milestone_bps_must_sum_to_10000() {
     bps.push_back(5000u32); // only 50%, not 100%
 
     let result = s.client.try_create_milestone_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &hashes, &bps,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &hashes,
+        &bps,
     );
     assert_eq!(result, Err(Ok(Error::InvalidSchedule)));
 }
@@ -298,8 +339,13 @@ fn test_revoke_linear_returns_unvested() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &4000u64,
     );
 
     // At t=3000: 50% vested → admin gets back 5000
@@ -320,8 +366,13 @@ fn test_double_revoke_fails() {
     set_time(&s.env, 1000);
 
     let id = s.client.create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &10_000i128,
-        &2000u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &10_000i128,
+        &2000u64,
+        &1000u64,
+        &4000u64,
     );
 
     set_time(&s.env, 3000);
@@ -337,8 +388,13 @@ fn test_zero_amount_fails() {
     set_time(&s.env, 1000);
 
     let result = s.client.try_create_linear_schedule(
-        &s.admin, &beneficiary, &s.token, &0i128,
-        &2000u64, &1000u64, &4000u64,
+        &s.admin,
+        &beneficiary,
+        &s.token,
+        &0i128,
+        &2000u64,
+        &1000u64,
+        &4000u64,
     );
     assert_eq!(result, Err(Ok(Error::ZeroAmount)));
 }

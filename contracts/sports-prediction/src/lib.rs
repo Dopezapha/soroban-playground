@@ -3,15 +3,12 @@
 mod storage;
 mod types;
 
-#[cfg(test)]
-mod test;
-
-use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec, symbol_short};
 use crate::storage::{
-    get_admin, get_market, get_market_count, get_bet, increment_market_count, 
-    is_initialized, set_admin, set_initialized, set_market, set_bet, is_paused, set_paused
+    get_admin, get_bet, get_market, get_market_count, increment_market_count, is_initialized,
+    is_paused, set_admin, set_bet, set_initialized, set_market, set_paused,
 };
-use crate::types::{Error, SportMarket, MarketStatus, Bet, Outcome};
+use crate::types::{Bet, Error, MarketStatus, Outcome, SportMarket};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Vec};
 
 #[contract]
 pub struct SportsPrediction;
@@ -65,11 +62,9 @@ impl SportsPrediction {
         };
 
         set_market(&env, &market);
-        
-        env.events().publish(
-            (symbol_short!("market"), symbol_short!("created")),
-            id
-        );
+
+        env.events()
+            .publish((symbol_short!("market"), symbol_short!("created")), id);
 
         Ok(id)
     }
@@ -129,7 +124,7 @@ impl SportsPrediction {
 
         env.events().publish(
             (symbol_short!("bet"), symbol_short!("placed")),
-            (market_id, bettor, outcome_index, stake)
+            (market_id, bettor, outcome_index, stake),
         );
 
         Ok(())
@@ -156,7 +151,7 @@ impl SportsPrediction {
 
         env.events().publish(
             (symbol_short!("market"), symbol_short!("resolved")),
-            (market_id, winning_outcome_index)
+            (market_id, winning_outcome_index),
         );
 
         Ok(())

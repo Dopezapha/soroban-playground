@@ -89,7 +89,9 @@ describe('KmsService', () => {
       rotationMs: 10,
     });
     await rotating.storeFaucetKey({ alias: 'aged', secret: 'abc12345' });
-    rotating.store.get('aged').rotatedAt = new Date(Date.now() - 50).toISOString();
+    rotating.store.get('aged').rotatedAt = new Date(
+      Date.now() - 50
+    ).toISOString();
 
     const rotated = await rotating.rotateDueKeys();
     expect(rotated).toEqual(['aged']);

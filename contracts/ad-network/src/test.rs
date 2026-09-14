@@ -82,7 +82,7 @@ fn test_record_and_verify_impression() {
     )
     .unwrap();
 
-    AdNetworkContract::verify_impression(env, admin, imp_id).unwrap();
+    AdNetworkContract::verify_impression(env.clone(), admin, imp_id).unwrap();
 
     let imp = AdNetworkContract::get_impression(env, imp_id).unwrap();
     assert!(imp.verified);

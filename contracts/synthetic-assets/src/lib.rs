@@ -3,9 +3,9 @@
 mod collateral;
 mod math;
 mod oracle;
-mod storage;
 #[cfg(test)]
 mod proptest;
+mod storage;
 #[cfg(test)]
 mod test;
 mod trading;
@@ -562,10 +562,7 @@ impl SyntheticAssetsContract {
         let pnl = calculate_pnl(&position, current_price)?;
 
         // Calculate final settlement
-        let final_amount = position
-            .margin
-            .checked_add(pnl)
-            .ok_or(Error::Overflow)?;
+        let final_amount = position.margin.checked_add(pnl).ok_or(Error::Overflow)?;
 
         if final_amount < 0 {
             // Position was liquidated - margin lost

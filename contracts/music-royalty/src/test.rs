@@ -11,7 +11,7 @@
 //! they had to keep working.
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, vec, Env, String as SdkString};
+use soroban_sdk::{testutils::Address as _, testutils::Ledger as _, vec, Env, String as SdkString};
 
 const HOUR: u64 = 3_600;
 
@@ -31,7 +31,11 @@ fn even_splits(env: &Env, n: u32) -> Vec<Split> {
     let mut allocated = 0;
     for i in 0..n {
         // Last split absorbs the rounding so the table still totals 10000.
-        let s = if i == n - 1 { TOTAL_SHARE_BASIS_POINTS - allocated } else { share };
+        let s = if i == n - 1 {
+            TOTAL_SHARE_BASIS_POINTS - allocated
+        } else {
+            share
+        };
         allocated += s;
         splits.push_back(Split {
             account: Address::generate(env),
@@ -95,8 +99,14 @@ fn rejects_splits_that_do_not_total_100_percent() {
     let (env, client, artist) = setup();
     let splits = vec![
         &env,
-        Split { account: Address::generate(&env), share: 5_000 },
-        Split { account: Address::generate(&env), share: 4_000 },
+        Split {
+            account: Address::generate(&env),
+            share: 5_000,
+        },
+        Split {
+            account: Address::generate(&env),
+            share: 4_000,
+        },
     ];
 
     assert_eq!(
@@ -119,8 +129,14 @@ fn rejects_duplicate_split_accounts() {
     let repeated = Address::generate(&env);
     let splits = vec![
         &env,
-        Split { account: repeated.clone(), share: 5_000 },
-        Split { account: repeated, share: 5_000 },
+        Split {
+            account: repeated.clone(),
+            share: 5_000,
+        },
+        Split {
+            account: repeated,
+            share: 5_000,
+        },
     ];
 
     // The table totals 10000 and every share is in range, so this was accepted
@@ -145,8 +161,14 @@ fn rejects_zero_share_split() {
     let (env, client, artist) = setup();
     let splits = vec![
         &env,
-        Split { account: Address::generate(&env), share: 10_000 },
-        Split { account: Address::generate(&env), share: 0 },
+        Split {
+            account: Address::generate(&env),
+            share: 10_000,
+        },
+        Split {
+            account: Address::generate(&env),
+            share: 0,
+        },
     ];
 
     assert_eq!(
@@ -357,11 +379,17 @@ fn rejects_zero_usage_or_payment() {
     );
 
     assert_eq!(
-        client.try_record_usage(&song_id, &licensee, &0, &100).unwrap_err().unwrap(),
+        client
+            .try_record_usage(&song_id, &licensee, &0, &100)
+            .unwrap_err()
+            .unwrap(),
         Error::ZeroAmount
     );
     assert_eq!(
-        client.try_record_usage(&song_id, &licensee, &1, &0).unwrap_err().unwrap(),
+        client
+            .try_record_usage(&song_id, &licensee, &1, &0)
+            .unwrap_err()
+            .unwrap(),
         Error::ZeroAmount
     );
 }
@@ -408,7 +436,10 @@ fn rejects_distribution_with_nothing_pending() {
 
     // Distributing twice in a row must not pay out an empty balance.
     assert_eq!(
-        client.try_distribute_royalties(&song_id).unwrap_err().unwrap(),
+        client
+            .try_distribute_royalties(&song_id)
+            .unwrap_err()
+            .unwrap(),
         Error::ZeroAmount
     );
 }
@@ -431,7 +462,10 @@ fn rejects_unknown_song() {
     let missing = SdkString::from_str(&env, "nope");
 
     assert_eq!(
-        client.try_distribute_royalty(&missing, &100).unwrap_err().unwrap(),
+        client
+            .try_distribute_royalty(&missing, &100)
+            .unwrap_err()
+            .unwrap(),
         Error::SongNotFound
     );
     assert_eq!(

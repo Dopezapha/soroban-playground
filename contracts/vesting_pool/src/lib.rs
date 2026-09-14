@@ -47,10 +47,8 @@ impl MilestoneVestingPoolContract {
         };
         env.storage().persistent().set(&key, &schedule);
 
-        env.events().publish(
-            (Symbol::new(&env, "ScheduleCreated"), beneficiary),
-            issuer,
-        );
+        env.events()
+            .publish((Symbol::new(&env, "ScheduleCreated"), beneficiary), issuer);
     }
 
     pub fn unlock_milestone(env: Env, admin: Address, beneficiary: Address, milestone_id: u32) {

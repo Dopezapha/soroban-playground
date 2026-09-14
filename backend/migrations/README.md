@@ -18,17 +18,17 @@ with both **SQLite** (development/test) and **PostgreSQL** (production).
 
 ## Mapping: raw SQL → Knex migration
 
-| Raw SQL file                                | Knex migration file                                                    |
-|---------------------------------------------|------------------------------------------------------------------------|
-| `V001__create_users_table.{up,down}.sql`    | `20260701000001_create_users_table.js`                                 |
-| `V002__add_rate_limiting.{up,down}.sql`     | `20260701000002_add_rate_limiting.js`                                  |
-| `V003__synthetic_assets.{up,down}.sql`      | `20260701000003_synthetic_assets.js` (PG-specific SQL converted)       |
-| `V004__add_webhooks_and_cors_whitelist.*`   | `20260701000004_add_webhooks_and_cors_whitelist.js`                    |
-| `V004__contract_events.{up,down}.sql`       | `20260701000005_contract_events.js` (duplicate version resolved)       |
-| `V005__zero_downtime_helpers.{up,down}.sql` | `20260701000006_zero_downtime_helpers.js`                              |
-| `V006__multi_tenant_isolation.{up,down}.sql`| `20260701000007_multi_tenant_isolation.js`                             |
-| `V007__contract_verification.{up,down}.sql` | `20260701000008_contract_verification.js`                              |
-| `001_initial_schema.{up,down}.sql`          | `20260630000000_initial_schema.js` (reads `schema.sql`)                |
+| Raw SQL file                                 | Knex migration file                                              |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `V001__create_users_table.{up,down}.sql`     | `20260701000001_create_users_table.js`                           |
+| `V002__add_rate_limiting.{up,down}.sql`      | `20260701000002_add_rate_limiting.js`                            |
+| `V003__synthetic_assets.{up,down}.sql`       | `20260701000003_synthetic_assets.js` (PG-specific SQL converted) |
+| `V004__add_webhooks_and_cors_whitelist.*`    | `20260701000004_add_webhooks_and_cors_whitelist.js`              |
+| `V004__contract_events.{up,down}.sql`        | `20260701000005_contract_events.js` (duplicate version resolved) |
+| `V005__zero_downtime_helpers.{up,down}.sql`  | `20260701000006_zero_downtime_helpers.js`                        |
+| `V006__multi_tenant_isolation.{up,down}.sql` | `20260701000007_multi_tenant_isolation.js`                       |
+| `V007__contract_verification.{up,down}.sql`  | `20260701000008_contract_verification.js`                        |
+| `001_initial_schema.{up,down}.sql`           | `20260630000000_initial_schema.js` (reads `schema.sql`)          |
 
 ## Why Knex instead of raw SQL?
 
@@ -60,4 +60,4 @@ npx knex migrate:status
 ## Indexer migrations
 
 The `indexer/migrations/postgres/` directory contains **separate** DDL managed
-by the Rust/sqlx indexer.  See that directory's `README.md` for details.
+by the Rust/sqlx indexer. See that directory's `README.md` for details.

@@ -56,7 +56,13 @@ impl DaoTreasury {
         }
         set_admin(&env, &owner);
         set_threshold(&env, threshold);
-        set_signer(&env, &Signer { address: owner, role: Role::Owner });
+        set_signer(
+            &env,
+            &Signer {
+                address: owner,
+                role: Role::Owner,
+            },
+        );
         set_signer_count(&env, 1);
         Ok(())
     }
@@ -70,7 +76,8 @@ impl DaoTreasury {
         caller.require_auth();
         require_min_role(&env, &caller, Role::Admin)?;
         set_paused(&env, true);
-        env.events().publish((soroban_sdk::symbol_short!("paused"),), caller);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("paused"),), caller);
         Ok(())
     }
 
@@ -80,7 +87,8 @@ impl DaoTreasury {
         caller.require_auth();
         require_min_role(&env, &caller, Role::Admin)?;
         set_paused(&env, false);
-        env.events().publish((soroban_sdk::symbol_short!("unpaused"),), caller);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("unpaused"),), caller);
         Ok(())
     }
 
@@ -122,10 +130,17 @@ impl DaoTreasury {
         if role > role_of(&env, &caller)? {
             return Err(Error::Unauthorized);
         }
-        set_signer(&env, &Signer { address: new_signer.clone(), role });
+        set_signer(
+            &env,
+            &Signer {
+                address: new_signer.clone(),
+                role,
+            },
+        );
         set_signer_count(&env, get_signer_count(&env) + 1);
 
-        env.events().publish((soroban_sdk::symbol_short!("add_sgn"),), new_signer);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("add_sgn"),), new_signer);
         Ok(())
     }
 
@@ -146,7 +161,8 @@ impl DaoTreasury {
         remove_signer(&env, &target);
         set_signer_count(&env, count - 1);
 
-        env.events().publish((soroban_sdk::symbol_short!("rm_sgn"),), target);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("rm_sgn"),), target);
         Ok(())
     }
 
@@ -200,7 +216,8 @@ impl DaoTreasury {
         set_tx(&env, &tx);
         set_tx_count(&env, id + 1);
 
-        env.events().publish((soroban_sdk::symbol_short!("proposed"),), id);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("proposed"),), id);
         Ok(id)
     }
 
@@ -232,7 +249,8 @@ impl DaoTreasury {
 
         if tx.approvals >= get_threshold(&env) {
             tx.status = TxStatus::Queued;
-            env.events().publish((soroban_sdk::symbol_short!("queued"),), tx_id);
+            env.events()
+                .publish((soroban_sdk::symbol_short!("queued"),), tx_id);
         }
         set_tx(&env, &tx);
         Ok(())
@@ -281,7 +299,8 @@ impl DaoTreasury {
         tx.status = TxStatus::Executed;
         set_tx(&env, &tx);
 
-        env.events().publish((soroban_sdk::symbol_short!("executed"),), tx_id);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("executed"),), tx_id);
         Ok(())
     }
 
@@ -298,7 +317,8 @@ impl DaoTreasury {
         tx.status = TxStatus::Cancelled;
         set_tx(&env, &tx);
 
-        env.events().publish((soroban_sdk::symbol_short!("cancelled"),), tx_id);
+        env.events()
+            .publish((soroban_sdk::symbol_short!("cancelled"),), tx_id);
         Ok(())
     }
 

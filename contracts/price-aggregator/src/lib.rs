@@ -113,12 +113,7 @@ impl PriceAggregator {
     // ── Source management ─────────────────────────────────────────────────────
 
     /// Register a new price source. Returns the new source ID.
-    pub fn add_source(
-        env: Env,
-        admin: Address,
-        name: String,
-        weight: u32,
-    ) -> Result<u32, Error> {
+    pub fn add_source(env: Env, admin: Address, name: String, weight: u32) -> Result<u32, Error> {
         ensure_initialized(&env)?;
         not_paused(&env)?;
         admin.require_auth();
@@ -134,7 +129,12 @@ impl PriceAggregator {
             return Err(Error::MaxSourcesReached);
         }
         let id = count;
-        let source = Source { id, name, weight, active: true };
+        let source = Source {
+            id,
+            name,
+            weight,
+            active: true,
+        };
         set_source(&env, &source);
         set_authorized(&env, id, true);
         set_source_count(&env, count + 1);
@@ -156,12 +156,7 @@ impl PriceAggregator {
     }
 
     /// Update the weight for a source (1–100). Used in WeightedAverage mode.
-    pub fn set_weight(
-        env: Env,
-        admin: Address,
-        source_id: u32,
-        weight: u32,
-    ) -> Result<(), Error> {
+    pub fn set_weight(env: Env, admin: Address, source_id: u32, weight: u32) -> Result<(), Error> {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
@@ -217,9 +212,14 @@ impl PriceAggregator {
             return Err(Error::InvalidPrice);
         }
 
-        let entry = PriceEntry { price, timestamp: env.ledger().timestamp(), source_id };
+        let entry = PriceEntry {
+            price,
+            timestamp: env.ledger().timestamp(),
+            source_id,
+        };
         set_price(&env, source_id, &asset, &entry);
-        env.events().publish((symbol_short!("priceUp"),), (source_id, asset, price));
+        env.events()
+            .publish((symbol_short!("priceUp"),), (source_id, asset, price));
         Ok(())
     }
 
@@ -256,10 +256,18 @@ impl PriceAggregator {
         // Collect fresh prices from active sources.
         let mut prices: Vec<(i128, u32)> = vec![&env]; // (price, weight)
         for i in 0..count {
-            let Ok(src) = get_source(&env, i) else { continue };
-            if !src.active { continue }
-            let Some(entry) = get_price(&env, i, &asset) else { continue };
-            if now.saturating_sub(entry.timestamp) > max_age { continue }
+            let Ok(src) = get_source(&env, i) else {
+                continue;
+            };
+            if !src.active {
+                continue;
+            }
+            let Some(entry) = get_price(&env, i, &asset) else {
+                continue;
+            };
+            if now.saturating_sub(entry.timestamp) > max_age {
+                continue;
+            }
             prices.push_back((entry.price, src.weight));
         }
 
@@ -321,15 +329,23 @@ impl PriceAggregator {
                     sum += p * (w as i128);
                     total_weight += w as i128;
                 }
-                if total_weight == 0 { return Err(Error::InsufficientSources); }
+                if total_weight == 0 {
+                    return Err(Error::InsufficientSources);
+                }
                 sum / total_weight
             }
             AggregationStrategy::TrimmedMean => {
                 // Drop lowest and highest if we have > 2 sources.
-                let (start, end) = if fn_len > 2 { (1, fn_len - 1) } else { (0, fn_len) };
+                let (start, end) = if fn_len > 2 {
+                    (1, fn_len - 1)
+                } else {
+                    (0, fn_len)
+                };
                 let mut sum: i128 = 0;
                 let trim_count = (end - start) as i128;
-                if trim_count == 0 { return Err(Error::InsufficientSources); }
+                if trim_count == 0 {
+                    return Err(Error::InsufficientSources);
+                }
                 for i in start..end {
                     sum += filtered.get(i).unwrap().0;
                 }
@@ -414,5 +430,9 @@ fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
 }
 
 fn abs_diff(a: i128, b: i128) -> i128 {
-    if a > b { a - b } else { b - a }
+    if a > b {
+        a - b
+    } else {
+        b - a
+    }
 }

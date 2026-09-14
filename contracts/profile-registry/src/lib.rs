@@ -32,7 +32,12 @@ impl ProfileRegistry {
     /// * `user` - The Stellar address of the profile owner (must authorize)
     /// * `name` - Display name (1-64 characters)
     /// * `bio` - Biographical text (0-512 characters)
-    pub fn set_profile(env: Env, user: Address, name: String, bio: String) -> Result<(), ProfileError> {
+    pub fn set_profile(
+        env: Env,
+        user: Address,
+        name: String,
+        bio: String,
+    ) -> Result<(), ProfileError> {
         user.require_auth();
 
         if name.is_empty() {

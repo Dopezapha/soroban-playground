@@ -90,9 +90,10 @@ impl MockToken {
             panic!("MockToken: mint to zero address");
         }
         let current = env.storage().instance().get::<_, i128>(&to).unwrap_or(0);
-        env.storage().instance().set(&to, &current.saturating_add(amount));
-        env.events()
-            .publish((symbol_short!("mint"), to), amount);
+        env.storage()
+            .instance()
+            .set(&to, &current.saturating_add(amount));
+        env.events().publish((symbol_short!("mint"), to), amount);
     }
 
     /// Burns `amount` tokens from `from`.
@@ -112,13 +113,12 @@ impl MockToken {
         let current = env.storage().instance().get::<_, i128>(&from).unwrap_or(0);
         if current < amount {
             panic!(
-                "MockToken: insufficient balance: {} has {}, needs {}",
+                "MockToken: insufficient balance: {:?} has {}, needs {}",
                 from, current, amount
             );
         }
         env.storage().instance().set(&from, &(current - amount));
-        env.events()
-            .publish((symbol_short!("burn"), from), amount);
+        env.events().publish((symbol_short!("burn"), from), amount);
     }
 
     /// Transfers `amount` tokens from `from` to `to`.
@@ -155,13 +155,17 @@ impl MockToken {
         let from_balance = env.storage().instance().get::<_, i128>(&from).unwrap_or(0);
         if from_balance < amount {
             panic!(
-                "MockToken: insufficient balance: {} has {}, needs {}",
+                "MockToken: insufficient balance: {:?} has {}, needs {}",
                 from, from_balance, amount
             );
         }
         let to_balance = env.storage().instance().get::<_, i128>(&to).unwrap_or(0);
-        env.storage().instance().set(&from, &(from_balance.saturating_sub(amount)));
-        env.storage().instance().set(&to, &to_balance.saturating_add(amount));
+        env.storage()
+            .instance()
+            .set(&from, &(from_balance.saturating_sub(amount)));
+        env.storage()
+            .instance()
+            .set(&to, &to_balance.saturating_add(amount));
         env.events()
             .publish((symbol_short!("transfer"), from, to), amount);
     }

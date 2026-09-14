@@ -27,7 +27,9 @@ pub fn is_initialized(env: &Env) -> bool {
 }
 
 pub fn set_airdrop_info(env: &Env, info: &AirdropInfo) {
-    env.storage().instance().set(&InstanceKey::AirdropInfo, info);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::AirdropInfo, info);
 }
 
 pub fn get_airdrop_info(env: &Env) -> Result<AirdropInfo, Error> {

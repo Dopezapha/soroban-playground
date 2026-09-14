@@ -10,12 +10,15 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Query performance threshold in milliseconds
  */
-const SLOW_QUERY_THRESHOLD_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS, 10) || 200;
+const SLOW_QUERY_THRESHOLD_MS =
+  parseInt(process.env.SLOW_QUERY_THRESHOLD_MS, 10) || 200;
 
 /**
  * Enable query logging in production
  */
-const ENABLE_QUERY_LOGGING = process.env.NODE_ENV === 'production' || process.env.ENABLE_QUERY_LOGGING === 'true';
+const ENABLE_QUERY_LOGGING =
+  process.env.NODE_ENV === 'production' ||
+  process.env.ENABLE_QUERY_LOGGING === 'true';
 
 /**
  * Query type categorization
@@ -106,16 +109,21 @@ class Counter {
  */
 function categorizeQuery(sql) {
   const normalized = sql.trim().toUpperCase();
-  
+
   if (normalized.startsWith('SELECT')) return QUERY_TYPE.SELECT;
   if (normalized.startsWith('INSERT')) return QUERY_TYPE.INSERT;
   if (normalized.startsWith('UPDATE')) return QUERY_TYPE.UPDATE;
   if (normalized.startsWith('DELETE')) return QUERY_TYPE.DELETE;
-  if (normalized.includes('BEGIN') || normalized.includes('COMMIT') || normalized.includes('ROLLBACK')) {
+  if (
+    normalized.includes('BEGIN') ||
+    normalized.includes('COMMIT') ||
+    normalized.includes('ROLLBACK')
+  ) {
     return QUERY_TYPE.TRANSACTION;
   }
-  if (normalized.startsWith('/*') || !/^\s*\w+/.test(normalized)) return QUERY_TYPE.RAW;
-  
+  if (normalized.startsWith('/*') || !/^\s*\w+/.test(normalized))
+    return QUERY_TYPE.RAW;
+
   return QUERY_TYPE.OTHER;
 }
 
@@ -126,7 +134,7 @@ function categorizeQuery(sql) {
  */
 function extractTableName(sql) {
   const normalized = sql.toUpperCase();
-  
+
   // Match common patterns
   const patterns = [
     /(?:FROM|JOIN|UPDATE|INTO)\s+([a-zA-Z0-9_]+)/i,
@@ -134,12 +142,12 @@ function extractTableName(sql) {
     /ALTER\s+TABLE\s+([a-zA-Z0-9_]+)/i,
     /DROP\s+TABLE\s+([a-zA-Z0-9_]+)/i,
   ];
-  
+
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
     if (match) return match[1];
   }
-  
+
   return 'unknown';
 }
 
@@ -151,18 +159,18 @@ function extractTableName(sql) {
 function sanitizeSQL(sql) {
   // Replace numeric literals that might be sensitive
   let sanitized = sql.replace(/\d{4,}/g, '[NUMERIC]');
-  
+
   // Replace string literals that might contain PII
   sanitized = sanitized.replace(/'[^']*'/g, "'[STRING]'");
-  
+
   // Replace quoted identifiers
   sanitized = sanitized.replace(/"[^"]*"/g, '"[IDENTIFIER]"');
-  
+
   // Limit length
   if (sanitized.length > 1000) {
     sanitized = sanitized.substring(0, 1000) + '...';
   }
-  
+
   return sanitized;
 }
 
@@ -171,8 +179,9 @@ function sanitizeSQL(sql) {
  * @param {object} queryInfo - Query information
  */
 function logSlowQuery(queryInfo) {
-  const { sql, duration, queryType, table, operation, requestId, userId } = queryInfo;
-  
+  const { sql, duration, queryType, table, operation, requestId, userId } =
+    queryInfo;
+
   const logEntry = {
     level: 'warn',
     message: 'Slow database query detected',
@@ -188,16 +197,19 @@ function logSlowQuery(queryInfo) {
       sql: sanitizeSQL(sql),
     },
   };
-  
+
   // Console output
   console.warn('[SLOW_QUERY]', JSON.stringify(logEntry));
-  
+
   // Emit custom event for external alerting
   if (typeof process.emitWarning === 'function') {
-    process.emitWarning(`Slow query: ${queryType} on ${table} took ${duration}ms`, {
-      code: 'SLOW_QUERY',
-      detail: JSON.stringify(logEntry),
-    });
+    process.emitWarning(
+      `Slow query: ${queryType} on ${table} took ${duration}ms`,
+      {
+        code: 'SLOW_QUERY',
+        detail: JSON.stringify(logEntry),
+      }
+    );
   }
 }
 
@@ -207,7 +219,7 @@ function logSlowQuery(queryInfo) {
  */
 function logQueryError(errorInfo) {
   const { sql, error, queryType, table, requestId, userId } = errorInfo;
-  
+
   const logEntry = {
     level: 'error',
     message: 'Database query error',
@@ -225,7 +237,7 @@ function logQueryError(errorInfo) {
       stack: error?.stack,
     },
   };
-  
+
   console.error('[QUERY_ERROR]', JSON.stringify(logEntry));
 }
 
@@ -270,24 +282,24 @@ export function createQueryInterceptor(db, options = {}) {
     const queryType = categorizeQuery(sql);
     const table = extractTableName(sql);
     const operation = context.operation || 'execute';
-    
+
     return async (...args) => {
       const requestId = context.requestId || uuidv4();
       const userId = context.userId;
-      
+
       try {
         const result = await executeQuery(...args);
         const duration = Date.now() - startTime;
-        
+
         // Record metrics
         if (enableMetrics) {
           const labels = { query_type: queryType, table, operation };
           queryDurationHistogram.observe(labels, duration);
-          
+
           // Log slow queries
           if (duration >= slowThreshold) {
             slowQueryCounter.inc(labels);
-            
+
             onSlowQuery({
               sql,
               duration,
@@ -299,18 +311,18 @@ export function createQueryInterceptor(db, options = {}) {
             });
           }
         }
-        
+
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         if (enableMetrics) {
           queryErrorCounter.inc({
             query_type: queryType,
             table,
             error_type: error?.code || 'UNKNOWN',
           });
-          
+
           onQueryError({
             sql,
             error,
@@ -320,7 +332,7 @@ export function createQueryInterceptor(db, options = {}) {
             userId,
           });
         }
-        
+
         throw error;
       }
     };
@@ -335,12 +347,12 @@ export function createQueryInterceptor(db, options = {}) {
       bindings,
       context
     );
-    
+
     const result = wrapped();
     if (result?.then) {
-      return result.then(data => {
+      return result.then((data) => {
         if (Array.isArray(data)) {
-          return data.map(item => {
+          return data.map((item) => {
             if (item && typeof item === 'object') {
               item._queryMetrics = { duration: Date.now() - startTime };
             }
@@ -361,21 +373,22 @@ export function createQueryInterceptor(db, options = {}) {
  */
 export function createMigrationInterceptor(db) {
   const startTime = Date.now();
-  
+
   console.log('[MIGRATION] Starting database migration');
-  
+
   const originalMigrate = db.migrate;
-  
+
   db.migrate = function (...args) {
     const migrationStart = Date.now();
-    
+
     console.log('[MIGRATION]', {
       action: args[0] || 'latest',
       timestamp: new Date().toISOString(),
     });
-    
-    return originalMigrate.apply(this, args)
-      .then(result => {
+
+    return originalMigrate
+      .apply(this, args)
+      .then((result) => {
         const duration = Date.now() - migrationStart;
         console.log('[MIGRATION] Completed', {
           durationMs: duration,
@@ -383,7 +396,7 @@ export function createMigrationInterceptor(db) {
         });
         return result;
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('[MIGRATION] Failed', {
           durationMs: Date.now() - migrationStart,
           error: error.message,
@@ -391,7 +404,7 @@ export function createMigrationInterceptor(db) {
         throw error;
       });
   };
-  
+
   return db;
 }
 
@@ -400,18 +413,18 @@ export function createMigrationInterceptor(db) {
  */
 export function withQueryTiming(knexQuery, context = {}) {
   const startTime = Date.now();
-  
+
   const originalThen = knexQuery.then.bind(knexQuery);
-  
+
   knexQuery.then = function (...args) {
     const query = this;
     const sql = query.toSQL()?.sql || 'unknown';
     const queryType = categorizeQuery(sql);
-    
+
     return originalThen(...args)
-      .then(result => {
+      .then((result) => {
         const duration = Date.now() - startTime;
-        
+
         if (duration >= SLOW_QUERY_THRESHOLD_MS && ENABLE_QUERY_LOGGING) {
           logSlowQuery({
             sql,
@@ -423,12 +436,12 @@ export function withQueryTiming(knexQuery, context = {}) {
             userId: context.userId,
           });
         }
-        
+
         return result;
       })
-      .catch(error => {
+      .catch((error) => {
         const duration = Date.now() - startTime;
-        
+
         logQueryError({
           sql,
           error,
@@ -437,11 +450,11 @@ export function withQueryTiming(knexQuery, context = {}) {
           requestId: context.requestId,
           userId: context.userId,
         });
-        
+
         throw error;
       });
   };
-  
+
   return knexQuery;
 }
 
@@ -455,7 +468,7 @@ export function queryContextMiddleware(options = {}) {
       userId: req.user?.id || req.session?.user?.id,
       tags: options.tags || {},
     });
-    
+
     next();
   };
 }

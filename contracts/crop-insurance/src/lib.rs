@@ -76,7 +76,12 @@ pub struct CropInsurance;
 
 #[contractimpl]
 impl CropInsurance {
-    pub fn initialize(env: Env, admin: Address, oracle: Address, token: Address) -> Result<(), Error> {
+    pub fn initialize(
+        env: Env,
+        admin: Address,
+        oracle: Address,
+        token: Address,
+    ) -> Result<(), Error> {
         if env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::AlreadyInitialized);
         }
@@ -87,7 +92,8 @@ impl CropInsurance {
         env.storage().instance().set(&DataKey::Paused, &false);
         env.storage().instance().set(&DataKey::PolicyCount, &0u64);
         bump_instance(&env);
-        env.events().publish((symbol_short!("init"),), (admin, oracle, token));
+        env.events()
+            .publish((symbol_short!("init"),), (admin, oracle, token));
         Ok(())
     }
 
@@ -108,6 +114,7 @@ impl CropInsurance {
     }
 
     /// Create a parametric crop insurance policy funded by premium deposit.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_policy(
         env: Env,
         farmer: Address,
@@ -130,7 +137,9 @@ impl CropInsurance {
         }
 
         let now = env.ledger().timestamp();
-        let end_time = now.checked_add(duration_seconds).ok_or(Error::ArithmeticError)?;
+        let end_time = now
+            .checked_add(duration_seconds)
+            .ok_or(Error::ArithmeticError)?;
 
         let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
         token::Client::new(&env, &token_addr).transfer(
@@ -154,10 +163,15 @@ impl CropInsurance {
         };
 
         put_policy(&env, &policy);
-        env.storage().instance().set(&DataKey::PolicyCount, &(id + 1));
+        env.storage()
+            .instance()
+            .set(&DataKey::PolicyCount, &(id + 1));
         bump_instance(&env);
 
-        env.events().publish((symbol_short!("create"), id), (policy.farmer, payout_amount));
+        env.events().publish(
+            (symbol_short!("create"), id),
+            (policy.farmer, payout_amount),
+        );
         Ok(id)
     }
 
@@ -181,7 +195,8 @@ impl CropInsurance {
         env.storage().persistent().set(&key, &rainfall_mm);
         bump_key(&env, &key);
 
-        env.events().publish((symbol_short!("rain"), region_id), rainfall_mm);
+        env.events()
+            .publish((symbol_short!("rain"), region_id), rainfall_mm);
         Ok(())
     }
 
@@ -196,7 +211,11 @@ impl CropInsurance {
         }
 
         let key = DataKey::Rainfall(policy.region_id.clone());
-        let rainfall_mm: u32 = env.storage().persistent().get(&key).ok_or(Error::RainfallDataMissing)?;
+        let rainfall_mm: u32 = env
+            .storage()
+            .persistent()
+            .get(&key)
+            .ok_or(Error::RainfallDataMissing)?;
 
         let condition_met = if policy.trigger_on_drought {
             rainfall_mm < policy.rainfall_threshold_mm
@@ -218,7 +237,10 @@ impl CropInsurance {
             &policy.payout_amount,
         );
 
-        env.events().publish((symbol_short!("claimed"), policy_id), (policy.farmer, policy.payout_amount));
+        env.events().publish(
+            (symbol_short!("claimed"), policy_id),
+            (policy.farmer, policy.payout_amount),
+        );
         Ok(policy.payout_amount)
     }
 
@@ -236,7 +258,8 @@ impl CropInsurance {
         policy.status = PolicyStatus::Expired;
         put_policy(&env, &policy);
 
-        env.events().publish((symbol_short!("expired"), policy_id), ());
+        env.events()
+            .publish((symbol_short!("expired"), policy_id), ());
         Ok(())
     }
 
@@ -245,7 +268,9 @@ impl CropInsurance {
     }
 
     pub fn get_rainfall(env: Env, region_id: String) -> Option<u32> {
-        env.storage().persistent().get(&DataKey::Rainfall(region_id))
+        env.storage()
+            .persistent()
+            .get(&DataKey::Rainfall(region_id))
     }
 }
 
@@ -259,11 +284,19 @@ fn initialized(env: &Env) -> Result<(), Error> {
 
 fn admin(env: &Env) -> Result<Address, Error> {
     initialized(env)?;
-    env.storage().instance().get(&DataKey::Admin).ok_or(Error::NotInitialized)
+    env.storage()
+        .instance()
+        .get(&DataKey::Admin)
+        .ok_or(Error::NotInitialized)
 }
 
 fn not_paused(env: &Env) -> Result<(), Error> {
-    if env.storage().instance().get(&DataKey::Paused).unwrap_or(false) {
+    if env
+        .storage()
+        .instance()
+        .get(&DataKey::Paused)
+        .unwrap_or(false)
+    {
         return Err(Error::Paused);
     }
     Ok(())
@@ -272,7 +305,11 @@ fn not_paused(env: &Env) -> Result<(), Error> {
 fn get_policy(env: &Env, id: u64) -> Result<CropPolicy, Error> {
     initialized(env)?;
     let key = DataKey::Policy(id);
-    let policy = env.storage().persistent().get(&key).ok_or(Error::PolicyNotFound)?;
+    let policy = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .ok_or(Error::PolicyNotFound)?;
     bump_key(env, &key);
     Ok(policy)
 }
@@ -284,9 +321,13 @@ fn put_policy(env: &Env, policy: &CropPolicy) {
 }
 
 fn bump_instance(env: &Env) {
-    env.storage().instance().extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_BUMP);
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_BUMP);
 }
 
 fn bump_key(env: &Env, key: &DataKey) {
-    env.storage().persistent().extend_ttl(key, DATA_TTL_THRESHOLD, DATA_TTL_BUMP);
+    env.storage()
+        .persistent()
+        .extend_ttl(key, DATA_TTL_THRESHOLD, DATA_TTL_BUMP);
 }

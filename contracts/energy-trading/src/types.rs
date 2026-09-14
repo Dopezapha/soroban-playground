@@ -61,7 +61,7 @@ pub enum MeterStatus {
 
 /// A smart meter IoT device registered in the system.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SmartMeter {
     pub id: u32,
     pub owner: Address,
@@ -76,7 +76,7 @@ pub struct SmartMeter {
 
 /// A reading from a smart meter (proof of energy generation/consumption).
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MeterReading {
     pub meter_id: u32,
     pub timestamp: u64,
@@ -88,7 +88,7 @@ pub struct MeterReading {
 
 /// A trade order for energy.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TradeOrder {
     pub id: u32,
     pub seller_meter_id: u32,
@@ -104,7 +104,7 @@ pub struct TradeOrder {
 
 /// A peer-to-peer energy trade between two parties.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EnergyTrade {
     pub id: u32,
     pub seller: Address,
@@ -122,7 +122,7 @@ pub struct EnergyTrade {
 
 /// Energy balance for a participant.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EnergyBalance {
     pub address: Address,
     pub kwh_balance: i128,

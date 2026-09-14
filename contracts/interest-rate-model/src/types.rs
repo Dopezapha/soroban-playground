@@ -1,7 +1,7 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
 
-use soroban_sdk::{contracterror, contracttype, Address};
+use soroban_sdk::{contracterror, contracttype};
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]

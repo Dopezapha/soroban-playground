@@ -9,8 +9,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{EnergyTrading, EnergyTradingClient};
 use crate::types::{EnergyType, Error, MeterStatus, TradeStatus};
+use crate::{EnergyTrading, EnergyTradingClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,7 +18,7 @@ use crate::types::{EnergyType, Error, MeterStatus, TradeStatus};
 fn setup() -> (Env, Address, EnergyTradingClient<'static>) {
     let env = Env::default();
     env.mock_all_auths();
-    let id = env.register(EnergyTrading, ());
+    let id = env.register_contract(None, EnergyTrading);
     let client = EnergyTradingClient::new(&env, &id);
     let admin = Address::generate(&env);
     client.initialize(&admin);
@@ -62,7 +62,7 @@ fn init_sets_zero_trade_count() {
 fn init_twice_panics() {
     let env = Env::default();
     env.mock_all_auths();
-    let id = env.register(EnergyTrading, ());
+    let id = env.register_contract(None, EnergyTrading);
     let client = EnergyTradingClient::new(&env, &id);
     let admin = Address::generate(&env);
     client.initialize(&admin);
@@ -117,12 +117,7 @@ fn register_meter_empty_location_fails() {
     let (env, _admin, client) = setup();
     let owner = Address::generate(&env);
     assert_eq!(
-        client.try_register_meter(
-            &owner,
-            &make_str(&env, ""),
-            &EnergyType::Solar,
-            &5000,
-        ),
+        client.try_register_meter(&owner, &make_str(&env, ""), &EnergyType::Solar, &5000,),
         Err(Ok(Error::EmptyField))
     );
 }
@@ -132,12 +127,7 @@ fn register_meter_zero_capacity_fails() {
     let (env, _admin, client) = setup();
     let owner = Address::generate(&env);
     assert_eq!(
-        client.try_register_meter(
-            &owner,
-            &make_str(&env, "Location"),
-            &EnergyType::Solar,
-            &0,
-        ),
+        client.try_register_meter(&owner, &make_str(&env, "Location"), &EnergyType::Solar, &0,),
         Err(Ok(Error::InvalidMeterReading))
     );
 }
@@ -438,12 +428,8 @@ fn accept_order_wrong_status_fails() {
     );
     client.submit_reading(&seller, &seller_meter, &1000, &0, &111);
 
-    let buyer_meter = client.register_meter(
-        &buyer,
-        &make_str(&env, "Buyer"),
-        &EnergyType::Solar,
-        &3000,
-    );
+    let buyer_meter =
+        client.register_meter(&buyer, &make_str(&env, "Buyer"), &EnergyType::Solar, &3000);
     client.submit_reading(&buyer, &buyer_meter, &0, &500, &222);
 
     let order_id = client.create_sell_order(&seller, &seller_meter, &500, &10);
@@ -519,12 +505,8 @@ fn full_trading_lifecycle() {
         &EnergyType::Solar,
         &10000,
     );
-    let buyer_meter = client.register_meter(
-        &buyer,
-        &make_str(&env, "Home"),
-        &EnergyType::Solar,
-        &5000,
-    );
+    let buyer_meter =
+        client.register_meter(&buyer, &make_str(&env, "Home"), &EnergyType::Solar, &5000);
 
     // Seller generates energy
     client.submit_reading(&seller, &seller_meter, &2000, &0, &111);
@@ -546,10 +528,10 @@ fn full_trading_lifecycle() {
     assert_eq!(seller_balance.total_earned, 15000); // 1000 * 15
 
     let buyer_balance = client.get_balance(&buyer);
-    assert_eq!(buyer_balance.kwh_balance, 500); // -500 - 15000 + 1000 = -14500? 
-    // Actually: -500 - 15000 (paid) + 1000 (received) = -14500
-    // But in our simplified model: balance -= total_price, then += kwh_amount
-    // So: -500 - 15000 + 1000 = -14500
+    assert_eq!(buyer_balance.kwh_balance, 500); // -500 - 15000 + 1000 = -14500?
+                                                // Actually: -500 - 15000 (paid) + 1000 (received) = -14500
+                                                // But in our simplified model: balance -= total_price, then += kwh_amount
+                                                // So: -500 - 15000 + 1000 = -14500
     assert_eq!(buyer_balance.total_spent, 15000);
 
     assert_eq!(client.get_total_energy_traded(), 1000);
@@ -560,10 +542,7 @@ fn full_trading_lifecycle() {
 #[test]
 fn get_meter_not_found() {
     let (env, _admin, client) = setup();
-    assert_eq!(
-        client.try_get_meter(&999),
-        Err(Ok(Error::MeterNotFound))
-    );
+    assert_eq!(client.try_get_meter(&999), Err(Ok(Error::MeterNotFound)));
 }
 
 #[test]

@@ -5,10 +5,10 @@ const createLogger = () => ({
 });
 
 describe('environment config validation', () => {
-  it('limits compile requests to 10 per minute per IP by default', () => {
+  it('limits compile requests to 15 per minute per IP by default', () => {
     const config = createConfig({}, { reportWarnings: false });
 
-    expect(config.rateLimit.compile.max).toBe(10);
+    expect(config.rateLimit.compile.max).toBe(15);
     expect(config.rateLimit.compile.windowMs).toBe(60000);
   });
 
@@ -18,7 +18,7 @@ describe('environment config validation', () => {
 
     expect(config.app.port).toBe(5000);
     expect(config.app.env).toBe('development');
-    expect(config.rateLimit.global.max).toBe(1000);
+    expect(config.rateLimit.global.max).toBe(60);
     expect(config.validation.valid).toBe(true);
     expect(config.validation.warnings).toEqual([]);
     expect(logger.warn).not.toHaveBeenCalled();
@@ -36,7 +36,7 @@ describe('environment config validation', () => {
     );
 
     expect(config.app.port).toBe(5000);
-    expect(config.rateLimit.global.max).toBe(1000);
+    expect(config.rateLimit.global.max).toBe(60);
     expect(config.compile.timeoutMs).toBe(30000);
     expect(config.validation.valid).toBe(false);
     expect(config.validation.warnings).toEqual(

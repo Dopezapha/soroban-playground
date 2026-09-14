@@ -78,12 +78,7 @@ fn test_milestone_flow() {
         &String::from_str(&env, "Build well"),
         &50_000,
     );
-    client.complete_milestone(
-        &organizer,
-        &id,
-        &1,
-        &String::from_str(&env, "proof_hash"),
-    );
+    client.complete_milestone(&organizer, &id, &1, &String::from_str(&env, "proof_hash"));
     client.verify_milestone(&admin, &id, &1);
     let m = client.get_milestone(&id, &1);
     assert!(m.verified);

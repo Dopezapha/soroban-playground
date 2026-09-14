@@ -55,7 +55,7 @@ mod test {
         let client = DonationTrackerClient::new(&env, &contract_id);
 
         let donor = Address::generate(&env);
-        
+
         env.mock_all_auths();
 
         let total = client.donate(&donor, &100);

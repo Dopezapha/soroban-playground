@@ -27,7 +27,10 @@ export async function up(knex) {
     table.string('updated_at', 50).notNullable();
     table.string('verified_at', 50).nullable();
 
-    table.index(['contract_id', 'network', 'updated_at'], 'idx_contract_verification_contract');
+    table.index(
+      ['contract_id', 'network', 'updated_at'],
+      'idx_contract_verification_contract'
+    );
     table.index(['status', 'updated_at'], 'idx_contract_verification_status');
   });
 }

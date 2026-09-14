@@ -33,9 +33,7 @@ pub fn next_meter_id(env: &Env) -> u32 {
         .get(&InstanceKey::MeterCount)
         .unwrap_or(0)
         + 1;
-    env.storage()
-        .instance()
-        .set(&InstanceKey::MeterCount, &id);
+    env.storage().instance().set(&InstanceKey::MeterCount, &id);
     id
 }
 
@@ -53,9 +51,7 @@ pub fn next_trade_id(env: &Env) -> u32 {
         .get(&InstanceKey::TradeCount)
         .unwrap_or(0)
         + 1;
-    env.storage()
-        .instance()
-        .set(&InstanceKey::TradeCount, &id);
+    env.storage().instance().set(&InstanceKey::TradeCount, &id);
     id
 }
 
@@ -82,9 +78,7 @@ pub fn get_total_energy_traded(env: &Env) -> i128 {
 // ── Smart Meters ──────────────────────────────────────────────────────────────
 
 pub fn set_meter(env: &Env, id: u32, meter: &SmartMeter) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Meter(id), meter);
+    env.storage().persistent().set(&DataKey::Meter(id), meter);
 }
 
 pub fn get_meter(env: &Env, id: u32) -> Result<SmartMeter, Error> {
@@ -111,9 +105,7 @@ pub fn get_meter_reading(env: &Env, meter_id: u32, timestamp: u64) -> Option<Met
 // ── Trade Orders ──────────────────────────────────────────────────────────────
 
 pub fn set_trade_order(env: &Env, id: u32, order: &TradeOrder) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Trade(id), order);
+    env.storage().persistent().set(&DataKey::Trade(id), order);
 }
 
 pub fn get_trade_order(env: &Env, id: u32) -> Result<TradeOrder, Error> {
@@ -126,9 +118,7 @@ pub fn get_trade_order(env: &Env, id: u32) -> Result<TradeOrder, Error> {
 // ── Energy Trades ─────────────────────────────────────────────────────────────
 
 pub fn set_energy_trade(env: &Env, id: u32, trade: &EnergyTrade) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Trade(id), trade);
+    env.storage().persistent().set(&DataKey::Trade(id), trade);
 }
 
 pub fn get_energy_trade(env: &Env, id: u32) -> Result<EnergyTrade, Error> {

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
+use super::storage::{set_count, set_total_voters};
 use super::{types::Error, VotingContract, VotingContractClient};
-use super::storage::set_count;
 use soroban_sdk::{symbol_short, testutils::Address as _, vec, Address, Env, Symbol, Vec};
 
 fn setup() -> (Env, VotingContractClient<'static>, Address, Vec<Symbol>) {
@@ -147,10 +147,12 @@ fn test_vote_rejects_invalid_state_when_previous_count_is_missing() {
     let go = symbol_short!("GO");
 
     client.vote(&voter, &rust);
-    set_count(&env, &rust, 0);
+    env.as_contract(&client.address, || {
+        set_count(&env, &rust, 0);
+    });
 
     let result = client.try_vote(&voter, &go);
-    assert!(matches!(result, Err(Ok(Error::InvalidState))));
+    assert!(matches!(result, Err(Ok(Error::VoteCountUnderflow))));
 }
 
 #[test]
@@ -193,7 +195,9 @@ fn test_vote_reports_count_underflow_instead_of_panicking() {
     let go = symbol_short!("GO");
 
     client.vote(&voter, &rust);
-    set_count(&env, &rust, 0);
+    env.as_contract(&client.address, || {
+        set_count(&env, &rust, 0);
+    });
 
     let result = client.try_vote(&voter, &go);
     assert!(matches!(result, Err(Ok(Error::VoteCountUnderflow))));
@@ -209,7 +213,9 @@ fn test_vote_reports_count_overflow_instead_of_panicking() {
     let voter = Address::generate(&env);
     let rust = symbol_short!("RUST");
 
-    set_count(&env, &rust, u32::MAX);
+    env.as_contract(&client.address, || {
+        set_count(&env, &rust, u32::MAX);
+    });
 
     let result = client.try_vote(&voter, &rust);
     assert!(matches!(result, Err(Ok(Error::VoteCountOverflow))));
@@ -225,7 +231,9 @@ fn test_vote_reports_voter_count_overflow_instead_of_panicking() {
     let voter = Address::generate(&env);
     let rust = symbol_short!("RUST");
 
-    set_total_voters(&env, u32::MAX);
+    env.as_contract(&client.address, || {
+        set_total_voters(&env, u32::MAX);
+    });
 
     let result = client.try_vote(&voter, &rust);
     assert!(matches!(result, Err(Ok(Error::VoterCountOverflow))));

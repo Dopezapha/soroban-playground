@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String,
+};
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -60,7 +62,11 @@ impl FileNotary {
         caller.require_auth();
         Self::assert_not_paused(&env)?;
 
-        if env.storage().instance().has(&DataKey::Record(file_hash.clone())) {
+        if env
+            .storage()
+            .instance()
+            .has(&DataKey::Record(file_hash.clone()))
+        {
             return Err(Error::AlreadyNotarized);
         }
 
@@ -77,7 +83,10 @@ impl FileNotary {
             .set(&DataKey::Record(file_hash.clone()), &record);
 
         env.events().publish(
-            (soroban_sdk::symbol_short!("notary"), soroban_sdk::symbol_short!("notarized")),
+            (
+                soroban_sdk::symbol_short!("notary"),
+                soroban_sdk::symbol_short!("notarized"),
+            ),
             (file_hash, caller, timestamp),
         );
 
@@ -117,7 +126,10 @@ impl FileNotary {
             .set(&DataKey::Record(file_hash.clone()), &record);
 
         env.events().publish(
-            (soroban_sdk::symbol_short!("notary"), soroban_sdk::symbol_short!("revoked")),
+            (
+                soroban_sdk::symbol_short!("notary"),
+                soroban_sdk::symbol_short!("revoked"),
+            ),
             file_hash,
         );
 

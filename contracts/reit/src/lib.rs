@@ -157,8 +157,7 @@ impl ReitContract {
             return Err(Error::ZeroShares);
         }
         let mut p = get_property(&env, property_id)?;
-        let mut h = get_holding(&env, property_id, &investor)
-            .ok_or(Error::InsufficientShares)?;
+        let mut h = get_holding(&env, property_id, &investor).ok_or(Error::InsufficientShares)?;
         if shares > h.shares {
             return Err(Error::InsufficientShares);
         }
@@ -195,8 +194,7 @@ impl ReitContract {
             return Err(Error::ZeroShares);
         }
         let p = get_property(&env, property_id)?;
-        let mut from_h = get_holding(&env, property_id, &from)
-            .ok_or(Error::InsufficientShares)?;
+        let mut from_h = get_holding(&env, property_id, &from).ok_or(Error::InsufficientShares)?;
         if shares > from_h.shares {
             return Err(Error::InsufficientShares);
         }
@@ -244,24 +242,21 @@ impl ReitContract {
     }
 
     /// Claim accrued dividends for `investor`. Returns amount claimed.
-    pub fn claim_dividends(
-        env: Env,
-        investor: Address,
-        property_id: u32,
-    ) -> Result<i128, Error> {
+    pub fn claim_dividends(env: Env, investor: Address, property_id: u32) -> Result<i128, Error> {
         Self::assert_not_paused(&env)?;
         investor.require_auth();
         let p = get_property(&env, property_id)?;
-        let mut h = get_holding(&env, property_id, &investor)
-            .ok_or(Error::InsufficientShares)?;
+        let mut h = get_holding(&env, property_id, &investor).ok_or(Error::InsufficientShares)?;
         let claimable = Self::compute_pending(&h, &p);
         if claimable == 0 {
             return Err(Error::NothingToClaim);
         }
         h.dividends_claimed_snapshot += claimable;
         set_holding(&env, property_id, &investor, &h);
-        env.events()
-            .publish((symbol_short!("div_clm"), property_id), (investor, claimable));
+        env.events().publish(
+            (symbol_short!("div_clm"), property_id),
+            (investor, claimable),
+        );
         Ok(claimable)
     }
 
@@ -282,8 +277,7 @@ impl ReitContract {
     /// Return pending claimable dividends without mutating state.
     pub fn pending_dividends(env: Env, investor: Address, property_id: u32) -> Result<i128, Error> {
         let p = get_property(&env, property_id)?;
-        let h = get_holding(&env, property_id, &investor)
-            .ok_or(Error::InsufficientShares)?;
+        let h = get_holding(&env, property_id, &investor).ok_or(Error::InsufficientShares)?;
         Ok(Self::compute_pending(&h, &p))
     }
 
@@ -298,13 +292,13 @@ impl ReitContract {
         if p.shares_issued == 0 || h.shares == 0 {
             return 0;
         }
-        let new_divs = p.total_dividends.saturating_sub(h.dividends_claimed_snapshot);
+        let new_divs = p
+            .total_dividends
+            .saturating_sub(h.dividends_claimed_snapshot);
         if new_divs <= 0 {
             return 0;
         }
-        new_divs
-            .saturating_mul(h.shares as i128)
-            / (p.shares_issued as i128)
+        new_divs.saturating_mul(h.shares as i128) / (p.shares_issued as i128)
     }
 
     fn assert_admin(env: &Env, caller: &Address) -> Result<(), Error> {

@@ -4,7 +4,9 @@
 import { z } from 'zod';
 
 export const commonSchemas = {
-  stellarAddress: z.string().regex(/^G[A-Z0-9]{55}$/, 'Invalid Stellar public key format'),
+  stellarAddress: z
+    .string()
+    .regex(/^G[A-Z0-9]{55}$/, 'Invalid Stellar public key format'),
   idParam: z.object({
     id: z.string().min(1, 'ID parameter is required'),
   }),
@@ -16,7 +18,9 @@ export const commonSchemas = {
 
 export function formatZodError(error) {
   if (!error || !error.issues) {
-    return [{ field: 'unknown', message: error?.message || 'Validation failed' }];
+    return [
+      { field: 'unknown', message: error?.message || 'Validation failed' },
+    ];
   }
   return error.issues.map((issue) => ({
     field: issue.path.join('.') || 'root',
@@ -26,7 +30,11 @@ export function formatZodError(error) {
 }
 
 export function validateRequest(schemas = {}) {
-  const { body: bodySchema, query: querySchema, params: paramsSchema } = schemas;
+  const {
+    body: bodySchema,
+    query: querySchema,
+    params: paramsSchema,
+  } = schemas;
 
   return (req, res, next) => {
     const errors = [];
@@ -34,7 +42,12 @@ export function validateRequest(schemas = {}) {
     if (bodySchema) {
       const result = bodySchema.safeParse(req.body || {});
       if (!result.success) {
-        errors.push(...formatZodError(result.error).map((e) => ({ ...e, location: 'body' })));
+        errors.push(
+          ...formatZodError(result.error).map((e) => ({
+            ...e,
+            location: 'body',
+          }))
+        );
       } else {
         req.body = result.data;
       }
@@ -43,7 +56,12 @@ export function validateRequest(schemas = {}) {
     if (querySchema) {
       const result = querySchema.safeParse(req.query || {});
       if (!result.success) {
-        errors.push(...formatZodError(result.error).map((e) => ({ ...e, location: 'query' })));
+        errors.push(
+          ...formatZodError(result.error).map((e) => ({
+            ...e,
+            location: 'query',
+          }))
+        );
       } else {
         req.query = result.data;
       }
@@ -52,7 +70,12 @@ export function validateRequest(schemas = {}) {
     if (paramsSchema) {
       const result = paramsSchema.safeParse(req.params || {});
       if (!result.success) {
-        errors.push(...formatZodError(result.error).map((e) => ({ ...e, location: 'params' })));
+        errors.push(
+          ...formatZodError(result.error).map((e) => ({
+            ...e,
+            location: 'params',
+          }))
+        );
       } else {
         req.params = result.data;
       }

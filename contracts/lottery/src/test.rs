@@ -1,12 +1,15 @@
 #![cfg(test)]
 
-use soroban_sdk::{testutils::{Address as _, Ledger}, Address, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    Address, Env,
+};
 
-use crate::{Lottery, LotteryClient};
 use crate::types::{Error, RoundStatus};
+use crate::{Lottery, LotteryClient};
 
 const TICKET_PRICE: i128 = 10_000_000; // 1 XLM
-const ROUND_DURATION: u64 = 3_600;     // 1 hour
+const ROUND_DURATION: u64 = 3_600; // 1 hour
 
 fn setup() -> (Env, Address, LotteryClient<'static>) {
     let env = Env::default();

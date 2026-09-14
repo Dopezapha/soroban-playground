@@ -7,7 +7,15 @@ use soroban_sdk::{
     Address, Env,
 };
 
-fn setup_test() -> (Env, StakingClient<'static>, Address, Address, Address, TokenClient<'static>, StellarAssetClient<'static>) {
+fn setup_test() -> (
+    Env,
+    StakingClient<'static>,
+    Address,
+    Address,
+    Address,
+    TokenClient<'static>,
+    StellarAssetClient<'static>,
+) {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -67,10 +75,22 @@ fn test_already_initialized_fails() {
 fn test_uninitialized_calls_fail() {
     let (_env, client, _admin, user, _token_addr, _token_client, _sac) = setup_test();
 
-    assert_eq!(client.try_stake(&user, &100), Err(Ok(Error::NotInitialized)));
-    assert_eq!(client.try_request_unstake(&user, &100), Err(Ok(Error::NotInitialized)));
-    assert_eq!(client.try_claim_unstake(&user, &0), Err(Ok(Error::NotInitialized)));
-    assert_eq!(client.try_get_stake_info(&user), Err(Ok(Error::NotInitialized)));
+    assert_eq!(
+        client.try_stake(&user, &100),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_request_unstake(&user, &100),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_claim_unstake(&user, &0),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_get_stake_info(&user),
+        Err(Ok(Error::NotInitialized))
+    );
 }
 
 #[test]
@@ -89,8 +109,14 @@ fn test_request_unstake_zero_or_insufficient_fails() {
 
     client.stake(&user, &500i128);
 
-    assert_eq!(client.try_request_unstake(&user, &0), Err(Ok(Error::ZeroAmount)));
-    assert_eq!(client.try_request_unstake(&user, &600), Err(Ok(Error::InsufficientBalance)));
+    assert_eq!(
+        client.try_request_unstake(&user, &0),
+        Err(Ok(Error::ZeroAmount))
+    );
+    assert_eq!(
+        client.try_request_unstake(&user, &600),
+        Err(Ok(Error::InsufficientBalance))
+    );
 }
 
 #[test]

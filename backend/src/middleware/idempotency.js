@@ -171,8 +171,7 @@ function interceptResponse(res, storeKey, ttlSeconds) {
     if (statusCode < 500) {
       let serialisedBody = '';
       try {
-        serialisedBody =
-          typeof body === 'string' ? body : JSON.stringify(body);
+        serialisedBody = typeof body === 'string' ? body : JSON.stringify(body);
         if (Buffer.byteLength(serialisedBody) > MAX_BODY_BYTES) {
           serialisedBody = serialisedBody.slice(0, MAX_BODY_BYTES);
         }

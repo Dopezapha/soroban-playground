@@ -8,8 +8,12 @@ const BROADCAST_CHANNEL = 'ws:broadcast';
 class WebSocketService {
   constructor(server) {
     this.wss = new WebSocket.Server({ server });
-    this.pub = new Redis(Process.env.REDIS_URL||'redis://127.0.0.1:6379', { lazyConnect: true });
-    this.sub = new Redis(Process.env.REDIS_URL||'redis://127.0.0.1:6379', { lazyConnect: true });
+    this.pub = new Redis(Process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+      lazyConnect: true,
+    });
+    this.sub = new Redis(Process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+      lazyConnect: true,
+    });
     this.ipCounts = new Map();
     this.sub.on('message', (channel, message) => {
       if (channel === BROADCAST_CHANNEL) this.handleRedisMessage(message);
@@ -36,14 +40,16 @@ class WebSocketService {
     this.ipCounts.set(ip, count + 1);
     ws.accepted = true;
     ws.isAlive = true;
-    ws.on('pong', () => { ws.isAlive = true; });
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
     ws.on('close', () => {
       if (!ws.accepted) return;
       const remaining = (this.ipCounts.get(ip) || 1) - 1;
       if (remaining <= 0) this.ipCounts.delete(ip);
       else this.ipCounts.set(ip, remaining);
     });
-    ws.on("error", () => {});
+    ws.on('error', () => {});
   }
 
   heartbeat() {
@@ -65,15 +71,20 @@ class WebSocketService {
 
   handleRedisMessage(message) {
     let msg;
-    try { msg = JSON.parse(message); } catch { return; }
+    try {
+      msg = JSON.parse(message);
+    } catch {
+      return;
+    }
     for (const client of this.wss.clients) {
-      if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(msg.data));
+      if (client.readyState === WebSocket.OPEN)
+        client.send(JSON.stringify(msg.data));
     }
   }
 
   close() {
     clearInterval(this.timer);
-    this.wss.clients.forEach(c => c.terminate());
+    this.wss.clients.forEach((c) => c.terminate());
     this.wss.close();
     this.pub.disconnect();
     this.sub.disconnect();

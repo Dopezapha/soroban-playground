@@ -109,7 +109,12 @@ export function attachAcmeHttp01(app, store = new Map()) {
  */
 export function watchTlsCertificates(
   server,
-  { keyPath, certPath, intervalMs = 60_000, readFileSync = fs.readFileSync } = {}
+  {
+    keyPath,
+    certPath,
+    intervalMs = 60_000,
+    readFileSync = fs.readFileSync,
+  } = {}
 ) {
   if (!keyPath || !certPath || typeof server?.setSecureContext !== 'function') {
     return () => {};

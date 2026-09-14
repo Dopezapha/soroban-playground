@@ -7,15 +7,22 @@ const router = express.Router();
 export async function checkWorkerQueueConnectivity() {
   const start = Date.now();
   try {
-    const redisModule = await import('../services/redisService.js').catch(() => null);
+    const redisModule = await import('../services/redisService.js').catch(
+      () => null
+    );
     const redisService = redisModule?.default || redisModule;
-    const isRedisReady = redisService?.client ? (redisService.client.status === 'ready' || redisService.client.status === 'connecting') : true;
+    const isRedisReady = redisService?.client
+      ? redisService.client.status === 'ready' ||
+        redisService.client.status === 'connecting'
+      : true;
     const latencyMs = Date.now() - start;
     return {
       name: 'workerQueue',
       status: isRedisReady ? 'healthy' : 'degraded',
       latencyMs,
-      message: isRedisReady ? 'Worker queue connection operational' : 'Worker queue degraded',
+      message: isRedisReady
+        ? 'Worker queue connection operational'
+        : 'Worker queue degraded',
     };
   } catch (error) {
     return {

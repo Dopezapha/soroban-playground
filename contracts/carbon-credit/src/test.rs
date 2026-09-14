@@ -61,8 +61,7 @@ fn test_register_duplicate_issuer_fails() {
     client
         .register_issuer(&issuer, &String::from_str(&env, "GreenCo"))
         .unwrap();
-    let result =
-        client.try_register_issuer(&issuer, &String::from_str(&env, "GreenCo2"));
+    let result = client.try_register_issuer(&issuer, &String::from_str(&env, "GreenCo2"));
     assert_eq!(result, Err(Ok(Error::IssuerAlreadyRegistered)));
 }
 
@@ -194,11 +193,7 @@ fn test_retire_creates_immutable_record() {
     client.mint(&issuer, &holder, &1000).unwrap();
 
     let id = client
-        .retire(
-            &holder,
-            &300,
-            &String::from_str(&env, "QmProjectHash123"),
-        )
+        .retire(&holder, &300, &String::from_str(&env, "QmProjectHash123"))
         .unwrap();
     assert_eq!(id, 1);
 
@@ -241,8 +236,7 @@ fn test_retire_insufficient_balance_fails() {
     let issuer = make_issuer(&env, &client, &admin);
     let holder = Address::generate(&env);
     client.mint(&issuer, &holder, &100).unwrap();
-    let result =
-        client.try_retire(&holder, &500, &String::from_str(&env, "Qm"));
+    let result = client.try_retire(&holder, &500, &String::from_str(&env, "Qm"));
     assert_eq!(result, Err(Ok(Error::InsufficientBalance)));
 }
 
@@ -252,8 +246,7 @@ fn test_retire_zero_amount_fails() {
     let issuer = make_issuer(&env, &client, &admin);
     let holder = Address::generate(&env);
     client.mint(&issuer, &holder, &100).unwrap();
-    let result =
-        client.try_retire(&holder, &0, &String::from_str(&env, "Qm"));
+    let result = client.try_retire(&holder, &0, &String::from_str(&env, "Qm"));
     assert_eq!(result, Err(Ok(Error::InvalidAmount)));
 }
 

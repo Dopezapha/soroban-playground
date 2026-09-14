@@ -29,11 +29,7 @@ fn setup() -> (Env, Address, Address, OptionsContractClient<'static>) {
     (env, admin, writer, client)
 }
 
-fn write_call_option(
-    env: &Env,
-    client: &OptionsContractClient,
-    writer: &Address,
-) -> u32 {
+fn write_call_option(env: &Env, client: &OptionsContractClient, writer: &Address) -> u32 {
     let expiry = env.ledger().timestamp() + 86_400 * 30; // 30 days
     client.write_option(
         writer,

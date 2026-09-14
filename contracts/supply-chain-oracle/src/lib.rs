@@ -17,8 +17,8 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 use crate::storage::{
     get_admin, get_prov_count, get_prov_event, get_shipment, get_shipment_count, get_source,
     get_threshold, is_circuit_breaker_active, is_initialized, is_paused, set_admin,
-    set_circuit_breaker, set_initialized, set_paused, set_prov_count, set_prov_event,
-    set_shipment, set_shipment_count, set_source, set_threshold, source_exists,
+    set_circuit_breaker, set_initialized, set_paused, set_prov_count, set_prov_event, set_shipment,
+    set_shipment_count, set_source, set_threshold, source_exists,
 };
 use crate::types::{DataSource, Error, ProvenanceEvent, Shipment, ShipmentStatus};
 
@@ -48,7 +48,12 @@ impl SupplyChainOracle {
         Ok(())
     }
 
-    pub fn add_data_source(env: Env, admin: Address, source: Address, name: String) -> Result<(), Error> {
+    pub fn add_data_source(
+        env: Env,
+        admin: Address,
+        source: Address,
+        name: String,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         not_paused(&env)?;
         admin.require_auth();
@@ -56,7 +61,15 @@ impl SupplyChainOracle {
         if source_exists(&env, &source) {
             return Err(Error::SourceAlreadyExists);
         }
-        set_source(&env, &DataSource { address: source.clone(), name, active: true, submissions: 0 });
+        set_source(
+            &env,
+            &DataSource {
+                address: source.clone(),
+                name,
+                active: true,
+                submissions: 0,
+            },
+        );
         env.events().publish((symbol_short!("srcAdd"),), source);
         Ok(())
     }
@@ -72,7 +85,11 @@ impl SupplyChainOracle {
         Ok(())
     }
 
-    pub fn set_verification_threshold(env: Env, admin: Address, threshold: u32) -> Result<(), Error> {
+    pub fn set_verification_threshold(
+        env: Env,
+        admin: Address,
+        threshold: u32,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
@@ -124,9 +141,17 @@ impl SupplyChainOracle {
         set_source(&env, &ds);
 
         // Record initial provenance event
-        record_provenance(&env, id, String::from_str(&env, "created"), origin_str(&env), now, submitter.clone());
+        record_provenance(
+            &env,
+            id,
+            String::from_str(&env, "created"),
+            origin_str(&env),
+            now,
+            submitter.clone(),
+        );
 
-        env.events().publish((symbol_short!("submit"),), (id, submitter));
+        env.events()
+            .publish((symbol_short!("submit"),), (id, submitter));
         Ok(id)
     }
 
@@ -163,11 +188,19 @@ impl SupplyChainOracle {
 
         if shipment.confirmations >= get_threshold(&env) {
             shipment.status = ShipmentStatus::Delivered;
-            env.events().publish((symbol_short!("delivered"),), shipment_id);
+            env.events()
+                .publish((symbol_short!("delivered"),), shipment_id);
         }
         set_shipment(&env, &shipment);
 
-        record_provenance(&env, shipment_id, String::from_str(&env, "confirmed"), location, now, source);
+        record_provenance(
+            &env,
+            shipment_id,
+            String::from_str(&env, "confirmed"),
+            location,
+            now,
+            source,
+        );
         Ok(())
     }
 
@@ -202,8 +235,16 @@ impl SupplyChainOracle {
         shipment.updated_at = now;
         set_shipment(&env, &shipment);
 
-        record_provenance(&env, shipment_id, String::from_str(&env, "status_update"), location, now, source);
-        env.events().publish((symbol_short!("statusUpd"),), shipment_id);
+        record_provenance(
+            &env,
+            shipment_id,
+            String::from_str(&env, "status_update"),
+            location,
+            now,
+            source,
+        );
+        env.events()
+            .publish((symbol_short!("statusUpd"),), shipment_id);
         Ok(())
     }
 
@@ -250,7 +291,11 @@ impl SupplyChainOracle {
 
     // ── Read-only ─────────────────────────────────────────────────────────────
 
-    pub fn get_provenance_data(env: Env, shipment_id: u32, index: u32) -> Result<ProvenanceEvent, Error> {
+    pub fn get_provenance_data(
+        env: Env,
+        shipment_id: u32,
+        index: u32,
+    ) -> Result<ProvenanceEvent, Error> {
         ensure_initialized(&env)?;
         get_prov_event(&env, shipment_id, index).ok_or(Error::ShipmentNotFound)
     }
@@ -288,27 +333,60 @@ impl SupplyChainOracle {
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 fn ensure_initialized(env: &Env) -> Result<(), Error> {
-    if !is_initialized(env) { Err(Error::NotInitialized) } else { Ok(()) }
+    if !is_initialized(env) {
+        Err(Error::NotInitialized)
+    } else {
+        Ok(())
+    }
 }
 
 fn not_paused(env: &Env) -> Result<(), Error> {
-    if is_paused(env) { Err(Error::ContractPaused) } else { Ok(()) }
+    if is_paused(env) {
+        Err(Error::ContractPaused)
+    } else {
+        Ok(())
+    }
 }
 
 fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
-    if get_admin(env)? != *caller { Err(Error::Unauthorized) } else { Ok(()) }
+    if get_admin(env)? != *caller {
+        Err(Error::Unauthorized)
+    } else {
+        Ok(())
+    }
 }
 
 fn check_circuit_breaker(env: &Env) -> Result<(), Error> {
-    if is_circuit_breaker_active(env) { Err(Error::CircuitBreakerActive) } else { Ok(()) }
+    if is_circuit_breaker_active(env) {
+        Err(Error::CircuitBreakerActive)
+    } else {
+        Ok(())
+    }
 }
 
 fn origin_str(env: &Env) -> String {
     String::from_str(env, "origin")
 }
 
-fn record_provenance(env: &Env, shipment_id: u32, event_type: String, location: String, timestamp: u64, recorder: Address) {
+fn record_provenance(
+    env: &Env,
+    shipment_id: u32,
+    event_type: String,
+    location: String,
+    timestamp: u64,
+    recorder: Address,
+) {
     let idx = get_prov_count(env, shipment_id);
-    set_prov_event(env, &ProvenanceEvent { shipment_id, index: idx, event_type, location, timestamp, recorder });
+    set_prov_event(
+        env,
+        &ProvenanceEvent {
+            shipment_id,
+            index: idx,
+            event_type,
+            location,
+            timestamp,
+            recorder,
+        },
+    );
     set_prov_count(env, shipment_id, idx + 1);
 }

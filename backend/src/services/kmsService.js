@@ -102,9 +102,8 @@ export class AwsKmsProvider {
 
   async #client() {
     if (this.client) return this.client;
-    const { KMSClient, EncryptCommand, DecryptCommand } = await import(
-      '@aws-sdk/client-kms'
-    );
+    const { KMSClient, EncryptCommand, DecryptCommand } =
+      await import('@aws-sdk/client-kms');
     this.client = new KMSClient({ region: this.region });
     this._EncryptCommand = EncryptCommand;
     this._DecryptCommand = DecryptCommand;
@@ -339,11 +338,14 @@ export class KmsService {
 
   start() {
     if (this.timer || !this.rotationMs) return this;
-    const timer = setInterval(() => {
-      this.rotateDueKeys().catch((err) => {
-        console.error('[KmsService] rotation failed:', err.message);
-      });
-    }, Math.min(this.rotationMs, 60_000));
+    const timer = setInterval(
+      () => {
+        this.rotateDueKeys().catch((err) => {
+          console.error('[KmsService] rotation failed:', err.message);
+        });
+      },
+      Math.min(this.rotationMs, 60_000)
+    );
     if (timer.unref) timer.unref();
     this.timer = timer;
     return this;

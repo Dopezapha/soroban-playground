@@ -30,13 +30,8 @@ fn test_parametric_crop_insurance_flow() {
 
     // Create policy: drought trigger if rainfall < 50mm, premium 100, payout 500
     let policy_id = client.create_policy(
-        &farmer,
-        &region,
-        &50,
-        &true, // trigger on drought
-        &100,
-        &500,
-        &86400,
+        &farmer, &region, &50, &true, // trigger on drought
+        &100, &500, &86400,
     );
 
     let policy = client.get_policy(&policy_id);

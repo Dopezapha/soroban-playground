@@ -49,7 +49,12 @@ export const rateLimiter = (options = {}) => {
     try {
       const start = performance.now();
       const requestLimit = typeof limit === 'function' ? limit(req) : limit;
-      const result = await strategy.check(redisService, key, requestLimit, windowMs);
+      const result = await strategy.check(
+        redisService,
+        key,
+        requestLimit,
+        windowMs
+      );
       const duration = performance.now() - start;
 
       // Observability: Log if check exceeds performance threshold
@@ -64,7 +69,10 @@ export const rateLimiter = (options = {}) => {
 
       res.set({
         'X-RateLimit-Limit': requestLimit,
-        'X-RateLimit-Remaining': Math.max(0, requestLimit - (result.current || 0)),
+        'X-RateLimit-Remaining': Math.max(
+          0,
+          requestLimit - (result.current || 0)
+        ),
         'X-RateLimit-Reset': String(resetTimestamp),
       });
 

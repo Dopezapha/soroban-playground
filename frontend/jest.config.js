@@ -20,12 +20,17 @@ const config = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     // Pin react and react-dom to resolved node_modules.
     "^react$": path.resolve(reactDir, "react"),
     "^react/(.*)$": path.resolve(reactDir, "react/$1"),
     "^react-dom$": path.resolve(reactDir, "react-dom"),
     "^react-dom/(.*)$": path.resolve(reactDir, "react-dom/$1"),
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "^monaco-editor$": path.resolve(
+      rootModules,
+      "monaco-editor/esm/vs/editor/editor.main.js"
+    ),
+    "^monaco-editor/(.*)$": path.resolve(rootModules, "monaco-editor/$1"),
   },
   // Resolve modules from both the frontend and the workspace root.
   modulePaths: [frontendModules, rootModules],
@@ -37,17 +42,25 @@ const config = {
           ["@babel/preset-react", { runtime: "automatic" }],
           "@babel/preset-typescript",
         ],
-        plugins: ["@babel/plugin-transform-modules-commonjs"],
+        plugins: [
+          "@babel/plugin-transform-modules-commonjs",
+          "@babel/plugin-transform-dynamic-import",
+          "babel-plugin-transform-import-meta",
+        ],
       },
     ],
     "^.+\\.js$": [
       "babel-jest",
       {
-        plugins: ["@babel/plugin-transform-modules-commonjs"],
+        plugins: [
+          "@babel/plugin-transform-modules-commonjs",
+          "@babel/plugin-transform-dynamic-import",
+          "babel-plugin-transform-import-meta",
+        ],
       },
     ],
   },
-  transformIgnorePatterns: ["/node_modules/(?!(lucide-react)/)"],
+  transformIgnorePatterns: ["/node_modules/(?!(lucide-react|monaco-editor)/)"],
 };
 
 module.exports = config;

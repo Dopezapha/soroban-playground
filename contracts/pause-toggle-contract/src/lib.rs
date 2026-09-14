@@ -86,9 +86,7 @@ impl PauseToggle {
         env.storage().instance().set(&DataKey::Paused, &true);
 
         let now = env.ledger().timestamp();
-        env.storage()
-            .instance()
-            .set(&DataKey::PauseTimestamp, &now);
+        env.storage().instance().set(&DataKey::PauseTimestamp, &now);
 
         if let Some(r) = &reason {
             env.storage().instance().set(&DataKey::PauseReason, r);
@@ -135,17 +133,13 @@ impl PauseToggle {
     /// Returns the reason the contract was paused, if one was recorded.
     /// Returns `None` when not paused or when no reason was given.
     pub fn get_pause_reason(env: Env) -> Option<String> {
-        env.storage()
-            .instance()
-            .get(&DataKey::PauseReason)
+        env.storage().instance().get(&DataKey::PauseReason)
     }
 
     /// Returns the ledger timestamp at which the contract was paused.
     /// Returns `None` when not paused.
     pub fn get_pause_timestamp(env: Env) -> Option<u64> {
-        env.storage()
-            .instance()
-            .get(&DataKey::PauseTimestamp)
+        env.storage().instance().get(&DataKey::PauseTimestamp)
     }
 
     /// Returns the current admin address.

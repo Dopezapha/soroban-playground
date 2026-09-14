@@ -24,9 +24,7 @@
 //! one extra unit. The sum of all shares is always exactly `amount`, which
 //! `split_shares` asserts.
 
-use soroban_sdk::{
-    contract, contracterror, contractimpl, token, Address, Env, Vec,
-};
+use soroban_sdk::{contract, contracterror, contractimpl, token, Address, Env, Vec};
 
 /// Upper bound on recipients per call.
 ///

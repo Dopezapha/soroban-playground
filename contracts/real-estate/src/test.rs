@@ -17,7 +17,12 @@ fn setup() -> (Env, Address, RealEstateContractClient<'static>) {
 }
 
 fn add_property(env: &Env, client: &RealEstateContractClient, admin: &Address) -> u32 {
-    client.list_property(admin, &String::from_str(env, "123 Main St"), &1000, &1_000_000)
+    client.list_property(
+        admin,
+        &String::from_str(env, "123 Main St"),
+        &1000,
+        &1_000_000,
+    )
 }
 
 #[test]
@@ -29,7 +34,10 @@ fn test_initialize_sets_admin() {
 #[test]
 fn test_initialize_twice_fails() {
     let (_env, admin, client) = setup();
-    assert_eq!(client.try_initialize(&admin), Err(Ok(Error::AlreadyInitialized)));
+    assert_eq!(
+        client.try_initialize(&admin),
+        Err(Ok(Error::AlreadyInitialized))
+    );
 }
 
 #[test]
@@ -75,7 +83,12 @@ fn test_list_property_zero_price_fails() {
 fn test_list_property_non_admin_fails() {
     let (env, _admin, client) = setup();
     let stranger = Address::generate(&env);
-    let r = client.try_list_property(&stranger, &String::from_str(&env, "House"), &1000, &1_000_000);
+    let r = client.try_list_property(
+        &stranger,
+        &String::from_str(&env, "House"),
+        &1000,
+        &1_000_000,
+    );
     assert_eq!(r, Err(Ok(Error::Unauthorized)));
 }
 
@@ -93,7 +106,10 @@ fn test_buy_shares_on_delisted_fails() {
     let id = add_property(&env, &client, &admin);
     client.delist_property(&admin, &id);
     let investor = Address::generate(&env);
-    assert_eq!(client.try_buy_shares(&investor, &id, &10), Err(Ok(Error::NotForSale)));
+    assert_eq!(
+        client.try_buy_shares(&investor, &id, &10),
+        Err(Ok(Error::NotForSale))
+    );
 }
 
 #[test]
@@ -112,7 +128,10 @@ fn test_buy_shares_zero_fails() {
     let (env, admin, client) = setup();
     let id = add_property(&env, &client, &admin);
     let investor = Address::generate(&env);
-    assert_eq!(client.try_buy_shares(&investor, &id, &0), Err(Ok(Error::ZeroShares)));
+    assert_eq!(
+        client.try_buy_shares(&investor, &id, &0),
+        Err(Ok(Error::ZeroShares))
+    );
 }
 
 #[test]
@@ -120,7 +139,10 @@ fn test_buy_shares_exceeds_supply_fails() {
     let (env, admin, client) = setup();
     let id = add_property(&env, &client, &admin);
     let investor = Address::generate(&env);
-    assert_eq!(client.try_buy_shares(&investor, &id, &1001), Err(Ok(Error::ExceedsTotalSupply)));
+    assert_eq!(
+        client.try_buy_shares(&investor, &id, &1001),
+        Err(Ok(Error::ExceedsTotalSupply))
+    );
 }
 
 #[test]
@@ -158,7 +180,10 @@ fn test_deposit_rental_updates_property() {
 fn test_deposit_rental_zero_fails() {
     let (env, admin, client) = setup();
     let id = add_property(&env, &client, &admin);
-    assert_eq!(client.try_deposit_rental(&admin, &id, &0), Err(Ok(Error::ZeroRental)));
+    assert_eq!(
+        client.try_deposit_rental(&admin, &id, &0),
+        Err(Ok(Error::ZeroRental))
+    );
 }
 
 #[test]
@@ -180,7 +205,10 @@ fn test_claim_rental_nothing_to_claim_fails() {
     let id = add_property(&env, &client, &admin);
     let investor = Address::generate(&env);
     client.buy_shares(&investor, &id, &100);
-    assert_eq!(client.try_claim_rental(&investor, &id), Err(Ok(Error::NothingToClaim)));
+    assert_eq!(
+        client.try_claim_rental(&investor, &id),
+        Err(Ok(Error::NothingToClaim))
+    );
 }
 
 #[test]
@@ -191,7 +219,10 @@ fn test_claim_rental_twice_second_fails() {
     client.buy_shares(&investor, &id, &1000);
     client.deposit_rental(&admin, &id, &5_000_000);
     client.claim_rental(&investor, &id);
-    assert_eq!(client.try_claim_rental(&investor, &id), Err(Ok(Error::NothingToClaim)));
+    assert_eq!(
+        client.try_claim_rental(&investor, &id),
+        Err(Ok(Error::NothingToClaim))
+    );
 }
 
 #[test]
@@ -203,7 +234,10 @@ fn test_new_investor_does_not_claim_old_rental() {
     client.buy_shares(&early, &id, &500);
     client.deposit_rental(&admin, &id, &1_000_000);
     client.buy_shares(&late, &id, &500);
-    assert_eq!(client.try_claim_rental(&late, &id), Err(Ok(Error::NothingToClaim)));
+    assert_eq!(
+        client.try_claim_rental(&late, &id),
+        Err(Ok(Error::NothingToClaim))
+    );
     // early owns 500/1000 shares → 50% of 1_000_000 = 500_000
     assert_eq!(client.claim_rental(&early, &id), 500_000);
 }
@@ -238,7 +272,10 @@ fn test_transfer_all_shares_removes_sender() {
     let bob = Address::generate(&env);
     client.buy_shares(&alice, &id, &100);
     client.transfer_shares(&alice, &bob, &id, &100);
-    assert_eq!(client.try_get_ownership(&alice, &id), Err(Ok(Error::NoShares)));
+    assert_eq!(
+        client.try_get_ownership(&alice, &id),
+        Err(Ok(Error::NoShares))
+    );
 }
 
 #[test]
@@ -248,7 +285,10 @@ fn test_transfer_exceeds_shares_fails() {
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
     client.buy_shares(&alice, &id, &100);
-    assert_eq!(client.try_transfer_shares(&alice, &bob, &id, &101), Err(Ok(Error::InsufficientShares)));
+    assert_eq!(
+        client.try_transfer_shares(&alice, &bob, &id, &101),
+        Err(Ok(Error::InsufficientShares))
+    );
 }
 
 #[test]
@@ -258,7 +298,10 @@ fn test_transfer_zero_shares_fails() {
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
     client.buy_shares(&alice, &id, &100);
-    assert_eq!(client.try_transfer_shares(&alice, &bob, &id, &0), Err(Ok(Error::ZeroShares)));
+    assert_eq!(
+        client.try_transfer_shares(&alice, &bob, &id, &0),
+        Err(Ok(Error::ZeroShares))
+    );
 }
 
 #[test]

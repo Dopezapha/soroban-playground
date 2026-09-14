@@ -212,11 +212,7 @@ impl RealEstateContract {
     }
 
     /// Claim pro-rata rental income for an investor. Returns amount claimed.
-    pub fn claim_rental(
-        env: Env,
-        investor: Address,
-        property_id: u32,
-    ) -> Result<i128, Error> {
+    pub fn claim_rental(env: Env, investor: Address, property_id: u32) -> Result<i128, Error> {
         Self::assert_initialized(&env)?;
         investor.require_auth();
 
@@ -243,7 +239,11 @@ impl RealEstateContract {
         get_property(&env, property_id)
     }
 
-    pub fn get_ownership(env: Env, investor: Address, property_id: u32) -> Result<Ownership, Error> {
+    pub fn get_ownership(
+        env: Env,
+        investor: Address,
+        property_id: u32,
+    ) -> Result<Ownership, Error> {
         get_ownership(&env, property_id, &investor)
     }
 
@@ -280,9 +280,7 @@ impl RealEstateContract {
             return 0;
         }
         // claimable = new_rental * shares / total_shares
-        new_rental
-            .saturating_mul(ownership.shares as i128)
-            / (property.total_shares as i128)
+        new_rental.saturating_mul(ownership.shares as i128) / (property.total_shares as i128)
     }
 
     fn assert_initialized(env: &Env) -> Result<(), Error> {

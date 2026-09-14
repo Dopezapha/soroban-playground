@@ -23,12 +23,12 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 use crate::storage::{
     get_admin, get_dispute, get_dispute_count, get_escrow, get_escrow_count, get_license,
     get_license_count, get_milestone, get_milestone_count, get_patent, get_patent_count,
-    is_initialized, is_paused, next_dispute_id, next_escrow_id, next_license_id,
-    next_milestone_id, next_patent_id, set_admin, set_dispute, set_escrow, set_license,
-    set_milestone, set_paused, set_patent,
+    is_initialized, is_paused, next_dispute_id, next_escrow_id, next_license_id, next_milestone_id,
+    next_patent_id, set_admin, set_dispute, set_escrow, set_license, set_milestone, set_patent,
+    set_paused,
 };
 use crate::types::{
-    Dispute, DisputeStatus, Escrow, EscrowStatus, Error, License, LicenseType, Milestone,
+    Dispute, DisputeStatus, Error, Escrow, EscrowStatus, License, LicenseType, Milestone,
     MilestoneStatus, Patent, PatentStatus,
 };
 
@@ -357,11 +357,7 @@ impl PatentRegistryContract {
     }
 
     /// Fund an escrow by depositing the full amount.
-    pub fn fund_escrow(
-        env: Env,
-        payer: Address,
-        escrow_id: u32,
-    ) -> Result<(), Error> {
+    pub fn fund_escrow(env: Env, payer: Address, escrow_id: u32) -> Result<(), Error> {
         Self::assert_not_paused(&env)?;
         payer.require_auth();
 
@@ -380,8 +376,7 @@ impl PatentRegistryContract {
         escrow.deposited_amount = escrow.total_amount;
         set_escrow(&env, escrow_id, &escrow);
 
-        env.events()
-            .publish((symbol_short!("funded"),), escrow_id);
+        env.events().publish((symbol_short!("funded"),), escrow_id);
 
         Ok(())
     }
@@ -440,11 +435,7 @@ impl PatentRegistryContract {
     }
 
     /// Complete a milestone (payer confirms delivery).
-    pub fn complete_milestone(
-        env: Env,
-        payer: Address,
-        milestone_id: u32,
-    ) -> Result<(), Error> {
+    pub fn complete_milestone(env: Env, payer: Address, milestone_id: u32) -> Result<(), Error> {
         Self::assert_not_paused(&env)?;
         payer.require_auth();
 
@@ -471,11 +462,7 @@ impl PatentRegistryContract {
     }
 
     /// Verify a milestone and release payment (payee confirms and receives funds).
-    pub fn verify_and_release(
-        env: Env,
-        payee: Address,
-        milestone_id: u32,
-    ) -> Result<(), Error> {
+    pub fn verify_and_release(env: Env, payee: Address, milestone_id: u32) -> Result<(), Error> {
         Self::assert_not_paused(&env)?;
         payee.require_auth();
 
@@ -511,11 +498,7 @@ impl PatentRegistryContract {
     }
 
     /// Reject a milestone (payee rejects delivery).
-    pub fn reject_milestone(
-        env: Env,
-        payee: Address,
-        milestone_id: u32,
-    ) -> Result<(), Error> {
+    pub fn reject_milestone(env: Env, payee: Address, milestone_id: u32) -> Result<(), Error> {
         Self::assert_not_paused(&env)?;
         payee.require_auth();
 
@@ -540,19 +523,13 @@ impl PatentRegistryContract {
     }
 
     /// Refund the remaining balance to the payer (admin only, for dispute resolution).
-    pub fn refund_escrow(
-        env: Env,
-        admin: Address,
-        escrow_id: u32,
-    ) -> Result<(), Error> {
+    pub fn refund_escrow(env: Env, admin: Address, escrow_id: u32) -> Result<(), Error> {
         Self::assert_not_paused(&env)?;
         Self::assert_admin(&env, &admin)?;
 
         let mut escrow = get_escrow(&env, escrow_id)?;
 
-        if escrow.status == EscrowStatus::FullyReleased
-            || escrow.status == EscrowStatus::Refunded
-        {
+        if escrow.status == EscrowStatus::FullyReleased || escrow.status == EscrowStatus::Refunded {
             return Err(Error::EscrowAlreadyReleased);
         }
 

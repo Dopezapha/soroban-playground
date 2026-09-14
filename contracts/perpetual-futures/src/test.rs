@@ -10,7 +10,13 @@ const INITIAL_PRICE: i128 = 100_000_000;
 const SIZE: i128 = 1_000_000;
 const COLLATERAL: i128 = 200_000;
 
-fn setup() -> (Env, PerpetualFuturesClient<'static>, Address, Address, Address) {
+fn setup() -> (
+    Env,
+    PerpetualFuturesClient<'static>,
+    Address,
+    Address,
+    Address,
+) {
     let env = Env::default();
     env.mock_all_auths();
     let contract_id = env.register_contract(None, PerpetualFutures);

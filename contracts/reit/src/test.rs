@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{ReitContract, ReitContractClient};
 use crate::types::Error;
+use crate::{ReitContract, ReitContractClient};
 
 fn setup() -> (Env, Address, ReitContractClient<'static>) {
     let env = Env::default();
@@ -20,7 +20,12 @@ fn setup() -> (Env, Address, ReitContractClient<'static>) {
 
 fn add_prop(env: &Env, client: &ReitContractClient, admin: &Address) -> u32 {
     client
-        .add_property(admin, &String::from_str(env, "Tower A"), &1000u64, &1_000_000i128)
+        .add_property(
+            admin,
+            &String::from_str(env, "Tower A"),
+            &1000u64,
+            &1_000_000i128,
+        )
         .unwrap()
 }
 
@@ -39,7 +44,10 @@ fn test_init_ok() {
 #[test]
 fn test_init_twice_fails() {
     let (_, admin, client) = setup();
-    assert_eq!(client.initialize(&admin), Err(Ok(Error::AlreadyInitialized)));
+    assert_eq!(
+        client.initialize(&admin),
+        Err(Ok(Error::AlreadyInitialized))
+    );
 }
 
 // ── Pause ─────────────────────────────────────────────────────────────────────
@@ -180,7 +188,9 @@ fn test_deposit_and_claim_dividends() {
     let pid = add_prop(&env, &client, &admin);
     let investor = Address::generate(&env);
     client.mint_shares(&investor, &pid, &500u64).unwrap(); // 50% of 1000
-    client.deposit_dividends(&admin, &pid, &1_000_000i128).unwrap();
+    client
+        .deposit_dividends(&admin, &pid, &1_000_000i128)
+        .unwrap();
     let pending = client.pending_dividends(&investor, &pid).unwrap();
     assert_eq!(pending, 500_000); // 50% of 1_000_000
     let claimed = client.claim_dividends(&investor, &pid).unwrap();
@@ -200,7 +210,9 @@ fn test_dividends_pro_rata_two_investors() {
     let b = Address::generate(&env);
     client.mint_shares(&a, &pid, &300u64).unwrap();
     client.mint_shares(&b, &pid, &700u64).unwrap();
-    client.deposit_dividends(&admin, &pid, &1_000_000i128).unwrap();
+    client
+        .deposit_dividends(&admin, &pid, &1_000_000i128)
+        .unwrap();
     assert_eq!(client.pending_dividends(&a, &pid).unwrap(), 300_000);
     assert_eq!(client.pending_dividends(&b, &pid).unwrap(), 700_000);
 }
@@ -212,7 +224,9 @@ fn test_new_investor_no_retroactive_dividends() {
     let a = Address::generate(&env);
     let b = Address::generate(&env);
     client.mint_shares(&a, &pid, &500u64).unwrap();
-    client.deposit_dividends(&admin, &pid, &1_000_000i128).unwrap();
+    client
+        .deposit_dividends(&admin, &pid, &1_000_000i128)
+        .unwrap();
     // b mints AFTER dividend deposit
     client.mint_shares(&b, &pid, &500u64).unwrap();
     // b should have 0 pending (joined after deposit)

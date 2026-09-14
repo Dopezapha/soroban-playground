@@ -47,7 +47,7 @@ pub enum OrderStatus {
 
 /// A limit order in the book.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Order {
     pub id: u64,
     pub owner: Address,
@@ -65,7 +65,7 @@ pub struct Order {
 
 /// Summary of a match execution.
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Trade {
     pub buy_order_id: u64,
     pub sell_order_id: u64,

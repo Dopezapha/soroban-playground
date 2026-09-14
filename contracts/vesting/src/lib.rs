@@ -5,7 +5,7 @@ use soroban_sdk::{
 
 // Storage TTL Bump Bounds
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280; // ~1 day
-const INSTANCE_EXTEND_TO: u32 = 518_400;      // ~30 days
+const INSTANCE_EXTEND_TO: u32 = 518_400; // ~30 days
 
 const PERSISTENT_BUMP_THRESHOLD: u32 = 17_280;
 const PERSISTENT_EXTEND_TO: u32 = 518_400;

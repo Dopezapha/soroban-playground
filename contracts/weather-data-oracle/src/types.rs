@@ -21,18 +21,29 @@ pub enum DataSourceType {
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct WeatherMeasurements {
+    pub temperature: i32,    // in Celsius * 100 (e.g., 2345 = 23.45°C)
+    pub humidity: u32,       // in percentage * 100 (e.g., 6500 = 65.00%)
+    pub pressure: u32,       // in hPa * 10 (e.g., 10132 = 1013.2 hPa)
+    pub wind_speed: u32,     // in km/h * 10 (e.g., 125 = 12.5 km/h)
+    pub wind_direction: u32, // in degrees (0-359)
+    pub precipitation: u32,  // in mm * 10 (e.g., 55 = 5.5 mm)
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WeatherData {
     pub id: u32,
     pub location: String,
     pub latitude: i64,
     pub longitude: i64,
-    pub temperature: i32, // in Celsius * 100 (e.g., 2345 = 23.45°C)
-    pub humidity: u32,    // in percentage * 100 (e.g., 6500 = 65.00%)
-    pub pressure: u32,    // in hPa * 10 (e.g., 10132 = 1013.2 hPa)
-    pub wind_speed: u32,  // in km/h * 10 (e.g., 125 = 12.5 km/h)
+    pub temperature: i32,    // in Celsius * 100 (e.g., 2345 = 23.45°C)
+    pub humidity: u32,       // in percentage * 100 (e.g., 6500 = 65.00%)
+    pub pressure: u32,       // in hPa * 10 (e.g., 10132 = 1013.2 hPa)
+    pub wind_speed: u32,     // in km/h * 10 (e.g., 125 = 12.5 km/h)
     pub wind_direction: u32, // in degrees (0-359)
-    pub precipitation: u32, // in mm * 10 (e.g., 55 = 5.5 mm)
+    pub precipitation: u32,  // in mm * 10 (e.g., 55 = 5.5 mm)
     pub timestamp: u64,
     pub status: WeatherDataStatus,
     pub submitter: Address,
@@ -41,7 +52,7 @@ pub struct WeatherData {
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DataSource {
     pub address: Address,
     pub name: String,
@@ -52,7 +63,7 @@ pub struct DataSource {
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct OutlierThreshold {
     pub temperature_min: i32,
     pub temperature_max: i32,
@@ -64,7 +75,7 @@ pub struct OutlierThreshold {
 }
 
 #[contracterror]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Error {
     NotInitialized = 1,
     AlreadyInitialized = 2,

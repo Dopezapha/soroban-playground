@@ -43,11 +43,21 @@ function storeNonce(nonce, expiry) {
   const expiryMs = Number(expiry);
   if (Number.isFinete(expiryMs)) {
     // Cap the stored expiry to the 5-minute SEP-0010 window.
-    nonceStore.set(nonce, Math.min(expiryMs, Date.now() + CHALLENGE_MAX_AGE_MS));
+    nonceStore.set(
+      nonce,
+      Math.min(expiryMs, Date.now() + CHALLENGE_MAX_AGE_MS)
+    );
   }
 }
 
-function buildMessage({ callerAddress, contractId, method, params, nonce, expiry }) {
+function buildMessage({
+  callerAddress,
+  contractId,
+  method,
+  params,
+  nonce,
+  expiry,
+}) {
   const payload = {
     callerAddress,
     contractId,
@@ -67,15 +77,15 @@ function buildMessage({ callerAddress, contractId, method, params, nonce, expiry
 }
 
 /**
-  * Express middleware that validates a Stellar ED25519 signature on the request body.
-  *
-  * On success: attaches req.signerAddress and calls next().
-  * On failure: calls next(HttpError 400) for missing fields or next(HttpError 401) for
-  *             invalid/expired/replayed signatures with a machine-readable `reason` field.
-  *
-  * Expected request body fields:
-  *   callerAddress, contractId, method, params?, nonce, expiry, signature
-  */
+ * Express middleware that validates a Stellar ED25519 signature on the request body.
+ *
+ * On success: attaches req.signerAddress and calls next().
+ * On failure: calls next(HttpError 400) for missing fields or next(HttpError 401) for
+ *             invalid/expired/replayed signatures with a machine-readable `reason` field.
+ *
+ * Expected request body fields:
+ *   callerAddress, contractId, method, params?, nonce, expiry, signature
+ */
 export function validateStellarSignature(req, res, next) {
   const missing = REQUIRED_FIELDS.filter((f) => req.body[f] == null);
   if (missing.length) {
@@ -97,22 +107,38 @@ export function validateStellarSignature(req, res, next) {
   // Reject replayed or expired requests
   const replayReason = isNonceReplay(nonce, expiry);
   if (replayReason) {
-    return next(new HttpError(401, 'Replay or expired request', { reason: replayReason }));
+    return next(
+      new HttpError(401, 'Replay or expired request', { reason: replayReason })
+    );
   }
 
   // Build the message that was signed
-  const message = buildMessage({ callerAddress, contractId, method, params, nonce, expiry });
+  const message = buildMessage({
+    callerAddress,
+    contractId,
+    method,
+    params,
+    nonce,
+    expiry,
+  });
 
   let verified;
   try {
     const keypair = Keypair.fromPublicKey(callerAddress);
-    verified = keypair.verify(Buffer.from(message), Buffer.from(signature, 'base64'));
+    verified = keypair.verify(
+      Buffer.from(message),
+      Buffer.from(signature, 'base64')
+    );
   } catch (err) {
-    return next(new HttpError(401, 'Invalid signature', { reason: 'invalid_signature' }));
+    return next(
+      new HttpError(401, 'Invalid signature', { reason: 'invalid_signature' })
+    );
   }
 
   if (!verified) {
-    return next(new HttpError(401, 'Invalid signature', { reason: 'invalid_signature' }));
+    return next(
+      new HttpError(401, 'Invalid signature', { reason: 'invalid_signature' })
+    );
   }
 
   // Store nonce only after successful verification

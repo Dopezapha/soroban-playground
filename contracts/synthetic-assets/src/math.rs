@@ -97,10 +97,7 @@ impl FixedPoint {
     /// Convert a fixed-point value to basis points, truncating towards zero.
     #[inline]
     pub fn to_bps(self) -> Result<u32, Error> {
-        let bps = self
-            .0
-            .checked_div(SCALE / 10000)
-            .ok_or(Error::Overflow)?;
+        let bps = self.0.checked_div(SCALE / 10000).ok_or(Error::Overflow)?;
         if bps < 0 || bps > u32::MAX as i128 {
             return Err(Error::Overflow);
         }

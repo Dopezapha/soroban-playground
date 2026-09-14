@@ -52,7 +52,8 @@ async function withRetry(fn, maxRetries = 3, baseDelayMs = 200) {
     } catch (err) {
       lastErr = err;
       const retryable =
-        err.code === grpc.status.UNAVAILABLE || err.code === grpc.status.DEADLINE_EXCEEDED;
+        err.code === grpc.status.UNAVAILABLE ||
+        err.code === grpc.status.DEADLINE_EXCEEDED;
       if (!retryable || attempt === maxRetries) throw err;
       await new Promise((r) => setTimeout(r, baseDelayMs * 2 ** attempt));
     }
@@ -98,7 +99,11 @@ export class GrpcClient {
       'grpc.max_receive_message_length': 64 * 1024 * 1024,
     };
 
-    this._stub = new proto.IndexerService(this._address, credentials, channelOptions);
+    this._stub = new proto.IndexerService(
+      this._address,
+      credentials,
+      channelOptions
+    );
   }
 
   // ── Deadline helper ─────────────────────────────────────────────────────────
@@ -122,10 +127,10 @@ export class GrpcClient {
           this._stub.GetCompileStatus(
             { job_id: jobId },
             { deadline: this._deadline() },
-            (err, response) => (err ? reject(err) : resolve(response)),
+            (err, response) => (err ? reject(err) : resolve(response))
           );
         }),
-      this._maxRetries,
+      this._maxRetries
     );
   }
 
@@ -151,10 +156,10 @@ export class GrpcClient {
               network,
             },
             { deadline: this._deadline() },
-            (err, response) => (err ? reject(err) : resolve(response)),
+            (err, response) => (err ? reject(err) : resolve(response))
           );
         }),
-      this._maxRetries,
+      this._maxRetries
     );
   }
 
@@ -170,10 +175,10 @@ export class GrpcClient {
           this._stub.HealthCheck(
             {},
             { deadline: this._deadline() },
-            (err, response) => (err ? reject(err) : resolve(response)),
+            (err, response) => (err ? reject(err) : resolve(response))
           );
         }),
-      1, // only one retry for health checks
+      1 // only one retry for health checks
     );
   }
 
@@ -191,7 +196,10 @@ export class GrpcClient {
    * @returns {grpc.ClientReadableStream<any>}
    */
   streamEvents({ contractId = '', sinceTs = 0 } = {}) {
-    return this._stub.StreamEvents({ contract_id: contractId, since_ts: sinceTs });
+    return this._stub.StreamEvents({
+      contract_id: contractId,
+      since_ts: sinceTs,
+    });
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────
@@ -212,7 +220,7 @@ export class GrpcClient {
   waitForReady(timeoutMs = 5_000) {
     return new Promise((resolve, reject) => {
       this._stub.waitForReady(new Date(Date.now() + timeoutMs), (err) =>
-        err ? reject(err) : resolve(),
+        err ? reject(err) : resolve()
       );
     });
   }

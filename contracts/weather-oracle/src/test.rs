@@ -5,8 +5,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{WeatherOracle, WeatherOracleClient};
 use crate::types::{Error, WeatherDataStatus};
+use crate::{WeatherOracle, WeatherOracleClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -30,9 +30,9 @@ fn src_name(env: &Env) -> String {
 // Observed-at timestamp: non-zero, arbitrary
 const OBS: u64 = 1_700_000_000;
 // Typical readings (fixed-point × 100)
-const TEMP: i32 = 2150;   // 21.50 °C
-const HUM: i32 = 6500;    // 65.00 %
-const WIND: i32 = 1500;   // 15.00 km/h
+const TEMP: i32 = 2150; // 21.50 °C
+const HUM: i32 = 6500; // 65.00 %
+const WIND: i32 = 1500; // 15.00 km/h
 
 // ── initialize ────────────────────────────────────────────────────────────────
 
@@ -102,7 +102,9 @@ fn test_pause_blocks_submit() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client.pause(&admin).unwrap();
     let err = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
@@ -117,7 +119,9 @@ fn test_circuit_breaker_blocks_submit() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client.set_circuit_breaker(&admin, &true).unwrap();
     assert!(client.is_circuit_breaker_active());
     let err = client
@@ -131,7 +135,9 @@ fn test_circuit_breaker_deactivate_allows_submit() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client.set_circuit_breaker(&admin, &true).unwrap();
     client.set_circuit_breaker(&admin, &false).unwrap();
     assert!(!client.is_circuit_breaker_active());
@@ -148,7 +154,9 @@ fn test_add_data_source_stores_data() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let ds = client.get_data_source(&src).unwrap();
     assert_eq!(ds.address, src);
     assert!(ds.active);
@@ -160,7 +168,9 @@ fn test_add_duplicate_source_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let err = client
         .add_data_source(&admin, &src, &src_name(&env))
         .unwrap_err();
@@ -172,7 +182,9 @@ fn test_remove_data_source_deactivates() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client.remove_data_source(&admin, &src, &false).unwrap();
     let ds = client.get_data_source(&src).unwrap();
     assert!(!ds.active);
@@ -183,7 +195,9 @@ fn test_inactive_source_submit_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client.remove_data_source(&admin, &src, &false).unwrap();
     let err = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
@@ -221,7 +235,9 @@ fn test_submit_creates_record() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let id = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
         .unwrap();
@@ -240,7 +256,9 @@ fn test_submit_increments_source_submissions() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
         .unwrap();
@@ -254,7 +272,9 @@ fn test_confirmation_verifies_record() {
     client.initialize(&admin, &Some(2)).unwrap();
     let src1 = Address::generate(&env);
     let src2 = Address::generate(&env);
-    client.add_data_source(&admin, &src1, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src1, &src_name(&env))
+        .unwrap();
     client
         .add_data_source(&admin, &src2, &String::from_str(&env, "Satellite-1"))
         .unwrap();
@@ -281,7 +301,9 @@ fn test_duplicate_submission_from_same_source_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
         .unwrap();
@@ -296,7 +318,9 @@ fn test_record_count_increments() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     assert_eq!(client.get_record_count().unwrap(), 0);
     client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
@@ -356,7 +380,9 @@ fn test_get_historical_data() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)
         .unwrap();
@@ -369,9 +395,7 @@ fn test_get_historical_data() {
 fn test_get_historical_data_not_found() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
-    let err = client
-        .get_historical_data(&loc(&env), &OBS)
-        .unwrap_err();
+    let err = client.get_historical_data(&loc(&env), &OBS).unwrap_err();
     assert_eq!(err, Error::RecordNotFound);
 }
 
@@ -382,7 +406,9 @@ fn test_submit_invalid_temperature_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     // too hot
     let err = client
         .submit_weather_data(&src, &loc(&env), &6001, &HUM, &WIND, &OBS)
@@ -400,7 +426,9 @@ fn test_submit_invalid_humidity_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let err = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &10_001, &WIND, &OBS)
         .unwrap_err();
@@ -416,7 +444,9 @@ fn test_submit_invalid_wind_speed_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let err = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &50_001, &OBS)
         .unwrap_err();
@@ -432,7 +462,9 @@ fn test_submit_empty_location_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let empty = String::from_str(&env, "");
     let err = client
         .submit_weather_data(&src, &empty, &TEMP, &HUM, &WIND, &OBS)
@@ -445,7 +477,9 @@ fn test_submit_zero_timestamp_fails() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let err = client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &0)
         .unwrap_err();
@@ -475,9 +509,7 @@ fn test_non_admin_cannot_set_threshold() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let rogue = Address::generate(&env);
-    let err = client
-        .set_verification_threshold(&rogue, &5)
-        .unwrap_err();
+    let err = client.set_verification_threshold(&rogue, &5).unwrap_err();
     assert_eq!(err, Error::Unauthorized);
 }
 
@@ -504,7 +536,9 @@ fn test_submit_boundary_temperature_values() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     // min valid temp
     client
         .submit_weather_data(&src, &loc(&env), &-9000, &HUM, &WIND, &OBS)
@@ -520,7 +554,9 @@ fn test_different_locations_independent_records() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &None).unwrap();
     let src = Address::generate(&env);
-    client.add_data_source(&admin, &src, &src_name(&env)).unwrap();
+    client
+        .add_data_source(&admin, &src, &src_name(&env))
+        .unwrap();
     let loc2 = String::from_str(&env, "Tokyo");
     client
         .submit_weather_data(&src, &loc(&env), &TEMP, &HUM, &WIND, &OBS)

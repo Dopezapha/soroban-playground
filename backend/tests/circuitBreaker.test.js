@@ -1,4 +1,8 @@
-import { CircuitBreaker, CIRCUIT_STATES, createCircuitBreakerMiddleware } from '../src/middleware/circuitBreaker.js';
+import {
+  CircuitBreaker,
+  CIRCUIT_STATES,
+  createCircuitBreakerMiddleware,
+} from '../src/middleware/circuitBreaker.js';
 
 describe('CircuitBreaker Middleware', () => {
   let breaker;
@@ -20,15 +24,21 @@ describe('CircuitBreaker Middleware', () => {
 
   test('trips to OPEN after failure threshold', async () => {
     try {
-      await breaker.execute(async () => { throw new Error('fail 1'); });
+      await breaker.execute(async () => {
+        throw new Error('fail 1');
+      });
     } catch {}
 
     try {
-      await breaker.execute(async () => { throw new Error('fail 2'); });
+      await breaker.execute(async () => {
+        throw new Error('fail 2');
+      });
     } catch {}
 
     expect(breaker.getState()).toBe(CIRCUIT_STATES.OPEN);
-    await expect(breaker.execute(async () => 'ok')).rejects.toThrow('Circuit breaker');
+    await expect(breaker.execute(async () => 'ok')).rejects.toThrow(
+      'Circuit breaker'
+    );
   });
 
   test('transitions to HALF_OPEN after reset timeout', async () => {
@@ -53,7 +63,9 @@ describe('CircuitBreaker Middleware', () => {
 
     middleware(req, res, next);
     expect(res.status).toHaveBeenCalledWith(503);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false })
+    );
     expect(next).not.toHaveBeenCalled();
   });
 });

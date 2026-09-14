@@ -55,9 +55,10 @@ pub fn get_property(env: &Env, id: u32) -> Result<Property, Error> {
 // ── Ownership ─────────────────────────────────────────────────────────────────
 
 pub fn set_ownership(env: &Env, property_id: u32, investor: &Address, ownership: &Ownership) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Ownership(property_id, investor.clone()), ownership);
+    env.storage().persistent().set(
+        &DataKey::Ownership(property_id, investor.clone()),
+        ownership,
+    );
 }
 
 pub fn get_ownership(env: &Env, property_id: u32, investor: &Address) -> Result<Ownership, Error> {

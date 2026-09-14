@@ -161,7 +161,8 @@ impl Lottery {
         let hash_bytes = entropy_hash.to_array();
 
         // Extract a u32 from the first 4 bytes and map to a ticket in [1, total_tickets].
-        let entropy_u32 = u32::from_be_bytes([hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]]);
+        let entropy_u32 =
+            u32::from_be_bytes([hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]]);
         let winner_ticket_id = (entropy_u32 % round.total_tickets) + 1;
         let winner = get_ticket_buyer(&env, round_id, winner_ticket_id)?;
 

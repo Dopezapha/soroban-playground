@@ -25,10 +25,10 @@ pub enum DataKey {
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Role {
-    Viewer   = 0,
+    Viewer = 0,
     Operator = 1,
-    Admin    = 2,
-    Owner    = 3,
+    Admin = 2,
+    Owner = 3,
 }
 
 // ── Signer ────────────────────────────────────────────────────────────────────
@@ -80,20 +80,20 @@ pub struct Transaction {
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
-    AlreadyInitialized    = 1,
-    NotInitialized        = 2,
-    Unauthorized          = 3,
-    InvalidThreshold      = 4,
-    SignerAlreadyExists   = 5,
-    SignerNotFound        = 6,
-    EmptyDescription      = 7,
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
+    Unauthorized = 3,
+    InvalidThreshold = 4,
+    SignerAlreadyExists = 5,
+    SignerNotFound = 6,
+    EmptyDescription = 7,
     TransactionNotPending = 8,
-    TransactionNotQueued  = 9,
-    TransactionExpired    = 10,
-    AlreadyApproved       = 11,
-    TimelockActive        = 12,
-    ContractPaused        = 13,
-    InsufficientBalance   = 14,
+    TransactionNotQueued = 9,
+    TransactionExpired = 10,
+    AlreadyApproved = 11,
+    TimelockActive = 12,
+    ContractPaused = 13,
+    InsufficientBalance = 14,
     /// Returned when a transaction ID does not exist in storage.
-    TransactionNotFound   = 15,
+    TransactionNotFound = 15,
 }

@@ -62,7 +62,15 @@ impl SupplyChainDataOracle {
         if source_exists(&env, &source) {
             return Err(Error::SourceAlreadyExists);
         }
-        set_source(&env, &DataSource { address: source.clone(), name, active: true, submissions: 0 });
+        set_source(
+            &env,
+            &DataSource {
+                address: source.clone(),
+                name,
+                active: true,
+                submissions: 0,
+            },
+        );
         env.events().publish((symbol_short!("srcAdd"),), source);
         Ok(())
     }
@@ -78,7 +86,11 @@ impl SupplyChainDataOracle {
         Ok(())
     }
 
-    pub fn set_verification_threshold(env: Env, admin: Address, threshold: u32) -> Result<(), Error> {
+    pub fn set_verification_threshold(
+        env: Env,
+        admin: Address,
+        threshold: u32,
+    ) -> Result<(), Error> {
         ensure_initialized(&env)?;
         admin.require_auth();
         require_admin(&env, &admin)?;
@@ -151,7 +163,8 @@ impl SupplyChainDataOracle {
         );
         set_provenance_count(&env, &shipment_id, prov_idx + 1);
 
-        env.events().publish((symbol_short!("submit"),), (id, submitter));
+        env.events()
+            .publish((symbol_short!("submit"),), (id, submitter));
         Ok(id)
     }
 
@@ -222,7 +235,11 @@ impl SupplyChainDataOracle {
         get_logistics_data(&env, data_id)
     }
 
-    pub fn get_provenance_data(env: Env, shipment_id: String, index: u32) -> Result<ProvenanceRecord, Error> {
+    pub fn get_provenance_data(
+        env: Env,
+        shipment_id: String,
+        index: u32,
+    ) -> Result<ProvenanceRecord, Error> {
         ensure_initialized(&env)?;
         get_provenance_record(&env, &shipment_id, index).ok_or(Error::DataNotFound)
     }
@@ -258,17 +275,33 @@ impl SupplyChainDataOracle {
 }
 
 fn ensure_initialized(env: &Env) -> Result<(), Error> {
-    if !is_initialized(env) { Err(Error::NotInitialized) } else { Ok(()) }
+    if !is_initialized(env) {
+        Err(Error::NotInitialized)
+    } else {
+        Ok(())
+    }
 }
 
 fn not_paused(env: &Env) -> Result<(), Error> {
-    if is_paused(env) { Err(Error::ContractPaused) } else { Ok(()) }
+    if is_paused(env) {
+        Err(Error::ContractPaused)
+    } else {
+        Ok(())
+    }
 }
 
 fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
-    if get_admin(env)? != *caller { Err(Error::Unauthorized) } else { Ok(()) }
+    if get_admin(env)? != *caller {
+        Err(Error::Unauthorized)
+    } else {
+        Ok(())
+    }
 }
 
 fn check_circuit_breaker(env: &Env) -> Result<(), Error> {
-    if is_circuit_breaker_active(env) { Err(Error::CircuitBreakerActive) } else { Ok(()) }
+    if is_circuit_breaker_active(env) {
+        Err(Error::CircuitBreakerActive)
+    } else {
+        Ok(())
+    }
 }

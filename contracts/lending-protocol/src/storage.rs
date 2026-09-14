@@ -1,8 +1,8 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
 
-use soroban_sdk::{contracttype, Address, Env};
 use crate::types::UserPosition;
+use soroban_sdk::{contracttype, Address, Env};
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
@@ -60,17 +60,27 @@ pub fn set_position(env: &Env, user: &Address, position: &UserPosition) {
 // ── Pool totals ───────────────────────────────────────────────────────────────
 
 pub fn get_total_deposited(env: &Env) -> i128 {
-    env.storage().instance().get(&DataKey::TotalDeposited).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::TotalDeposited)
+        .unwrap_or(0)
 }
 
 pub fn set_total_deposited(env: &Env, amount: i128) {
-    env.storage().instance().set(&DataKey::TotalDeposited, &amount);
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalDeposited, &amount);
 }
 
 pub fn get_total_borrowed(env: &Env) -> i128 {
-    env.storage().instance().get(&DataKey::TotalBorrowed).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::TotalBorrowed)
+        .unwrap_or(0)
 }
 
 pub fn set_total_borrowed(env: &Env, amount: i128) {
-    env.storage().instance().set(&DataKey::TotalBorrowed, &amount);
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalBorrowed, &amount);
 }

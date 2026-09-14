@@ -1,6 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractimpl, contracttype, Address, Env, String, Vec, log, symbol_short, vec,
+    contract, contractimpl, contracttype, log, symbol_short, vec, Address, Env, String, Vec,
 };
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
@@ -15,11 +15,11 @@ pub enum DataKey {
     UserPosts(Address),
     LatestPostIds,
     // Monetization & social graph (new)
-    Following(Address, Address),          // bool: does follower follow creator
-    Subscribed(Address, Address),         // bool: is subscriber subscribed to creator
-    CreatorEarnings(Address),             // i128: withdrawable balance
-    CreatorSubscriberCount(Address),      // u32
-    CreatorTotalLikes(Address),           // u32: sum of likes on all creator's posts
+    Following(Address, Address),     // bool: does follower follow creator
+    Subscribed(Address, Address),    // bool: is subscriber subscribed to creator
+    CreatorEarnings(Address),        // i128: withdrawable balance
+    CreatorSubscriberCount(Address), // u32
+    CreatorTotalLikes(Address),      // u32: sum of likes on all creator's posts
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,8 +44,8 @@ pub struct Post {
     pub timestamp: u64,
     pub likes: u32,
     pub tips_collected: i128,
-    pub is_premium: bool,         // premium posts require a subscription to tip
-    pub min_tip: i128,            // minimum tip amount (0 = free)
+    pub is_premium: bool, // premium posts require a subscription to tip
+    pub min_tip: i128,    // minimum tip amount (0 = free)
 }
 
 /// Per-creator analytics returned by `get_creator_analytics`.
@@ -68,7 +68,6 @@ pub struct SocialMediaContract;
 
 #[contractimpl]
 impl SocialMediaContract {
-
     // ── Profile management ─────────────────────────────────────────────────
 
     /// Create or update a user profile.
@@ -98,21 +97,34 @@ impl SocialMediaContract {
     pub fn follow_creator(env: Env, follower: Address, creator: Address) {
         follower.require_auth();
         let follow_key = DataKey::Following(follower.clone(), creator.clone());
-        if env.storage().instance().get::<DataKey, bool>(&follow_key).unwrap_or(false) {
+        if env
+            .storage()
+            .instance()
+            .get::<DataKey, bool>(&follow_key)
+            .unwrap_or(false)
+        {
             return; // already following
         }
         env.storage().instance().set(&follow_key, &true);
 
         // Increment creator's follower count on their profile.
         let creator_key = DataKey::Profiles(creator.clone());
-        if let Some(mut profile) = env.storage().instance().get::<DataKey, Profile>(&creator_key) {
+        if let Some(mut profile) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Profile>(&creator_key)
+        {
             profile.followers += 1;
             env.storage().instance().set(&creator_key, &profile);
         }
 
         // Increment follower's following count.
         let follower_key = DataKey::Profiles(follower.clone());
-        if let Some(mut profile) = env.storage().instance().get::<DataKey, Profile>(&follower_key) {
+        if let Some(mut profile) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Profile>(&follower_key)
+        {
             profile.following += 1;
             env.storage().instance().set(&follower_key, &profile);
         }
@@ -124,19 +136,32 @@ impl SocialMediaContract {
     pub fn unfollow_creator(env: Env, follower: Address, creator: Address) {
         follower.require_auth();
         let follow_key = DataKey::Following(follower.clone(), creator.clone());
-        if !env.storage().instance().get::<DataKey, bool>(&follow_key).unwrap_or(false) {
+        if !env
+            .storage()
+            .instance()
+            .get::<DataKey, bool>(&follow_key)
+            .unwrap_or(false)
+        {
             return;
         }
         env.storage().instance().remove(&follow_key);
 
         let creator_key = DataKey::Profiles(creator.clone());
-        if let Some(mut profile) = env.storage().instance().get::<DataKey, Profile>(&creator_key) {
+        if let Some(mut profile) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Profile>(&creator_key)
+        {
             profile.followers = profile.followers.saturating_sub(1);
             env.storage().instance().set(&creator_key, &profile);
         }
 
         let follower_key = DataKey::Profiles(follower.clone());
-        if let Some(mut profile) = env.storage().instance().get::<DataKey, Profile>(&follower_key) {
+        if let Some(mut profile) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Profile>(&follower_key)
+        {
             profile.following = profile.following.saturating_sub(1);
             env.storage().instance().set(&follower_key, &profile);
         }
@@ -159,14 +184,20 @@ impl SocialMediaContract {
             panic!("Subscription amount must be positive");
         }
         let sub_key = DataKey::Subscribed(subscriber.clone(), creator.clone());
-        let already = env.storage().instance().get::<DataKey, bool>(&sub_key).unwrap_or(false);
+        let already = env
+            .storage()
+            .instance()
+            .get::<DataKey, bool>(&sub_key)
+            .unwrap_or(false);
 
         env.storage().instance().set(&sub_key, &true);
 
         // Credit creator's earnings.
         let earnings_key = DataKey::CreatorEarnings(creator.clone());
         let current: i128 = env.storage().instance().get(&earnings_key).unwrap_or(0);
-        env.storage().instance().set(&earnings_key, &(current + amount));
+        env.storage()
+            .instance()
+            .set(&earnings_key, &(current + amount));
 
         // Increment subscriber count only on new subscription.
         if !already {
@@ -185,14 +216,21 @@ impl SocialMediaContract {
     pub fn unsubscribe_from_creator(env: Env, subscriber: Address, creator: Address) {
         subscriber.require_auth();
         let sub_key = DataKey::Subscribed(subscriber.clone(), creator.clone());
-        if !env.storage().instance().get::<DataKey, bool>(&sub_key).unwrap_or(false) {
+        if !env
+            .storage()
+            .instance()
+            .get::<DataKey, bool>(&sub_key)
+            .unwrap_or(false)
+        {
             return; // not subscribed
         }
         env.storage().instance().remove(&sub_key);
 
         let count_key = DataKey::CreatorSubscriberCount(creator.clone());
         let count: u32 = env.storage().instance().get(&count_key).unwrap_or(0);
-        env.storage().instance().set(&count_key, &count.saturating_sub(1));
+        env.storage()
+            .instance()
+            .set(&count_key, &count.saturating_sub(1));
     }
 
     pub fn is_subscribed(env: Env, subscriber: Address, creator: Address) -> bool {
@@ -213,13 +251,23 @@ impl SocialMediaContract {
         min_tip: i128,
     ) -> u64 {
         author.require_auth();
-        if !env.storage().instance().has(&DataKey::Profiles(author.clone())) {
+        if !env
+            .storage()
+            .instance()
+            .has(&DataKey::Profiles(author.clone()))
+        {
             panic!("Profile not found. Create a profile first.");
         }
 
-        let mut post_id: u64 = env.storage().instance().get(&DataKey::PostCounter).unwrap_or(0);
+        let mut post_id: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::PostCounter)
+            .unwrap_or(0);
         post_id += 1;
-        env.storage().instance().set(&DataKey::PostCounter, &post_id);
+        env.storage()
+            .instance()
+            .set(&DataKey::PostCounter, &post_id);
 
         let post = Post {
             id: post_id,
@@ -231,30 +279,44 @@ impl SocialMediaContract {
             is_premium,
             min_tip,
         };
-        env.storage().instance().set(&DataKey::Posts(post_id), &post);
+        env.storage()
+            .instance()
+            .set(&DataKey::Posts(post_id), &post);
 
         // Update author's user-post index.
         let user_posts_key = DataKey::UserPosts(author.clone());
-        let mut user_posts: Vec<u64> =
-            env.storage().instance().get(&user_posts_key).unwrap_or(vec![&env]);
+        let mut user_posts: Vec<u64> = env
+            .storage()
+            .instance()
+            .get(&user_posts_key)
+            .unwrap_or(vec![&env]);
         user_posts.push_back(post_id);
         env.storage().instance().set(&user_posts_key, &user_posts);
 
         // Update author's profile post_count.
         let profile_key = DataKey::Profiles(author.clone());
-        if let Some(mut profile) = env.storage().instance().get::<DataKey, Profile>(&profile_key) {
+        if let Some(mut profile) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Profile>(&profile_key)
+        {
             profile.post_count += 1;
             env.storage().instance().set(&profile_key, &profile);
         }
 
         // Update global latest-posts feed (most-recent-10).
-        let mut latest: Vec<u64> =
-            env.storage().instance().get(&DataKey::LatestPostIds).unwrap_or(vec![&env]);
+        let mut latest: Vec<u64> = env
+            .storage()
+            .instance()
+            .get(&DataKey::LatestPostIds)
+            .unwrap_or(vec![&env]);
         latest.push_front(post_id);
         if latest.len() > 10 {
             latest.pop_back();
         }
-        env.storage().instance().set(&DataKey::LatestPostIds, &latest);
+        env.storage()
+            .instance()
+            .set(&DataKey::LatestPostIds, &latest);
 
         log!(&env, "post {} by {}", post_id, author);
         post_id
@@ -265,8 +327,11 @@ impl SocialMediaContract {
     }
 
     pub fn get_latest_posts(env: Env) -> Vec<Post> {
-        let latest: Vec<u64> =
-            env.storage().instance().get(&DataKey::LatestPostIds).unwrap_or(vec![&env]);
+        let latest: Vec<u64> = env
+            .storage()
+            .instance()
+            .get(&DataKey::LatestPostIds)
+            .unwrap_or(vec![&env]);
         let mut posts = vec![&env];
         for id in latest.iter() {
             if let Some(post) = env.storage().instance().get(&DataKey::Posts(id)) {
@@ -314,7 +379,8 @@ impl SocialMediaContract {
 
         // Premium gate: tipper must be subscribed.
         if post.is_premium {
-            let is_sub = env.storage()
+            let is_sub = env
+                .storage()
                 .instance()
                 .get::<DataKey, bool>(&DataKey::Subscribed(from.clone(), post.author.clone()))
                 .unwrap_or(false);
@@ -329,33 +395,39 @@ impl SocialMediaContract {
         // Credit creator earnings.
         let earnings_key = DataKey::CreatorEarnings(post.author.clone());
         let current: i128 = env.storage().instance().get(&earnings_key).unwrap_or(0);
-        env.storage().instance().set(&earnings_key, &(current + amount));
+        env.storage()
+            .instance()
+            .set(&earnings_key, &(current + amount));
 
-        env.events().publish(
-            (symbol_short!("tip"), post.author, post_id),
-            (from, amount),
-        );
+        env.events()
+            .publish((symbol_short!("tip"), post.author, post_id), (from, amount));
     }
 
     // ── Creator analytics & earnings ───────────────────────────────────────
 
     /// Returns a full analytics snapshot for a creator.
     pub fn get_creator_analytics(env: Env, creator: Address) -> CreatorAnalytics {
-        let profile: Option<Profile> = env.storage().instance().get(&DataKey::Profiles(creator.clone()));
+        let profile: Option<Profile> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Profiles(creator.clone()));
         let follower_count = profile.as_ref().map(|p| p.followers).unwrap_or(0);
         let post_count = profile.as_ref().map(|p| p.post_count).unwrap_or(0);
 
-        let subscriber_count: u32 = env.storage()
+        let subscriber_count: u32 = env
+            .storage()
             .instance()
             .get(&DataKey::CreatorSubscriberCount(creator.clone()))
             .unwrap_or(0);
 
-        let total_likes: u32 = env.storage()
+        let total_likes: u32 = env
+            .storage()
             .instance()
             .get(&DataKey::CreatorTotalLikes(creator.clone()))
             .unwrap_or(0);
 
-        let withdrawable_earnings: i128 = env.storage()
+        let withdrawable_earnings: i128 = env
+            .storage()
             .instance()
             .get(&DataKey::CreatorEarnings(creator.clone()))
             .unwrap_or(0);
@@ -366,7 +438,8 @@ impl SocialMediaContract {
         CreatorAnalytics {
             post_count,
             total_tips: withdrawable_earnings, // combined earnings (tips + subs)
-            total_subscription_revenue: env.storage()
+            total_subscription_revenue: env
+                .storage()
                 .instance()
                 .get(&DataKey::CreatorEarnings(creator.clone()))
                 .unwrap_or(0),

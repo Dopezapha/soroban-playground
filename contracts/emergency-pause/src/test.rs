@@ -10,8 +10,8 @@
 
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::{EmergencyPause, EmergencyPauseClient};
 use crate::types::{Error, PauseAction};
+use crate::{EmergencyPause, EmergencyPauseClient};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -229,12 +229,7 @@ fn create_proposal_by_non_guardian_works() {
 #[test]
 fn create_proposal_empty_reason_works() {
     let (env, admin, client) = setup();
-    let id = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, ""),
-        &3600,
-    );
+    let id = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, ""), &3600);
     assert_eq!(id, 1);
 }
 
@@ -313,12 +308,7 @@ fn sign_proposal_expired_fails() {
     let (env, admin, client) = setup();
     let guardian = Address::generate(&env);
     client.add_guardian(&admin, &guardian);
-    let id = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "reason"),
-        &100,
-    );
+    let id = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "reason"), &100);
     advance_time(&env, 200);
     assert_eq!(
         client.try_sign_proposal(&guardian, &id),
@@ -380,12 +370,7 @@ fn execute_proposal_unpause_works() {
     client.add_guardian(&admin, &guardian2);
 
     // Pause first
-    let id1 = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "pause"),
-        &3600,
-    );
+    let id1 = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "pause"), &3600);
     client.sign_proposal(&guardian1, &id1);
     client.sign_proposal(&guardian2, &id1);
     client.execute_proposal(&admin, &id1);
@@ -427,12 +412,7 @@ fn execute_proposal_expired_fails() {
     let (env, admin, client) = setup();
     let guardian = Address::generate(&env);
     client.add_guardian(&admin, &guardian);
-    let id = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "reason"),
-        &100,
-    );
+    let id = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "reason"), &100);
     advance_time(&env, 200);
     assert_eq!(
         client.try_execute_proposal(&admin, &id),
@@ -473,12 +453,7 @@ fn execute_pause_when_already_paused_fails() {
     let (env, admin, client) = setup();
     let guardian = Address::generate(&env);
     client.add_guardian(&admin, &guardian);
-    let id = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "first"),
-        &3600,
-    );
+    let id = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "first"), &3600);
     client.sign_proposal(&guardian, &id);
     client.execute_proposal(&admin, &id);
 
@@ -562,12 +537,7 @@ fn do_action_succeeds_after_unpause() {
     client.add_guardian(&admin, &guardian);
 
     // Pause
-    let id1 = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "pause"),
-        &3600,
-    );
+    let id1 = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "pause"), &3600);
     client.sign_proposal(&guardian, &id1);
     client.execute_proposal(&admin, &id1);
 
@@ -630,12 +600,8 @@ fn multiple_pause_unpause_cycles() {
     let user = Address::generate(&env);
 
     for _ in 0..3 {
-        let id1 = client.create_proposal(
-            &admin,
-            &PauseAction::Pause,
-            &make_str(&env, "pause"),
-            &3600,
-        );
+        let id1 =
+            client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "pause"), &3600);
         client.sign_proposal(&guardian, &id1);
         client.execute_proposal(&admin, &id1);
         assert!(client.paused());
@@ -658,19 +624,9 @@ fn multiple_pause_unpause_cycles() {
 fn proposal_count_increments() {
     let (env, admin, client) = setup();
     assert_eq!(client.proposal_count(), 0);
-    client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "p1"),
-        &3600,
-    );
+    client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "p1"), &3600);
     assert_eq!(client.proposal_count(), 1);
-    client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "p2"),
-        &3600,
-    );
+    client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "p2"), &3600);
     assert_eq!(client.proposal_count(), 2);
 }
 
@@ -739,12 +695,7 @@ fn paused_query_is_false_after_unpause() {
     let guardian = Address::generate(&env);
     client.add_guardian(&admin, &guardian);
 
-    let id1 = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "pause"),
-        &3600,
-    );
+    let id1 = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "pause"), &3600);
     client.sign_proposal(&guardian, &id1);
     client.execute_proposal(&admin, &id1);
 
@@ -773,18 +724,8 @@ fn guardian_can_sign_multiple_proposals() {
     let guardian = Address::generate(&env);
     client.add_guardian(&admin, &guardian);
 
-    let id1 = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "p1"),
-        &3600,
-    );
-    let id2 = client.create_proposal(
-        &admin,
-        &PauseAction::Pause,
-        &make_str(&env, "p2"),
-        &3600,
-    );
+    let id1 = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "p1"), &3600);
+    let id2 = client.create_proposal(&admin, &PauseAction::Pause, &make_str(&env, "p2"), &3600);
 
     client.sign_proposal(&guardian, &id1);
     client.sign_proposal(&guardian, &id2);

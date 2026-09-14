@@ -45,3 +45,14 @@ if (typeof Blob !== "undefined" && !Blob.prototype.arrayBuffer) {
     return new ArrayBuffer(0);
   };
 }
+
+// Mock Worker for JSDOM
+if (typeof global.Worker === "undefined") {
+  global.Worker = class MockWorker {
+    constructor() {}
+    postMessage() {}
+    terminate() {}
+    addEventListener() {}
+    removeEventListener() {}
+  };
+}

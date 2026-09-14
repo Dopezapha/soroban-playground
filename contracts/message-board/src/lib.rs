@@ -187,7 +187,10 @@ impl MessageBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::{Address as _, Ledger as _}, Env, String};
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger as _},
+        Env, String,
+    };
 
     fn setup() -> (Env, Address, MessageBoardClient<'static>) {
         let env = Env::default();

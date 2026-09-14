@@ -39,8 +39,12 @@ const ALL_MIGRATIONS_DIR = path.resolve(_dirname, '../src/database/migrations');
  * Returns the path to the temp directory (caller must clean up).
  */
 async function createSubsetMigrationsDir(prefix) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'knex-test-migrations-'));
-  const files = fs.readdirSync(ALL_MIGRATIONS_DIR).filter((f) => f.startsWith(prefix) && f.endsWith('.js'));
+  const tmpDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'knex-test-migrations-')
+  );
+  const files = fs
+    .readdirSync(ALL_MIGRATIONS_DIR)
+    .filter((f) => f.startsWith(prefix) && f.endsWith('.js'));
 
   for (const file of files) {
     // Copy (not symlink) so that Knex can load them via require() during tests
@@ -100,39 +104,39 @@ const EXPECTED_TABLES = [
 
 // Key columns per table to spot-check schema parity
 const COLUMN_CHECKS = [
-  { table: 'users',                  column: 'username' },
-  { table: 'users',                  column: 'email' },
-  { table: 'users',                  column: 'password_hash' },
-  { table: 'api_keys',               column: 'key_hash' },
-  { table: 'api_keys',               column: 'tier' },
-  { table: 'api_keys',               column: 'status' },
-  { table: 'rate_limit_usage',       column: 'window_start' },
-  { table: 'rate_limit_usage',       column: 'window_end' },
-  { table: 'tier_limits',            column: 'requests_per_minute' },
-  { table: 'audit_log',              column: 'action' },
-  { table: 'audit_log',              column: 'ip_address' },
-  { table: 'synthetic_assets',       column: 'symbol' },
-  { table: 'synthetic_assets',       column: 'decimals' },
-  { table: 'positions',              column: 'position_id' },
-  { table: 'positions',              column: 'user_address' },
-  { table: 'positions',              column: 'asset_symbol' },
-  { table: 'positions',              column: 'direction' },
-  { table: 'asset_prices',           column: 'price' },
-  { table: 'asset_prices',           column: 'confidence' },
+  { table: 'users', column: 'username' },
+  { table: 'users', column: 'email' },
+  { table: 'users', column: 'password_hash' },
+  { table: 'api_keys', column: 'key_hash' },
+  { table: 'api_keys', column: 'tier' },
+  { table: 'api_keys', column: 'status' },
+  { table: 'rate_limit_usage', column: 'window_start' },
+  { table: 'rate_limit_usage', column: 'window_end' },
+  { table: 'tier_limits', column: 'requests_per_minute' },
+  { table: 'audit_log', column: 'action' },
+  { table: 'audit_log', column: 'ip_address' },
+  { table: 'synthetic_assets', column: 'symbol' },
+  { table: 'synthetic_assets', column: 'decimals' },
+  { table: 'positions', column: 'position_id' },
+  { table: 'positions', column: 'user_address' },
+  { table: 'positions', column: 'asset_symbol' },
+  { table: 'positions', column: 'direction' },
+  { table: 'asset_prices', column: 'price' },
+  { table: 'asset_prices', column: 'confidence' },
   { table: 'synthetic_asset_events', column: 'event_type' },
   { table: 'synthetic_asset_events', column: 'details' },
-  { table: 'liquidation_alerts',     column: 'alerted_at' },
-  { table: 'cors_whitelist',         column: 'origin' },
-  { table: 'cors_whitelist',         column: 'active' },
-  { table: 'webhook_subscriptions',  column: 'url' },
-  { table: 'webhook_subscriptions',  column: 'secret' },
-  { table: 'webhook_deliveries',     column: 'subscription_id' },
-  { table: 'webhook_deliveries',     column: 'status' },
-  { table: 'contract_events',        column: 'contract_id' },
-  { table: 'contract_events',        column: 'ledger_sequence' },
-  { table: 'contract_event_cursor',  column: 'cursor' },
-  { table: 'contract_verification',  column: 'source_hash' },
-  { table: 'contract_verification',  column: 'status' },
+  { table: 'liquidation_alerts', column: 'alerted_at' },
+  { table: 'cors_whitelist', column: 'origin' },
+  { table: 'cors_whitelist', column: 'active' },
+  { table: 'webhook_subscriptions', column: 'url' },
+  { table: 'webhook_subscriptions', column: 'secret' },
+  { table: 'webhook_deliveries', column: 'subscription_id' },
+  { table: 'webhook_deliveries', column: 'status' },
+  { table: 'contract_events', column: 'contract_id' },
+  { table: 'contract_events', column: 'ledger_sequence' },
+  { table: 'contract_event_cursor', column: 'cursor' },
+  { table: 'contract_verification', column: 'source_hash' },
+  { table: 'contract_verification', column: 'status' },
 ];
 
 // ─── Test suite ───────────────────────────────────────────────────────────────
@@ -234,10 +238,20 @@ describe('Knex migrations — schema parity (SQLite in-memory)', () => {
     await knex.migrate.rollback({}, true);
 
     const tablesToCheck = [
-      'users', 'organizations', 'api_keys', 'rate_limit_usage',
-      'tier_limits', 'audit_log', 'synthetic_assets', 'positions',
-      'cors_whitelist', 'webhook_subscriptions', 'webhook_deliveries',
-      'contract_events', 'contract_event_cursor', 'contract_verification',
+      'users',
+      'organizations',
+      'api_keys',
+      'rate_limit_usage',
+      'tier_limits',
+      'audit_log',
+      'synthetic_assets',
+      'positions',
+      'cors_whitelist',
+      'webhook_subscriptions',
+      'webhook_deliveries',
+      'contract_events',
+      'contract_event_cursor',
+      'contract_verification',
     ];
 
     for (const t of tablesToCheck) {
@@ -253,7 +267,12 @@ describe('Knex migrations — schema parity (SQLite in-memory)', () => {
     await knex.migrate.rollback({}, true);
     await expect(knex.migrate.latest()).resolves.toBeDefined();
 
-    for (const t of ['users', 'api_keys', 'contract_events', 'contract_verification']) {
+    for (const t of [
+      'users',
+      'api_keys',
+      'contract_events',
+      'contract_verification',
+    ]) {
       const exists = await knex.schema.hasTable(t);
       expect(exists).toBe(true);
     }
@@ -278,15 +297,15 @@ describe('Knex migrations — schema parity (SQLite in-memory)', () => {
   it('can insert an api_key linked to a user', async () => {
     await knex.migrate.latest();
 
-    const [insertedId] = await knex('users')
-      .insert({
-        username: 'bob',
-        email: 'bob@example.com',
-        password_hash: 'hashed_pw',
-      });
+    const [insertedId] = await knex('users').insert({
+      username: 'bob',
+      email: 'bob@example.com',
+      password_hash: 'hashed_pw',
+    });
 
     await knex('api_keys').insert({
-      key_hash: 'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+      key_hash:
+        'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
       key_prefix: 'abc123de',
       name: 'Test Key',
       tier: 'free',

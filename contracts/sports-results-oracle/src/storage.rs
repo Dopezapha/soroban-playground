@@ -13,11 +13,15 @@ const THRESHOLD: &str = "THRESH";
 const CIRCUIT_BREAKER: &str = "CB";
 
 pub fn is_initialized(env: &Env) -> bool {
-    env.storage().instance().has(&soroban_sdk::symbol_short!("INIT"))
+    env.storage()
+        .instance()
+        .has(&soroban_sdk::symbol_short!("INIT"))
 }
 
 pub fn set_initialized(env: &Env) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("INIT"), &true);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("INIT"), &true);
 }
 
 pub fn get_admin(env: &Env) -> Result<Address, Error> {
@@ -28,7 +32,9 @@ pub fn get_admin(env: &Env) -> Result<Address, Error> {
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("ADMIN"), admin);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("ADMIN"), admin);
 }
 
 pub fn is_paused(env: &Env) -> bool {
@@ -39,7 +45,9 @@ pub fn is_paused(env: &Env) -> bool {
 }
 
 pub fn set_paused(env: &Env, paused: bool) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("PAUSED"), &paused);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("PAUSED"), &paused);
 }
 
 pub fn get_result_count(env: &Env) -> u32 {
@@ -50,7 +58,9 @@ pub fn get_result_count(env: &Env) -> u32 {
 }
 
 pub fn set_result_count(env: &Env, count: u32) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("RCOUNT"), &count);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("RCOUNT"), &count);
 }
 
 pub fn get_threshold(env: &Env) -> u32 {
@@ -61,7 +71,9 @@ pub fn get_threshold(env: &Env) -> u32 {
 }
 
 pub fn set_threshold(env: &Env, threshold: u32) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("THRESH"), &threshold);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("THRESH"), &threshold);
 }
 
 pub fn is_circuit_breaker_active(env: &Env) -> bool {
@@ -72,7 +84,9 @@ pub fn is_circuit_breaker_active(env: &Env) -> bool {
 }
 
 pub fn set_circuit_breaker(env: &Env, active: bool) {
-    env.storage().instance().set(&soroban_sdk::symbol_short!("CB"), &active);
+    env.storage()
+        .instance()
+        .set(&soroban_sdk::symbol_short!("CB"), &active);
 }
 
 pub fn get_result(env: &Env, id: u32) -> Result<SportResult, Error> {

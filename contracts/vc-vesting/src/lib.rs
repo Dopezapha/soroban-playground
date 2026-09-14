@@ -1,7 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env,
-    String,
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
 };
 
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280;
@@ -214,9 +213,11 @@ impl VCVestingContract {
 
         let key = DataKey::Tranche(pool_id, tranche_id);
         env.storage().persistent().set(&key, &tranche);
-        env.storage()
-            .persistent()
-            .extend_ttl(&key, PERSISTENT_BUMP_THRESHOLD, PERSISTENT_EXTEND_TO);
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_BUMP_THRESHOLD,
+            PERSISTENT_EXTEND_TO,
+        );
 
         env.events()
             .publish((symbol_short!("vc"), symbol_short!("tranche")), pool_id);
@@ -254,9 +255,11 @@ impl VCVestingContract {
 
         let key = DataKey::Investor(pool_id, investor.clone());
         env.storage().persistent().set(&key, &inv);
-        env.storage()
-            .persistent()
-            .extend_ttl(&key, PERSISTENT_BUMP_THRESHOLD, PERSISTENT_EXTEND_TO);
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_BUMP_THRESHOLD,
+            PERSISTENT_EXTEND_TO,
+        );
 
         let count: u32 = env
             .storage()
@@ -272,9 +275,10 @@ impl VCVestingContract {
             .instance()
             .get(&DataKey::TotalInvestorAllocation(pool_id))
             .unwrap_or(0);
-        env.storage()
-            .instance()
-            .set(&DataKey::TotalInvestorAllocation(pool_id), &(total + allocation));
+        env.storage().instance().set(
+            &DataKey::TotalInvestorAllocation(pool_id),
+            &(total + allocation),
+        );
 
         env.events()
             .publish((symbol_short!("vc"), symbol_short!("investor")), pool_id);
@@ -313,8 +317,10 @@ impl VCVestingContract {
         tranche.voting_end_time = env.ledger().timestamp() + voting_duration;
         env.storage().persistent().set(&key, &tranche);
 
-        env.events()
-            .publish((symbol_short!("vc"), symbol_short!("vote_open")), tranche_id);
+        env.events().publish(
+            (symbol_short!("vc"), symbol_short!("vote_open")),
+            tranche_id,
+        );
 
         Ok(())
     }
@@ -370,9 +376,11 @@ impl VCVestingContract {
             timestamp: env.ledger().timestamp(),
         };
         env.storage().persistent().set(&record_key, &vote);
-        env.storage()
-            .persistent()
-            .extend_ttl(&record_key, PERSISTENT_BUMP_THRESHOLD, PERSISTENT_EXTEND_TO);
+        env.storage().persistent().extend_ttl(
+            &record_key,
+            PERSISTENT_BUMP_THRESHOLD,
+            PERSISTENT_EXTEND_TO,
+        );
 
         env.events()
             .publish((symbol_short!("vc"), symbol_short!("vote")), tranche_id);
@@ -474,7 +482,7 @@ impl VCVestingContract {
             .get(&DataKey::Investor(pool_id, investor.clone()))
             .ok_or(VCVestingError::InvestorNotFound)?;
 
-        let pool: VCPool = env
+        let _pool: VCPool = env
             .storage()
             .instance()
             .get(&DataKey::Pool(pool_id))
@@ -503,11 +511,7 @@ impl VCVestingContract {
             .ok_or(VCVestingError::NotInitialized)?;
         let token_client = token::Client::new(&env, &token);
 
-        token_client.transfer(
-            &env.current_contract_address(),
-            &investor,
-            &claim_amount,
-        );
+        token_client.transfer(&env.current_contract_address(), &investor, &claim_amount);
 
         env.events().publish(
             (symbol_short!("vc"), symbol_short!("claim")),
@@ -524,11 +528,7 @@ impl VCVestingContract {
             .ok_or(VCVestingError::PoolNotFound)
     }
 
-    pub fn get_tranche(
-        env: Env,
-        pool_id: u32,
-        tranche_id: u32,
-    ) -> Result<Tranche, VCVestingError> {
+    pub fn get_tranche(env: Env, pool_id: u32, tranche_id: u32) -> Result<Tranche, VCVestingError> {
         env.storage()
             .persistent()
             .get(&DataKey::Tranche(pool_id, tranche_id))

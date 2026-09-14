@@ -1,100 +1,10 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String};
-// contracts/ad-network/src/lib.rs
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, BytesN};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String,
+};
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Campaign {
-    pub advertiser: Address,
-    pub budget: i128,
-    pub payout_per_impression: i128,
-    pub active: bool,
-}
-
-#[contracttype]
-pub enum DataKey {
-    Campaign(u64),
-    ImpressionNonce(Address, u64),
-}
-
-#[contract]
-pub struct AdNetworkContract;
-
-#[contractimpl]
-impl AdNetworkContract {
-    pub fn create_campaign(
-        env: Env,
-        advertiser: Address,
-        campaign_id: u64,
-        budget: i128,
-        payout_per_impression: i128,
-    ) {
-        advertiser.require_auth();
-
-        let key = DataKey::Campaign(campaign_id);
-        if env.storage().persistent().has(&key) {
-            panic!("Campaign already exists");
-        }
-
-        let campaign = Campaign {
-            advertiser,
-            budget,
-            payout_per_impression,
-            active: true,
-        };
-
-        env.storage().persistent().set(&key, &campaign);
-        env.events().publish(
-            (Symbol::new(&env, "CampaignCreated"), campaign_id),
-            budget,
-        );
-    }
-
-    pub fn verify_and_payout(
-        env: Env,
-        publisher: Address,
-        campaign_id: u64,
-        nonce: u64,
-        _signature: BytesN<64>,
-    ) {
-        publisher.require_auth();
-
-        let key = DataKey::Campaign(campaign_id);
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .unwrap_or_else(|| panic!("Campaign not found"));
-
-        if !campaign.active {
-            panic!("Campaign is not active");
-        }
-
-        if campaign.budget < campaign.payout_per_impression {
-            panic!("Insufficient campaign budget for payout");
-        }
-
-        let nonce_key = DataKey::ImpressionNonce(publisher.clone(), nonce);
-        if env.storage().temporary().has(&nonce_key) {
-            panic!("Impression nonce already processed");
-        }
-
-        env.storage().temporary().set(&nonce_key, &true);
-
-        campaign.budget -= campaign.payout_per_impression;
-        env.storage().persistent().set(&key, &campaign);
-
-        env.events().publish(
-            (Symbol::new(&env, "ImpressionPaid"), campaign_id),
-            publisher,
-        );
-    }
-}
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280;
 const INSTANCE_EXTEND_TO: u32 = 518_400;
-const PERSISTENT_BUMP_THRESHOLD: u32 = 17_280;
-const PERSISTENT_EXTEND_TO: u32 = 518_400;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -182,8 +92,12 @@ impl AdNetworkContract {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Token, &token);
         env.storage().instance().set(&DataKey::CampaignCount, &0u32);
-        env.storage().instance().set(&DataKey::PublisherCount, &0u32);
-        env.storage().instance().set(&DataKey::ImpressionCount, &0u32);
+        env.storage()
+            .instance()
+            .set(&DataKey::PublisherCount, &0u32);
+        env.storage()
+            .instance()
+            .set(&DataKey::ImpressionCount, &0u32);
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_BUMP_THRESHOLD, INSTANCE_EXTEND_TO);
@@ -227,9 +141,7 @@ impl AdNetworkContract {
         env.storage()
             .instance()
             .set(&DataKey::Campaign(id), &campaign);
-        env.storage()
-            .instance()
-            .set(&DataKey::CampaignCount, &id);
+        env.storage().instance().set(&DataKey::CampaignCount, &id);
 
         env.events()
             .publish((symbol_short!("ad"), symbol_short!("campaign")), id);
@@ -272,9 +184,7 @@ impl AdNetworkContract {
         env.storage()
             .instance()
             .set(&DataKey::Publisher(id), &publisher);
-        env.storage()
-            .instance()
-            .set(&DataKey::PublisherCount, &id);
+        env.storage().instance().set(&DataKey::PublisherCount, &id);
         env.storage()
             .instance()
             .set(&DataKey::PublisherByAddress(publisher_address), &id);
@@ -313,7 +223,7 @@ impl AdNetworkContract {
             return Err(AdNetworkError::DuplicateImpression);
         }
 
-        let publisher: Publisher = env
+        let _publisher: Publisher = env
             .storage()
             .instance()
             .get(&DataKey::Publisher(publisher_id))
@@ -340,9 +250,7 @@ impl AdNetworkContract {
         env.storage()
             .instance()
             .set(&DataKey::Impression(id), &impression);
-        env.storage()
-            .instance()
-            .set(&DataKey::ImpressionCount, &id);
+        env.storage().instance().set(&DataKey::ImpressionCount, &id);
         env.storage()
             .instance()
             .set(&DataKey::ImpressionHash(user_hash), &id);
@@ -408,7 +316,7 @@ impl AdNetworkContract {
             .instance()
             .set(&DataKey::Publisher(publisher.id), &publisher);
 
-        let token: Address = env
+        let _token: Address = env
             .storage()
             .instance()
             .get(&DataKey::Token)

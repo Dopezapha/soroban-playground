@@ -84,12 +84,18 @@ class SorobanRpcManager {
         fetch(ep.url, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: [] }),
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: Date.now(),
+            method,
+            params: [],
+          }),
           signal: controller.signal,
         }).then(async (response) => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const payload = await response.json();
-          if (payload.error) throw new Error(payload.error.message || `${method} failed`);
+          if (payload.error)
+            throw new Error(payload.error.message || `${method} failed`);
           return payload.result;
         });
 
@@ -119,7 +125,9 @@ class SorobanRpcManager {
   startHealthChecks() {
     if (this.healthTimer || this.endpoints.length === 0) return;
     const poll = () => {
-      Promise.all(this.endpoints.map((endpoint) => this.checkEndpointHealth(endpoint))).catch(() => {});
+      Promise.all(
+        this.endpoints.map((endpoint) => this.checkEndpointHealth(endpoint))
+      ).catch(() => {});
     };
     poll();
     this.healthTimer = setInterval(poll, HEALTH_CHECK_INTERVAL_MS);

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
-// 
+//
 // ⚠️ DEPRECATED: This file is deprecated and will be removed in a future version.
 // All cache functionality has been merged into redisService.js for unified connection pooling.
 // Please import from './redisService.js' instead.
@@ -36,14 +36,20 @@ class CacheService {
     do {
       // ioredis returns [next, keys]
       // use client.scan to iterate safely
-      // eslint-disable-next-line no-await-in-loop
-      const [next, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+
+      const [next, keys] = await client.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100
+      );
       cursor = next;
       if (keys.length > 0) {
         // Use pipeline for batch deletes
         const pipe = client.pipeline();
         keys.forEach((k) => pipe.del(k));
-        // eslint-disable-next-line no-await-in-loop
+
         await pipe.exec();
         deleted += keys.length;
       }
@@ -61,13 +67,18 @@ class CacheService {
     const client = redisService.client;
     let cursor = '0';
     do {
-      // eslint-disable-next-line no-await-in-loop
-      const [next, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const [next, keys] = await client.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100
+      );
       cursor = next;
       if (keys.length > 0) {
         const pipeline = client.pipeline();
         keys.forEach((key) => pipeline.get(key));
-        // eslint-disable-next-line no-await-in-loop
+
         const values = await pipeline.exec();
         values.forEach(([err, val], idx) => {
           if (!err && val) {
@@ -240,7 +251,10 @@ class CacheService {
   async getCacheAdminSnapshot() {
     return {
       cacheVersion: 'v1',
-      memoryEntries: redisService && redisService.client ? await redisService.client.dbsize() : 0,
+      memoryEntries:
+        redisService && redisService.client
+          ? await redisService.client.dbsize()
+          : 0,
       isConnected: !!redisService && !redisService.isFallbackMode,
     };
   }

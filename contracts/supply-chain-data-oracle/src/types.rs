@@ -25,12 +25,12 @@ pub struct LogisticsData {
     pub timestamp: u64,
     pub submitter: Address,
     pub confirmations: u32,
-    pub temperature: i32,   // in tenths of °C, e.g. 250 = 25.0°C
-    pub humidity: u32,      // percentage 0-100
+    pub temperature: i32, // in tenths of °C, e.g. 250 = 25.0°C
+    pub humidity: u32,    // percentage 0-100
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProvenanceRecord {
     pub shipment_id: String,
     pub data_id: u32,
@@ -40,7 +40,7 @@ pub struct ProvenanceRecord {
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DataSource {
     pub address: Address,
     pub name: String,
@@ -49,7 +49,7 @@ pub struct DataSource {
 }
 
 #[contracterror]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Error {
     NotInitialized = 1,
     AlreadyInitialized = 2,

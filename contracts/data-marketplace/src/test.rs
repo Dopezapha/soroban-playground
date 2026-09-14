@@ -20,11 +20,7 @@ fn b(env: &Env, byte: u8) -> BytesN<32> {
 }
 
 fn register_provider(env: &Env, client: &DataMarketplaceContractClient, provider: &Address) {
-    client.register_provider(
-        provider,
-        &String::from_str(env, "Acme Data"),
-        &b(env, 0xAA),
-    );
+    client.register_provider(provider, &String::from_str(env, "Acme Data"), &b(env, 0xAA));
 }
 
 fn list_basic_dataset(
@@ -105,7 +101,11 @@ fn quota_exhausts_after_limit() {
     client.submit_query(&buyer, &id, &b(&env, 1));
     client.submit_query(&buyer, &id, &b(&env, 2));
     assert_eq!(
-        client.try_submit_query(&buyer, &id, &b(&env, 3)).err().unwrap().unwrap(),
+        client
+            .try_submit_query(&buyer, &id, &b(&env, 3))
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::NoQuotaRemaining
     );
 }
@@ -118,9 +118,14 @@ fn license_expiry_blocks_queries() {
     register_provider(&env, &client, &provider);
     let id = list_basic_dataset(&env, &client, &provider);
     client.purchase_access(&buyer, &id, &5_u32);
-    env.ledger().with_mut(|li| li.timestamp += 30 * 24 * 60 * 60);
+    env.ledger()
+        .with_mut(|li| li.timestamp += 30 * 24 * 60 * 60);
     assert_eq!(
-        client.try_submit_query(&buyer, &id, &b(&env, 9)).err().unwrap().unwrap(),
+        client
+            .try_submit_query(&buyer, &id, &b(&env, 9))
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::LicenseExpired
     );
 }
@@ -133,7 +138,11 @@ fn provider_cannot_self_purchase_or_self_query() {
     let id = list_basic_dataset(&env, &client, &provider);
 
     assert_eq!(
-        client.try_purchase_access(&provider, &id, &1_u32).err().unwrap().unwrap(),
+        client
+            .try_purchase_access(&provider, &id, &1_u32)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::SelfPurchaseForbidden
     );
 
@@ -141,7 +150,11 @@ fn provider_cannot_self_purchase_or_self_query() {
     let buyer = Address::generate(&env);
     client.purchase_access(&buyer, &id, &1_u32);
     assert_eq!(
-        client.try_submit_query(&provider, &id, &b(&env, 5)).err().unwrap().unwrap(),
+        client
+            .try_submit_query(&provider, &id, &b(&env, 5))
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::SelfQueryForbidden
     );
 }
@@ -178,7 +191,11 @@ fn delisted_dataset_blocks_new_purchases() {
     let id = list_basic_dataset(&env, &client, &provider);
     client.delist_dataset(&provider, &id);
     assert_eq!(
-        client.try_purchase_access(&buyer, &id, &1_u32).err().unwrap().unwrap(),
+        client
+            .try_purchase_access(&buyer, &id, &1_u32)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::DatasetDelisted
     );
     // active feed no longer surfaces it
@@ -218,7 +235,11 @@ fn non_admin_cannot_pause() {
     let (env, _admin, client) = setup();
     let stranger = Address::generate(&env);
     assert_eq!(
-        client.try_set_paused(&stranger, &true).err().unwrap().unwrap(),
+        client
+            .try_set_paused(&stranger, &true)
+            .err()
+            .unwrap()
+            .unwrap(),
         Error::Unauthorized
     );
 }

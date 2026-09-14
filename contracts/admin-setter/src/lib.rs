@@ -20,7 +20,11 @@ impl AdminSetterContract {
     /// Update the value. Only the admin is allowed to call this.
     pub fn set_value(env: Env, admin: Address, value: u32) {
         // 1. Get the current admin.
-        let current_admin: Address = env.storage().instance().get(&ADMIN).expect("not initialized");
+        let current_admin: Address = env
+            .storage()
+            .instance()
+            .get(&ADMIN)
+            .expect("not initialized");
 
         // 2. Ensure the provided admin address matches the stored admin.
         if admin != current_admin {
@@ -41,7 +45,10 @@ impl AdminSetterContract {
 
     /// Get the current admin address.
     pub fn get_admin(env: Env) -> Address {
-        env.storage().instance().get(&ADMIN).expect("not initialized")
+        env.storage()
+            .instance()
+            .get(&ADMIN)
+            .expect("not initialized")
     }
 }
 

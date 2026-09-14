@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env,
+};
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +33,7 @@ pub enum DataKey {
     Admin,
     TotalSupply,
     TotalBurned,
-    BurnRate,   // basis points (0–10000); e.g. 200 = 2%
+    BurnRate, // basis points (0–10000); e.g. 200 = 2%
     Paused,
     Balance(Address),
 }
@@ -67,16 +69,18 @@ impl TokenBurn {
         }
 
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::TotalSupply, &initial_supply);
+        env.storage()
+            .instance()
+            .set(&DataKey::TotalSupply, &initial_supply);
         env.storage().instance().set(&DataKey::TotalBurned, &0_i128);
         env.storage().instance().set(&DataKey::BurnRate, &burn_rate);
         env.storage().instance().set(&DataKey::Paused, &false);
-        env.storage().persistent().set(&DataKey::Balance(admin.clone()), &initial_supply);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Balance(admin.clone()), &initial_supply);
 
-        env.events().publish(
-            (symbol_short!("init"),),
-            (admin, initial_supply, burn_rate),
-        );
+        env.events()
+            .publish((symbol_short!("init"),), (admin, initial_supply, burn_rate));
 
         Ok(())
     }
@@ -140,11 +144,7 @@ impl TokenBurn {
     /// portion from `from`. Returns the net amount after burn.
     ///
     /// `net = amount - floor(amount * burn_rate / 10000)`
-    pub fn deflationary_transfer(
-        env: Env,
-        from: Address,
-        amount: i128,
-    ) -> Result<i128, Error> {
+    pub fn deflationary_transfer(env: Env, from: Address, amount: i128) -> Result<i128, Error> {
         from.require_auth();
         Self::assert_not_paused(&env)?;
         Self::assert_initialized(&env)?;

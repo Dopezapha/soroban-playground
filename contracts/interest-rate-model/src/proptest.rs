@@ -9,9 +9,7 @@
 use proptest::prelude::*;
 use proptest::test_runner::TestCaseError;
 
-use crate::math::{
-    compute_exponential_rate, compute_linear_rate, compute_utilization_bps,
-};
+use crate::math::{compute_exponential_rate, compute_linear_rate, compute_utilization_bps};
 use crate::types::Error;
 
 fn default_config() -> ProptestConfig {

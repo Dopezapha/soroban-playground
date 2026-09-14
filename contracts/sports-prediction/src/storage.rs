@@ -1,5 +1,5 @@
-use soroban_sdk::{Env, Address, symbol_short, Symbol};
-use crate::types::{SportMarket, Bet, Error};
+use crate::types::{Bet, Error, SportMarket};
+use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
 const ADMIN: Symbol = symbol_short!("ADMIN");
 const IS_INIT: Symbol = symbol_short!("IS_INIT");
@@ -15,7 +15,10 @@ pub fn set_initialized(env: &Env) {
 }
 
 pub fn get_admin(env: &Env) -> Result<Address, Error> {
-    env.storage().instance().get(&ADMIN).ok_or(Error::NotInitialized)
+    env.storage()
+        .instance()
+        .get(&ADMIN)
+        .ok_or(Error::NotInitialized)
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
@@ -41,15 +44,11 @@ pub fn increment_market_count(env: &Env) -> u32 {
 }
 
 pub fn get_market(env: &Env, id: u32) -> Result<SportMarket, Error> {
-    env.storage().persistent().get(&Symbol::new(env, "MARKET")).unwrap_or_else(|| {
-        // Fallback to a dynamic key if needed, but for simplicity we use a map-like structure
-        // In Soroban, it's better to use DataKey
-        Err(Error::MarketNotFound)
-    });
-    
-    // Proper way with DataKey
     let key = DataKey::Market(id);
-    env.storage().persistent().get(&key).ok_or(Error::MarketNotFound)
+    env.storage()
+        .persistent()
+        .get(&key)
+        .ok_or(Error::MarketNotFound)
 }
 
 pub fn set_market(env: &Env, market: &SportMarket) {

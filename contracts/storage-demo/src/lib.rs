@@ -5,13 +5,13 @@ use soroban_sdk::{
 
 // Storage TTL Constants (in ledgers; ~5 seconds per ledger)
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280; // ~1 day
-const INSTANCE_EXTEND_TO: u32 = 518_400;      // ~30 days
+const INSTANCE_EXTEND_TO: u32 = 518_400; // ~30 days
 
 const PERSISTENT_BUMP_THRESHOLD: u32 = 17_280;
 const PERSISTENT_EXTEND_TO: u32 = 518_400;
 
-const TEMPORARY_BUMP_THRESHOLD: u32 = 1_200;  // ~1 hour
-const TEMPORARY_EXTEND_TO: u32 = 17_280;      // ~1 day
+const TEMPORARY_BUMP_THRESHOLD: u32 = 1_200; // ~1 hour
+const TEMPORARY_EXTEND_TO: u32 = 17_280; // ~1 day
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -27,10 +27,10 @@ pub enum DataKey {
     // Instance storage: Global contract settings & admin
     Admin,
     ProtocolFeeBps,
-    
+
     // Persistent storage: Important user state requiring long-term retention
     UserBalance(Address),
-    
+
     // Temporary storage: Ephemeral data like replay attack nonces/oracles
     TxNonce(Address, u64),
 }
@@ -48,7 +48,9 @@ impl DecoupledStorageContract {
         admin.require_auth();
 
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::ProtocolFeeBps, &fee_bps);
+        env.storage()
+            .instance()
+            .set(&DataKey::ProtocolFeeBps, &fee_bps);
 
         // Extend instance storage TTL upon initialization
         env.storage()
@@ -110,11 +112,9 @@ impl DecoupledStorageContract {
         env.storage().temporary().set(&key, &true);
 
         // Extend temporary storage entry TTL for a short duration
-        env.storage().temporary().extend_ttl(
-            &key,
-            TEMPORARY_BUMP_THRESHOLD,
-            TEMPORARY_EXTEND_TO,
-        );
+        env.storage()
+            .temporary()
+            .extend_ttl(&key, TEMPORARY_BUMP_THRESHOLD, TEMPORARY_EXTEND_TO);
 
         env.events().publish(
             (symbol_short!("storage"), symbol_short!("nonce")),

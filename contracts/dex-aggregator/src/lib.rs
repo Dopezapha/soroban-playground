@@ -261,14 +261,21 @@ impl DexAggregatorContract {
                 }
 
                 // Determine intermediate token
-                let (mid_token, r_in1, r_out1) =
-                    if pool_mid.token_a == token_in {
-                        (pool_mid.token_b.clone(), pool_mid.reserve_a, pool_mid.reserve_b)
-                    } else if pool_mid.token_b == token_in {
-                        (pool_mid.token_a.clone(), pool_mid.reserve_b, pool_mid.reserve_a)
-                    } else {
-                        continue;
-                    };
+                let (mid_token, r_in1, r_out1) = if pool_mid.token_a == token_in {
+                    (
+                        pool_mid.token_b.clone(),
+                        pool_mid.reserve_a,
+                        pool_mid.reserve_b,
+                    )
+                } else if pool_mid.token_b == token_in {
+                    (
+                        pool_mid.token_a.clone(),
+                        pool_mid.reserve_b,
+                        pool_mid.reserve_a,
+                    )
+                } else {
+                    continue;
+                };
 
                 if mid_token == token_out {
                     continue; // that's a direct route, already handled
@@ -435,10 +442,8 @@ impl DexAggregatorContract {
             executed_at: env.ledger().timestamp(),
         };
 
-        env.events().publish(
-            (symbol_short!("swap"),),
-            (user, amount_in, final_out),
-        );
+        env.events()
+            .publish((symbol_short!("swap"),), (user, amount_in, final_out));
 
         Ok(result)
     }
@@ -452,12 +457,7 @@ impl DexAggregatorContract {
         amount_in: i128,
         min_amount_out: i128,
     ) -> Result<SwapResult, Error> {
-        let route = Self::find_best_route(
-            env.clone(),
-            token_in,
-            token_out,
-            amount_in,
-        )?;
+        let route = Self::find_best_route(env.clone(), token_in, token_out, amount_in)?;
         Self::swap(env, user, route.hops, amount_in, min_amount_out)
     }
 

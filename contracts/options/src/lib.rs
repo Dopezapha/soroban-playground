@@ -109,10 +109,7 @@ impl OptionsContract {
         }
 
         // Validate margin requirement.
-        let notional = strike_price
-            .checked_mul(size)
-            .ok_or(Error::Overflow)?
-            / PRICE_PRECISION;
+        let notional = strike_price.checked_mul(size).ok_or(Error::Overflow)? / PRICE_PRECISION;
         let min_margin = notional
             .checked_mul(MIN_MARGIN_BPS)
             .ok_or(Error::Overflow)?
@@ -142,8 +139,10 @@ impl OptionsContract {
         set_margin(&env, &writer, get_margin(&env, &writer) + margin);
         set_total_margin(&env, get_total_margin(&env) + margin);
 
-        env.events()
-            .publish((symbol_short!("opt_writ"),), (id, writer, strike_price, expiry));
+        env.events().publish(
+            (symbol_short!("opt_writ"),),
+            (id, writer, strike_price, expiry),
+        );
         Ok(id)
     }
 
@@ -218,10 +217,7 @@ impl OptionsContract {
             OptionType::Call => (settlement_price - opt.strike_price).max(0),
             OptionType::Put => (opt.strike_price - settlement_price).max(0),
         };
-        let payout = intrinsic
-            .checked_mul(opt.size)
-            .ok_or(Error::Overflow)?
-            / PRICE_PRECISION;
+        let payout = intrinsic.checked_mul(opt.size).ok_or(Error::Overflow)? / PRICE_PRECISION;
 
         // Deduct from writer margin.
         let writer_margin = get_margin(&env, &opt.writer);
@@ -233,8 +229,10 @@ impl OptionsContract {
         opt.settlement_price = settlement_price;
         set_option(&env, &opt);
 
-        env.events()
-            .publish((symbol_short!("opt_exer"),), (option_id, holder, actual_payout));
+        env.events().publish(
+            (symbol_short!("opt_exer"),),
+            (option_id, holder, actual_payout),
+        );
         Ok(actual_payout)
     }
 
@@ -381,10 +379,7 @@ impl OptionsContract {
             / GREEK_PRECISION;
 
         let numerator_d1 = ln_sk + sigma_sq_half_t;
-        let denom_d1 = sigma_scaled
-            .checked_mul(sqrt_t)
-            .ok_or(Error::Overflow)?
-            / GREEK_PRECISION;
+        let denom_d1 = sigma_scaled.checked_mul(sqrt_t).ok_or(Error::Overflow)? / GREEK_PRECISION;
 
         let d1 = if denom_d1 != 0 {
             numerator_d1
@@ -396,10 +391,8 @@ impl OptionsContract {
         };
 
         // d2 = d1 - σ*√T
-        let sigma_sqrt_t = sigma_scaled
-            .checked_mul(sqrt_t)
-            .ok_or(Error::Overflow)?
-            / GREEK_PRECISION;
+        let sigma_sqrt_t =
+            sigma_scaled.checked_mul(sqrt_t).ok_or(Error::Overflow)? / GREEK_PRECISION;
         let d2 = d1 - sigma_sqrt_t;
 
         // N(d1), N(d2): standard normal CDF approximation
@@ -419,25 +412,17 @@ impl OptionsContract {
         let denom_gamma = spot_price
             .checked_mul(sigma_scaled)
             .ok_or(Error::Overflow)?
-            / GREEK_PRECISION
-            .checked_mul(sqrt_t)
-            .ok_or(Error::Overflow)?
+            / GREEK_PRECISION.checked_mul(sqrt_t).ok_or(Error::Overflow)?
             / GREEK_PRECISION;
         let gamma = if denom_gamma != 0 {
-            n_d1.checked_mul(GREEK_PRECISION)
-                .ok_or(Error::Overflow)?
-                / denom_gamma
+            n_d1.checked_mul(GREEK_PRECISION).ok_or(Error::Overflow)? / denom_gamma
         } else {
             0
         };
 
         // Vega = S * n(d1) * √T (per 1% vol change = per 100 bps)
-        let vega = spot_price
-            .checked_mul(n_d1)
-            .ok_or(Error::Overflow)?
-            / GREEK_PRECISION
-            .checked_mul(sqrt_t)
-            .ok_or(Error::Overflow)?
+        let vega = spot_price.checked_mul(n_d1).ok_or(Error::Overflow)?
+            / GREEK_PRECISION.checked_mul(sqrt_t).ok_or(Error::Overflow)?
             / GREEK_PRECISION
             / 100; // per 1% change in vol
 
@@ -445,12 +430,10 @@ impl OptionsContract {
         // Approximate r=0 (risk-free rate) for simplicity:
         // Theta ≈ -(S * n(d1) * σ) / (2 * √T) per year, divide by 365 for per-day
         let theta_annual = if sqrt_t != 0 {
-            -(spot_price
-                .checked_mul(n_d1)
-                .ok_or(Error::Overflow)?
+            -(spot_price.checked_mul(n_d1).ok_or(Error::Overflow)?
                 / GREEK_PRECISION
-                .checked_mul(sigma_scaled)
-                .ok_or(Error::Overflow)?
+                    .checked_mul(sigma_scaled)
+                    .ok_or(Error::Overflow)?
                 / GREEK_PRECISION
                 / (2 * sqrt_t / GREEK_PRECISION).max(1))
         } else {
@@ -469,14 +452,8 @@ impl OptionsContract {
         // Call = S*N(d1) - K*N(d2), scaled
         let bs_price = match opt.option_type {
             OptionType::Call => {
-                spot_price
-                    .checked_mul(nd1)
-                    .ok_or(Error::Overflow)?
-                    / GREEK_PRECISION
-                    - opt.strike_price
-                        .checked_mul(nd2)
-                        .ok_or(Error::Overflow)?
-                        / GREEK_PRECISION
+                spot_price.checked_mul(nd1).ok_or(Error::Overflow)? / GREEK_PRECISION
+                    - opt.strike_price.checked_mul(nd2).ok_or(Error::Overflow)? / GREEK_PRECISION
             }
             OptionType::Put => {
                 opt.strike_price
@@ -514,7 +491,8 @@ impl OptionsContract {
                 margin_call: false,
             });
         }
-        let notional = opt.strike_price
+        let notional = opt
+            .strike_price
             .checked_mul(opt.size)
             .ok_or(Error::Overflow)?
             / PRICE_PRECISION;
@@ -621,8 +599,7 @@ fn normal_cdf(x_scaled: i128) -> i128 {
     // Horner's method: poly = t*(a1 + t*(a2 + t*(a3 + t*(a4 + t*a5)))) / 10^8
     let t6 = t / 1_000; // scale to 10^3 for intermediate products
     let poly = t6
-        * (a1
-            + t6 * (a2 + t6 * (a3 + t6 * (a4 + t6 * a5) / 100_000) / 100_000) / 100_000)
+        * (a1 + t6 * (a2 + t6 * (a3 + t6 * (a4 + t6 * a5) / 100_000) / 100_000) / 100_000)
         / 100_000;
 
     // Gaussian component: exp(-x²/2) / sqrt(2π) ≈ normal_pdf(x)

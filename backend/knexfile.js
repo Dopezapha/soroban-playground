@@ -75,10 +75,7 @@ const migrationsDir = path.join(_dirname, 'src', 'database', 'migrations');
 export default {
   development: {
     client: resolveClient('sqlite3'),
-    connection: resolveConnection(
-      resolveClient('sqlite3'),
-      'database.sqlite'
-    ),
+    connection: resolveConnection(resolveClient('sqlite3'), 'database.sqlite'),
     useNullAsDefault: true,
     pool: {
       min: 1,

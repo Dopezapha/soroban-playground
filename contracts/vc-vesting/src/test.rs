@@ -1,6 +1,9 @@
 #![cfg(test)]
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Env, String,
+};
 
 fn setup() -> (Env, Address, Address) {
     let env = Env::default();
@@ -23,7 +26,7 @@ fn test_initialize_twice_fails() {
     let (env, admin, token) = setup();
     VCVestingContract::initialize(env.clone(), admin.clone(), token.clone()).unwrap();
     assert_eq!(
-        VCVestingContract::initialize(env, admin, token),
+        VCVestingContract::initialize(env.clone(), admin, token),
         Err(VCVestingError::AlreadyInitialized)
     );
 }
@@ -32,11 +35,15 @@ fn test_initialize_twice_fails() {
 fn test_create_pool() {
     let (env, admin, _token) = setup();
     VCVestingContract::initialize(env.clone(), admin.clone(), Address::generate(&env)).unwrap();
-    let pool_id =
-        VCVestingContract::create_pool(env.clone(), String::from_str(&env, "VC Fund I"), 1_000_000, 3)
-            .unwrap();
+    let pool_id = VCVestingContract::create_pool(
+        env.clone(),
+        String::from_str(&env, "VC Fund I"),
+        1_000_000,
+        3,
+    )
+    .unwrap();
     assert_eq!(pool_id, 1);
-    let pool = VCVestingContract::get_pool(env, pool_id).unwrap();
+    let pool = VCVestingContract::get_pool(env.clone(), pool_id).unwrap();
     assert_eq!(pool.name, String::from_str(&env, "VC Fund I"));
     assert_eq!(pool.tranche_count, 3);
 }
@@ -123,7 +130,12 @@ fn test_vote_and_finalize() {
     VCVestingContract::vote(env.clone(), pool_id, 1, inv1.clone(), true).unwrap();
     VCVestingContract::vote(env.clone(), pool_id, 1, inv2.clone(), true).unwrap();
 
-    assert!(VCVestingContract::has_voted(env.clone(), pool_id, 1, inv1.clone()));
+    assert!(VCVestingContract::has_voted(
+        env.clone(),
+        pool_id,
+        1,
+        inv1.clone()
+    ));
 
     env.ledger().set_timestamp(env.ledger().timestamp() + 86401);
 

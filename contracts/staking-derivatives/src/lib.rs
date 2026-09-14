@@ -36,12 +36,11 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env};
 
 use crate::storage::{
     get_admin, get_exchange_rate, get_last_accrual_ts, get_lst_balance, get_reward_rate_bps,
-    get_total_lst, get_total_rewards, get_total_staked, get_total_unbonding,
-    get_unbond_count, get_unbond_entry, get_unbonding_period, get_validator_stake, is_initialized,
-    is_paused, set_admin, set_exchange_rate, set_last_accrual_ts, set_lst_balance,
-    set_paused, set_reward_rate_bps, set_total_lst, set_total_rewards, set_total_staked,
-    set_total_unbonding, set_unbond_count, set_unbond_entry, set_unbonding_period,
-    set_validator_stake,
+    get_total_lst, get_total_rewards, get_total_staked, get_total_unbonding, get_unbond_count,
+    get_unbond_entry, get_unbonding_period, get_validator_stake, is_initialized, is_paused,
+    set_admin, set_exchange_rate, set_last_accrual_ts, set_lst_balance, set_paused,
+    set_reward_rate_bps, set_total_lst, set_total_rewards, set_total_staked, set_total_unbonding,
+    set_unbond_count, set_unbond_entry, set_unbonding_period, set_validator_stake,
 };
 use crate::types::{Error, ProtocolMetrics, UnbondEntry, UserInfo};
 
@@ -105,10 +104,7 @@ impl StakingDerivatives {
 
         let rate = get_exchange_rate(&env);
         // lst_minted = amount * RATE_PRECISION / rate
-        let lst_minted = amount
-            .checked_mul(RATE_PRECISION)
-            .ok_or(Error::Overflow)?
-            / rate;
+        let lst_minted = amount.checked_mul(RATE_PRECISION).ok_or(Error::Overflow)? / rate;
 
         if lst_minted == 0 {
             return Err(Error::ZeroAmount);
@@ -145,10 +141,7 @@ impl StakingDerivatives {
         accrue_rewards(&env)?;
 
         let rate = get_exchange_rate(&env);
-        let underlying = lst_amount
-            .checked_mul(rate)
-            .ok_or(Error::Overflow)?
-            / RATE_PRECISION;
+        let underlying = lst_amount.checked_mul(rate).ok_or(Error::Overflow)? / RATE_PRECISION;
 
         // Burn lstTokens.
         set_lst_balance(&env, &staker, lst_bal - lst_amount);
@@ -167,8 +160,10 @@ impl StakingDerivatives {
         set_unbond_count(&env, &staker, idx + 1);
         set_total_unbonding(&env, get_total_unbonding(&env) + underlying);
 
-        env.events()
-            .publish((symbol_short!("unstaked"),), (staker, lst_amount, underlying, release_ts));
+        env.events().publish(
+            (symbol_short!("unstaked"),),
+            (staker, lst_amount, underlying, release_ts),
+        );
         Ok((underlying, release_ts))
     }
 
@@ -179,8 +174,7 @@ impl StakingDerivatives {
         ensure_active(&env)?;
         staker.require_auth();
 
-        let entry = get_unbond_entry(&env, &staker, entry_idx)
-            .ok_or(Error::InvalidEntry)?;
+        let entry = get_unbond_entry(&env, &staker, entry_idx).ok_or(Error::InvalidEntry)?;
 
         if entry.claimed {
             return Err(Error::AlreadyClaimed);
@@ -198,10 +192,7 @@ impl StakingDerivatives {
             claimed: true,
         };
         set_unbond_entry(&env, &staker, entry_idx, &claimed_entry);
-        set_total_unbonding(
-            &env,
-            (get_total_unbonding(&env) - entry.amount).max(0),
-        );
+        set_total_unbonding(&env, (get_total_unbonding(&env) - entry.amount).max(0));
 
         env.events()
             .publish((symbol_short!("claimed"),), (staker, entry.amount));
@@ -317,20 +308,14 @@ impl StakingDerivatives {
     pub fn preview_stake(env: Env, amount: i128) -> Result<i128, Error> {
         ensure_initialized(&env)?;
         let rate = get_exchange_rate(&env);
-        Ok(amount
-            .checked_mul(RATE_PRECISION)
-            .ok_or(Error::Overflow)?
-            / rate)
+        Ok(amount.checked_mul(RATE_PRECISION).ok_or(Error::Overflow)? / rate)
     }
 
     /// Preview how much underlying `lst_amount` lstTokens would redeem at current rate.
     pub fn preview_unstake(env: Env, lst_amount: i128) -> Result<i128, Error> {
         ensure_initialized(&env)?;
         let rate = get_exchange_rate(&env);
-        Ok(lst_amount
-            .checked_mul(rate)
-            .ok_or(Error::Overflow)?
-            / RATE_PRECISION)
+        Ok(lst_amount.checked_mul(rate).ok_or(Error::Overflow)? / RATE_PRECISION)
     }
 
     /// Get user position.
@@ -338,10 +323,7 @@ impl StakingDerivatives {
         ensure_initialized(&env)?;
         let lst_bal = get_lst_balance(&env, &staker);
         let rate = get_exchange_rate(&env);
-        let underlying_value = lst_bal
-            .checked_mul(rate)
-            .ok_or(Error::Overflow)?
-            / RATE_PRECISION;
+        let underlying_value = lst_bal.checked_mul(rate).ok_or(Error::Overflow)? / RATE_PRECISION;
         Ok(UserInfo {
             lst_balance: lst_bal,
             underlying_value,

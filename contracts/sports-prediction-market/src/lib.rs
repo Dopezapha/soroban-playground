@@ -268,8 +268,7 @@ impl SportsPredictionMarket {
         let market = get_market(&env, market_id)?;
 
         if market.status == MarketStatus::Cancelled {
-            let pos = get_position(&env, market_id, &bettor)
-                .ok_or(Error::PositionNotFound)?;
+            let pos = get_position(&env, market_id, &bettor).ok_or(Error::PositionNotFound)?;
             return Ok(pos.stake);
         }
 
@@ -278,8 +277,7 @@ impl SportsPredictionMarket {
         }
 
         let winning_outcome = market.winning_outcome.ok_or(Error::MarketNotResolved)?;
-        let pos = get_position(&env, market_id, &bettor)
-            .ok_or(Error::PositionNotFound)?;
+        let pos = get_position(&env, market_id, &bettor).ok_or(Error::PositionNotFound)?;
 
         if pos.outcome != winning_outcome {
             return Ok(0);

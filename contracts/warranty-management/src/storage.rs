@@ -76,9 +76,7 @@ pub fn get_warranty(env: &Env, id: u32) -> Result<Warranty, Error> {
 }
 
 pub fn set_claim(env: &Env, id: u32, claim: &Claim) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Claim(id), claim);
+    env.storage().persistent().set(&DataKey::Claim(id), claim);
 }
 
 pub fn get_claim(env: &Env, id: u32) -> Result<Claim, Error> {

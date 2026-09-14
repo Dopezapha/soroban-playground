@@ -21,7 +21,11 @@ export async function up(knex) {
   await knex.schema.createTable('webhook_subscriptions', (table) => {
     table.string('id', 36).primary().comment('UUID');
     table.text('url').notNullable();
-    table.text('events').notNullable().defaultTo('[]').comment('JSON array of event types');
+    table
+      .text('events')
+      .notNullable()
+      .defaultTo('[]')
+      .comment('JSON array of event types');
     table.string('secret', 255).notNullable();
     table.boolean('active').notNullable().defaultTo(true);
     table.timestamps(true, true);
@@ -29,7 +33,12 @@ export async function up(knex) {
 
   await knex.schema.createTable('webhook_deliveries', (table) => {
     table.string('id', 36).primary().comment('UUID');
-    table.string('subscription_id', 36).notNullable().references('id').inTable('webhook_subscriptions').onDelete('CASCADE');
+    table
+      .string('subscription_id', 36)
+      .notNullable()
+      .references('id')
+      .inTable('webhook_subscriptions')
+      .onDelete('CASCADE');
     table.string('event_type', 100).notNullable();
     table.text('payload').notNullable();
     table
@@ -45,7 +54,10 @@ export async function up(knex) {
     table.timestamp('delivered_at').nullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
 
-    table.index(['status', 'next_attempt_at'], 'idx_webhook_deliveries_status_next');
+    table.index(
+      ['status', 'next_attempt_at'],
+      'idx_webhook_deliveries_status_next'
+    );
   });
 }
 

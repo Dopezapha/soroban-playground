@@ -2,8 +2,7 @@
 // AUTARCH implementation for StellarDevHub#1393.
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, Address, Bytes, Env,
-    Map, Vec,
+    contract, contracterror, contractimpl, contracttype, Address, Bytes, Env, Map, Vec,
 };
 
 #[contracttype]
@@ -67,8 +66,11 @@ impl BountyDisputeContract {
     ) -> Result<u64, DisputeError> {
         whitehat.require_auth();
 
-        let mut counter: u64 =
-            env.storage().persistent().get(&DataKey::Counter).unwrap_or(0);
+        let mut counter: u64 = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Counter)
+            .unwrap_or(0);
         counter += 1;
 
         let submission = Submission {

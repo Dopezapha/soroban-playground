@@ -16,7 +16,11 @@ fn setup() -> (Env, SocialMediaContractClient<'static>) {
 fn test_create_profile() {
     let (env, client) = setup();
     let user = Address::generate(&env);
-    client.create_profile(&user, &String::from_str(&env, "Alice"), &String::from_str(&env, "Web3 dev"));
+    client.create_profile(
+        &user,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, "Web3 dev"),
+    );
     let p = client.get_profile(&user).unwrap();
     assert_eq!(p.nickname, String::from_str(&env, "Alice"));
     assert_eq!(p.followers, 0);
@@ -28,12 +32,24 @@ fn test_update_profile_preserves_counts() {
     let (env, client) = setup();
     let user = Address::generate(&env);
     let follower = Address::generate(&env);
-    client.create_profile(&user, &String::from_str(&env, "Alice"), &String::from_str(&env, "Bio"));
-    client.create_profile(&follower, &String::from_str(&env, "Bob"), &String::from_str(&env, "Bio"));
+    client.create_profile(
+        &user,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, "Bio"),
+    );
+    client.create_profile(
+        &follower,
+        &String::from_str(&env, "Bob"),
+        &String::from_str(&env, "Bio"),
+    );
     client.follow_creator(&follower, &user);
 
     // Re-create profile should preserve followers
-    client.create_profile(&user, &String::from_str(&env, "Alice2"), &String::from_str(&env, "New bio"));
+    client.create_profile(
+        &user,
+        &String::from_str(&env, "Alice2"),
+        &String::from_str(&env, "New bio"),
+    );
     let p = client.get_profile(&user).unwrap();
     assert_eq!(p.followers, 1);
     assert_eq!(p.nickname, String::from_str(&env, "Alice2"));
@@ -46,8 +62,16 @@ fn test_follow_unfollow() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
-    client.create_profile(&bob, &String::from_str(&env, "Bob"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
+    client.create_profile(
+        &bob,
+        &String::from_str(&env, "Bob"),
+        &String::from_str(&env, ""),
+    );
 
     assert!(!client.is_following(&bob, &alice));
     client.follow_creator(&bob, &alice);
@@ -66,8 +90,16 @@ fn test_follow_idempotent() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
-    client.create_profile(&bob, &String::from_str(&env, "Bob"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
+    client.create_profile(
+        &bob,
+        &String::from_str(&env, "Bob"),
+        &String::from_str(&env, ""),
+    );
 
     client.follow_creator(&bob, &alice);
     client.follow_creator(&bob, &alice); // second call is no-op
@@ -81,7 +113,11 @@ fn test_subscribe_and_unsubscribe() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
 
     assert!(!client.is_subscribed(&bob, &alice));
     client.subscribe_to_creator(&bob, &alice, &1000);
@@ -101,7 +137,11 @@ fn test_subscribe_renew_adds_revenue() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
 
     client.subscribe_to_creator(&bob, &alice, &500);
     client.subscribe_to_creator(&bob, &alice, &500); // renewal
@@ -125,13 +165,12 @@ fn test_subscribe_zero_amount_fails() {
 fn test_create_post_increments_count() {
     let (env, client) = setup();
     let user = Address::generate(&env);
-    client.create_profile(&user, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
-    let id = client.create_post(
+    client.create_profile(
         &user,
-        &String::from_str(&env, "ipfs://abc"),
-        &false,
-        &0,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
     );
+    let id = client.create_post(&user, &String::from_str(&env, "ipfs://abc"), &false, &0);
     assert_eq!(id, 1);
     assert_eq!(client.get_profile(&user).unwrap().post_count, 1);
 }
@@ -148,7 +187,11 @@ fn test_post_without_profile_fails() {
 fn test_get_latest_posts() {
     let (env, client) = setup();
     let user = Address::generate(&env);
-    client.create_profile(&user, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &user,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     client.create_post(&user, &String::from_str(&env, "Post 1"), &false, &0);
     client.create_post(&user, &String::from_str(&env, "Post 2"), &false, &0);
     let feed = client.get_latest_posts();
@@ -161,7 +204,11 @@ fn test_get_latest_posts() {
 fn test_get_user_posts() {
     let (env, client) = setup();
     let user = Address::generate(&env);
-    client.create_profile(&user, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &user,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     client.create_post(&user, &String::from_str(&env, "P1"), &false, &0);
     client.create_post(&user, &String::from_str(&env, "P2"), &false, &0);
     let ids = client.get_user_posts(&user);
@@ -175,7 +222,11 @@ fn test_like_post() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &false, &0);
     client.like_post(&bob, &id);
     assert_eq!(client.get_post(&id).unwrap().likes, 1);
@@ -187,11 +238,18 @@ fn test_tip_post() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &false, &0);
     client.tip_post(&bob, &id, &500);
     assert_eq!(client.get_post(&id).unwrap().tips_collected, 500);
-    assert_eq!(client.get_creator_analytics(&alice).withdrawable_earnings, 500);
+    assert_eq!(
+        client.get_creator_analytics(&alice).withdrawable_earnings,
+        500
+    );
 }
 
 #[test]
@@ -200,7 +258,11 @@ fn test_tip_zero_fails() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &false, &0);
     client.tip_post(&bob, &id, &0);
 }
@@ -211,7 +273,11 @@ fn test_tip_below_minimum_fails() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &false, &1000);
     client.tip_post(&bob, &id, &100); // below min_tip of 1000
 }
@@ -222,7 +288,11 @@ fn test_tip_premium_without_sub_fails() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &true, &0);
     client.tip_post(&bob, &id, &100); // not subscribed
 }
@@ -232,7 +302,11 @@ fn test_tip_premium_with_sub_succeeds() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &true, &0);
     client.subscribe_to_creator(&bob, &alice, &500);
     client.tip_post(&bob, &id, &100);
@@ -246,14 +320,21 @@ fn test_withdraw_earnings() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
     let bob = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     let id = client.create_post(&alice, &String::from_str(&env, "P1"), &false, &0);
     client.tip_post(&bob, &id, &1000);
     client.subscribe_to_creator(&bob, &alice, &500);
 
     let withdrawn = client.withdraw_earnings(&alice);
     assert_eq!(withdrawn, 1500);
-    assert_eq!(client.get_creator_analytics(&alice).withdrawable_earnings, 0);
+    assert_eq!(
+        client.get_creator_analytics(&alice).withdrawable_earnings,
+        0
+    );
 }
 
 #[test]
@@ -261,7 +342,11 @@ fn test_withdraw_earnings() {
 fn test_withdraw_empty_earnings_fails() {
     let (env, client) = setup();
     let alice = Address::generate(&env);
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
     client.withdraw_earnings(&alice);
 }
 
@@ -274,9 +359,21 @@ fn test_creator_analytics_full() {
     let bob = Address::generate(&env);
     let carol = Address::generate(&env);
 
-    client.create_profile(&alice, &String::from_str(&env, "Alice"), &String::from_str(&env, ""));
-    client.create_profile(&bob, &String::from_str(&env, "Bob"), &String::from_str(&env, ""));
-    client.create_profile(&carol, &String::from_str(&env, "Carol"), &String::from_str(&env, ""));
+    client.create_profile(
+        &alice,
+        &String::from_str(&env, "Alice"),
+        &String::from_str(&env, ""),
+    );
+    client.create_profile(
+        &bob,
+        &String::from_str(&env, "Bob"),
+        &String::from_str(&env, ""),
+    );
+    client.create_profile(
+        &carol,
+        &String::from_str(&env, "Carol"),
+        &String::from_str(&env, ""),
+    );
 
     client.follow_creator(&bob, &alice);
     client.follow_creator(&carol, &alice);

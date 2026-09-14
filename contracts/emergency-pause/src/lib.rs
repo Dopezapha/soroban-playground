@@ -8,105 +8,6 @@
 //!
 //! ## Features
 //! - Multi-sig guardian role for pause/unpause actions
-//! - Time-locked governance with proposal expiration
-//! - Configurable signature threshold
-//! - Comprehensive event emissions
-//! - Guarded action example via `do_action`
-
-// contracts/emergency-pause/src/lib.rs
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GuardianConfig {
-    pub guardians: Vec<Address>,
-    pub threshold: u32,
-    pub is_paused: bool,
-    pub time_lock_duration: u64,
-}
-
-#[contracttype]
-pub enum DataKey {
-    Config,
-    PendingUnpause(u64), // timestamp for time-locked resume
-}
-
-#[contract]
-pub struct EmergencyPauseContract;
-
-#[contractimpl]
-impl EmergencyPauseContract {
-    pub fn initialize(env: Env, admin: Address, guardians: Vec<Address>, threshold: u32, time_lock_duration: u64) {
-        admin.require_auth();
-        if env.storage().instance().has(&DataKey::Config) {
-            panic!("Emergency pause contract already initialized");
-        }
-        if threshold == 0 || threshold > guardians.len() {
-            panic!("Invalid guardian signature threshold");
-        }
-
-        let config = GuardianConfig {
-            guardians,
-            threshold,
-            is_paused: false,
-            time_lock_duration,
-        };
-
-        env.storage().instance().set(&DataKey::Config, &config);
-        env.events().publish((Symbol::new(&env, "Initialized"),), admin);
-    }
-
-    pub fn emergency_pause(env: Env, guardian: Address) {
-        guardian.require_auth();
-
-        let mut config: GuardianConfig = env.storage().instance().get(&DataKey::Config).unwrap();
-        if !config.guardians.contains(&guardian) {
-            panic!("Unauthorized: caller is not a registered guardian");
-        }
-
-        config.is_paused = true;
-        env.storage().instance().set(&DataKey::Config, &config);
-
-        env.events().publish((Symbol::new(&env, "EmergencyPaused"), guardian), ());
-    }
-
-    pub fn schedule_unpause(env: Env, admin: Address) {
-        admin.require_auth();
-
-        let config: GuardianConfig = env.storage().instance().get(&DataKey::Config).unwrap();
-        if !config.is_paused {
-            panic!("System is not currently paused");
-        }
-
-        let unpause_time = env.ledger().timestamp() + config.time_lock_duration;
-        env.storage().instance().set(&DataKey::PendingUnpause(unpause_time), &true);
-
-        env.events().publish((Symbol::new(&env, "UnpauseScheduled"), unpause_time), admin);
-    }
-
-    pub fn execute_unpause(env: Env, admin: Address, unpause_time: u64) {
-        admin.require_auth();
-
-        let pending_key = DataKey::PendingUnpause(unpause_time);
-        let is_pending: bool = env.storage().instance().get(&pending_key).unwrap_or(false);
-        if !is_pending {
-            panic!("No pending unpause found for given timestamp");
-        }
-
-        if env.ledger().timestamp() < unpause_time {
-            panic!("Time-lock duration has not yet elapsed");
-        }
-
-        let mut config: GuardianConfig = env.storage().instance().get(&DataKey::Config).unwrap();
-        config.is_paused = false;
-        
-        env.storage().instance().set(&DataKey::Config, &config);
-        env.storage().instance().remove(&pending_key);
-
-        env.events().publish((Symbol::new(&env, "EmergencyResumed"),), admin);
-    }
-}
-
 #![cfg_attr(not(test), no_std)]
 
 mod storage;
@@ -118,8 +19,8 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 use crate::storage::{
     get_admin, get_guardian_count, get_pause_reason, get_pause_timestamp, get_proposal,
     get_proposal_count, get_threshold, is_guardian, is_initialized, is_paused, next_proposal_id,
-    set_admin, set_guardian, set_guardian_count, set_pause_reason, set_pause_timestamp,
-    set_paused, set_proposal, set_threshold,
+    set_admin, set_guardian, set_guardian_count, set_pause_reason, set_pause_timestamp, set_paused,
+    set_proposal, set_threshold,
 };
 use crate::types::{Error, PauseAction, PauseProposal};
 
@@ -147,8 +48,7 @@ impl EmergencyPause {
         set_paused(&env, false);
         set_guardian_count(&env, 0);
 
-        env.events()
-            .publish((symbol_short!("init"),), admin);
+        env.events().publish((symbol_short!("init"),), admin);
 
         Ok(())
     }
@@ -167,8 +67,7 @@ impl EmergencyPause {
         let count = get_guardian_count(&env) + 1;
         set_guardian_count(&env, count);
 
-        env.events()
-            .publish((symbol_short!("guardian"),), guardian);
+        env.events().publish((symbol_short!("guardian"),), guardian);
 
         Ok(())
     }
@@ -185,8 +84,7 @@ impl EmergencyPause {
         let count = get_guardian_count(&env).saturating_sub(1);
         set_guardian_count(&env, count);
 
-        env.events()
-            .publish((symbol_short!("un_guard"),), guardian);
+        env.events().publish((symbol_short!("un_guard"),), guardian);
 
         Ok(())
     }
@@ -264,11 +162,7 @@ impl EmergencyPause {
     }
 
     /// Sign a proposal. Guardian-only. Increments signature count.
-    pub fn sign_proposal(
-        env: Env,
-        signer: Address,
-        proposal_id: u32,
-    ) -> Result<(), Error> {
+    pub fn sign_proposal(env: Env, signer: Address, proposal_id: u32) -> Result<(), Error> {
         signer.require_auth();
         Self::assert_initialized(&env)?;
 
@@ -302,11 +196,7 @@ impl EmergencyPause {
     }
 
     /// Execute a proposal once enough signatures are collected.
-    pub fn execute_proposal(
-        env: Env,
-        executor: Address,
-        proposal_id: u32,
-    ) -> Result<(), Error> {
+    pub fn execute_proposal(env: Env, executor: Address, proposal_id: u32) -> Result<(), Error> {
         executor.require_auth();
         Self::assert_initialized(&env)?;
 
@@ -338,18 +228,20 @@ impl EmergencyPause {
                 if proposal.reason.len() > 0 {
                     set_pause_reason(&env, &proposal.reason);
                 }
-                env.events()
-                    .publish((symbol_short!("paused"),), now);
+                env.events().publish((symbol_short!("paused"),), now);
             }
             PauseAction::Unpause => {
                 if !is_paused(&env) {
                     return Err(Error::AlreadyInState);
                 }
                 set_paused(&env, false);
-                env.storage().instance().remove(&crate::types::InstanceKey::PauseReason);
-                env.storage().instance().remove(&crate::types::InstanceKey::PauseTimestamp);
-                env.events()
-                    .publish((symbol_short!("unpaused"),), executor);
+                env.storage()
+                    .instance()
+                    .remove(&crate::types::InstanceKey::PauseReason);
+                env.storage()
+                    .instance()
+                    .remove(&crate::types::InstanceKey::PauseTimestamp);
+                env.events().publish((symbol_short!("unpaused"),), executor);
             }
         }
 
@@ -399,8 +291,7 @@ impl EmergencyPause {
         if is_paused(&env) {
             return Err(Error::ContractPaused);
         }
-        env.events()
-            .publish((symbol_short!("action"),), caller);
+        env.events().publish((symbol_short!("action"),), caller);
         Ok(())
     }
 

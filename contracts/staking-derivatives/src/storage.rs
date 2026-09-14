@@ -8,7 +8,10 @@ use crate::types::{DataKey, Error, InstanceKey, UnbondEntry};
 macro_rules! instance_get {
     ($fn:ident, $key:ident, $t:ty, $default:expr) => {
         pub fn $fn(env: &Env) -> $t {
-            env.storage().instance().get(&InstanceKey::$key).unwrap_or($default)
+            env.storage()
+                .instance()
+                .get(&InstanceKey::$key)
+                .unwrap_or($default)
         }
     };
 }
@@ -28,7 +31,10 @@ pub fn set_admin(env: &Env, a: &Address) {
     env.storage().instance().set(&InstanceKey::Admin, a);
 }
 pub fn get_admin(env: &Env) -> Result<Address, Error> {
-    env.storage().instance().get(&InstanceKey::Admin).ok_or(Error::NotInitialized)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::Admin)
+        .ok_or(Error::NotInitialized)
 }
 
 instance_get!(get_total_staked, TotalStaked, i128, 0);

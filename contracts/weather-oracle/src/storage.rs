@@ -11,7 +11,9 @@ pub fn is_initialized(env: &Env) -> bool {
     env.storage().instance().has(&InstanceKey::Initialized)
 }
 pub fn set_initialized(env: &Env) {
-    env.storage().instance().set(&InstanceKey::Initialized, &true);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::Initialized, &true);
 }
 
 pub fn set_admin(env: &Env, a: &Address) {
@@ -25,7 +27,10 @@ pub fn get_admin(env: &Env) -> Result<Address, Error> {
 }
 
 pub fn is_paused(env: &Env) -> bool {
-    env.storage().instance().get(&InstanceKey::Paused).unwrap_or(false)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::Paused)
+        .unwrap_or(false)
 }
 pub fn set_paused(env: &Env, v: bool) {
     env.storage().instance().set(&InstanceKey::Paused, &v);
@@ -44,7 +49,10 @@ pub fn set_threshold(env: &Env, v: u32) {
 }
 
 pub fn get_record_count(env: &Env) -> u32 {
-    env.storage().instance().get(&InstanceKey::RecordCount).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&InstanceKey::RecordCount)
+        .unwrap_or(0)
 }
 pub fn set_record_count(env: &Env, v: u32) {
     env.storage().instance().set(&InstanceKey::RecordCount, &v);
@@ -57,13 +65,17 @@ pub fn is_circuit_breaker_active(env: &Env) -> bool {
         .unwrap_or(false)
 }
 pub fn set_circuit_breaker(env: &Env, v: bool) {
-    env.storage().instance().set(&InstanceKey::CircuitBreaker, &v);
+    env.storage()
+        .instance()
+        .set(&InstanceKey::CircuitBreaker, &v);
 }
 
 // ── Persistent storage (data) ─────────────────────────────────────────────────
 
 pub fn set_record(env: &Env, r: &WeatherData) {
-    env.storage().persistent().set(&DataKey::WeatherData(r.id), r);
+    env.storage()
+        .persistent()
+        .set(&DataKey::WeatherData(r.id), r);
 }
 pub fn get_record(env: &Env, id: u32) -> Result<WeatherData, Error> {
     env.storage()
@@ -73,7 +85,9 @@ pub fn get_record(env: &Env, id: u32) -> Result<WeatherData, Error> {
 }
 
 pub fn source_exists(env: &Env, addr: &Address) -> bool {
-    env.storage().persistent().has(&DataKey::Source(addr.clone()))
+    env.storage()
+        .persistent()
+        .has(&DataKey::Source(addr.clone()))
 }
 pub fn set_source(env: &Env, s: &DataSource) {
     env.storage()
@@ -99,9 +113,10 @@ pub fn mark_submitted(env: &Env, record_id: u32, source: &Address) {
 }
 
 pub fn set_history_index(env: &Env, location: &String, observed_at: u64, record_id: u32) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::HistoryIndex(location.clone(), observed_at), &record_id);
+    env.storage().persistent().set(
+        &DataKey::HistoryIndex(location.clone(), observed_at),
+        &record_id,
+    );
 }
 pub fn get_history_index(env: &Env, location: &String, observed_at: u64) -> Option<u32> {
     env.storage()

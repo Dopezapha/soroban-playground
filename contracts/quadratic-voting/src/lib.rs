@@ -24,10 +24,10 @@ mod types;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 
 use crate::storage::{
-    get_admin, get_balance, get_proposal, get_proposal_count, get_quorum_bps,
-    get_total_supply, get_voting_period, has_voted, is_initialized, is_paused, is_whitelisted,
-    record_vote, set_admin, set_balance, set_paused, set_proposal, set_proposal_count,
-    set_quorum_bps, set_total_supply, set_voting_period, set_whitelisted,
+    get_admin, get_balance, get_proposal, get_proposal_count, get_quorum_bps, get_total_supply,
+    get_voting_period, has_voted, is_initialized, is_paused, is_whitelisted, record_vote,
+    set_admin, set_balance, set_paused, set_proposal, set_proposal_count, set_quorum_bps,
+    set_total_supply, set_voting_period, set_whitelisted,
 };
 use crate::types::{Error, Proposal, ProposalStatus};
 
@@ -160,7 +160,8 @@ impl QuadraticVoting {
         }
         proposal.status = ProposalStatus::Cancelled;
         set_proposal(&env, &proposal);
-        env.events().publish((symbol_short!("cancelled"),), proposal_id);
+        env.events()
+            .publish((symbol_short!("cancelled"),), proposal_id);
         Ok(())
     }
 
@@ -168,12 +169,7 @@ impl QuadraticVoting {
 
     /// Cast a quadratic vote. Voting power = floor(sqrt(token_balance)).
     /// `is_for`: true = vote for, false = vote against.
-    pub fn vote(
-        env: Env,
-        voter: Address,
-        proposal_id: u32,
-        is_for: bool,
-    ) -> Result<i128, Error> {
+    pub fn vote(env: Env, voter: Address, proposal_id: u32, is_for: bool) -> Result<i128, Error> {
         ensure_initialized(&env)?;
         not_paused(&env)?;
         voter.require_auth();
@@ -210,7 +206,10 @@ impl QuadraticVoting {
         record_vote(&env, proposal_id, &voter);
         set_proposal(&env, &proposal);
 
-        env.events().publish((symbol_short!("voted"),), (voter, proposal_id, votes, is_for));
+        env.events().publish(
+            (symbol_short!("voted"),),
+            (voter, proposal_id, votes, is_for),
+        );
         Ok(votes)
     }
 
@@ -227,18 +226,20 @@ impl QuadraticVoting {
         }
 
         let total_votes = proposal.votes_for + proposal.votes_against;
-        let quorum_needed = proposal.total_supply_snapshot
-            .saturating_mul(get_quorum_bps(&env)) / 10_000;
+        let quorum_needed = proposal
+            .total_supply_snapshot
+            .saturating_mul(get_quorum_bps(&env))
+            / 10_000;
 
-        proposal.status = if total_votes >= quorum_needed
-            && proposal.votes_for > proposal.votes_against
-        {
-            ProposalStatus::Passed
-        } else {
-            ProposalStatus::Defeated
-        };
+        proposal.status =
+            if total_votes >= quorum_needed && proposal.votes_for > proposal.votes_against {
+                ProposalStatus::Passed
+            } else {
+                ProposalStatus::Defeated
+            };
         set_proposal(&env, &proposal);
-        env.events().publish((symbol_short!("finalized"),), proposal_id);
+        env.events()
+            .publish((symbol_short!("finalized"),), proposal_id);
         Ok(proposal.status)
     }
 
@@ -279,7 +280,9 @@ impl QuadraticVoting {
 
     /// Compute voting power for a given token balance (off-chain helper).
     pub fn balance_to_voting_power(_env: Env, balance: i128) -> i128 {
-        if balance <= 0 { return 0; }
+        if balance <= 0 {
+            return 0;
+        }
         integer_sqrt(balance as u64) as i128
     }
 }

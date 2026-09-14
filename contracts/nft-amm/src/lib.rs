@@ -265,11 +265,13 @@ impl NftAmm {
         }
 
         // Calculate price buyer pays (spot + fee).
-        let fee = pool.spot_price
+        let fee = pool
+            .spot_price
             .checked_mul(pool.fee_bps)
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
-        let protocol_fee = pool.spot_price
+        let protocol_fee = pool
+            .spot_price
             .checked_mul(get_protocol_fee_bps(&env))
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
@@ -347,11 +349,13 @@ impl NftAmm {
         }
 
         // Calculate payout (spot - fee).
-        let fee = pool.spot_price
+        let fee = pool
+            .spot_price
             .checked_mul(pool.fee_bps)
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
-        let protocol_fee = pool.spot_price
+        let protocol_fee = pool
+            .spot_price
             .checked_mul(get_protocol_fee_bps(&env))
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
@@ -425,12 +429,7 @@ impl NftAmm {
     }
 
     /// Withdraw NFTs from a pool. Pool owner only.
-    pub fn withdraw_nfts(
-        env: Env,
-        owner: Address,
-        pool_id: u32,
-        count: u32,
-    ) -> Result<(), Error> {
+    pub fn withdraw_nfts(env: Env, owner: Address, pool_id: u32, count: u32) -> Result<(), Error> {
         ensure_initialized(&env)?;
         owner.require_auth();
 
@@ -470,8 +469,7 @@ impl NftAmm {
         pool.active = false;
         set_pool(&env, &pool);
 
-        env.events()
-            .publish((symbol_short!("pool_off"),), pool_id);
+        env.events().publish((symbol_short!("pool_off"),), pool_id);
         Ok(())
     }
 
@@ -550,8 +548,7 @@ impl NftAmm {
             return Err(Error::InvalidFee);
         }
         set_protocol_fee_bps(&env, fee_bps);
-        env.events()
-            .publish((symbol_short!("fee_upd"),), fee_bps);
+        env.events().publish((symbol_short!("fee_upd"),), fee_bps);
         Ok(())
     }
 
@@ -590,11 +587,13 @@ impl NftAmm {
     pub fn get_buy_price(env: Env, pool_id: u32) -> Result<i128, Error> {
         ensure_initialized(&env)?;
         let pool = get_pool(&env, pool_id)?;
-        let fee = pool.spot_price
+        let fee = pool
+            .spot_price
             .checked_mul(pool.fee_bps)
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
-        let protocol_fee = pool.spot_price
+        let protocol_fee = pool
+            .spot_price
             .checked_mul(get_protocol_fee_bps(&env))
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
@@ -605,11 +604,13 @@ impl NftAmm {
     pub fn get_sell_price(env: Env, pool_id: u32) -> Result<i128, Error> {
         ensure_initialized(&env)?;
         let pool = get_pool(&env, pool_id)?;
-        let fee = pool.spot_price
+        let fee = pool
+            .spot_price
             .checked_mul(pool.fee_bps)
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
-        let protocol_fee = pool.spot_price
+        let protocol_fee = pool
+            .spot_price
             .checked_mul(get_protocol_fee_bps(&env))
             .ok_or(Error::Overflow)?
             / BPS_DENOM;
@@ -662,7 +663,8 @@ fn next_price_up(pool: &Pool) -> Result<i128, Error> {
         CurveType::Linear => Ok(pool.spot_price + pool.delta),
         CurveType::Exponential => {
             // new_price = spot * (1 + delta/10000)
-            let increase = pool.spot_price
+            let increase = pool
+                .spot_price
                 .checked_mul(pool.delta)
                 .ok_or(Error::Overflow)?
                 / BPS_DENOM;
@@ -680,7 +682,8 @@ fn next_price_down(pool: &Pool) -> Result<i128, Error> {
         }
         CurveType::Exponential => {
             // new_price = spot * (1 - delta/10000)
-            let decrease = pool.spot_price
+            let decrease = pool
+                .spot_price
                 .checked_mul(pool.delta)
                 .ok_or(Error::Overflow)?
                 / BPS_DENOM;

@@ -1,69 +1,8 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String};
-// contracts/index-token/src/lib.rs
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String,
+};
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AssetWeight {
-    pub asset: Address,
-    pub weight: u32, // Basis points (e.g., 5000 = 50%)
-}
-
-#[contracttype]
-pub enum DataKey {
-    Admin,
-    Assets,
-    TotalSupply,
-}
-
-#[contract]
-pub struct IndexTokenContract;
-
-#[contractimpl]
-impl IndexTokenContract {
-    pub fn initialize(env: Env, admin: Address, initial_assets: Vec<AssetWeight>) {
-        if env.storage().instance().has(&DataKey::Admin) {
-            panic!("Already initialized");
-        }
-        admin.require_auth();
-        env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::Assets, &initial_assets);
-        env.storage().instance().set(&DataKey::TotalSupply, &0i128);
-
-        env.events().publish(
-            (Symbol::new(&env, "IndexInitialized"), admin),
-            initial_assets.len() as u32,
-        );
-    }
-
-    pub fn rebalance(env: Env, admin: Address, new_assets: Vec<AssetWeight>) {
-        let stored_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
-        if admin != stored_admin {
-            panic!("Unauthorized: admin access required");
-        }
-
-        let mut total_weight: u32 = 0;
-        for asset in new_assets.iter() {
-            total_weight += asset.weight;
-        }
-        if total_weight != 10000 {
-            panic!("Total asset weights must equal 10000 basis points (100%)");
-        }
-
-        env.storage().instance().set(&DataKey::Assets, &new_assets);
-
-        env.events().publish(
-            (Symbol::new(&env, "IndexRebalanced"),),
-            new_assets,
-        );
-    }
-
-    pub fn get_assets(env: Env) -> Vec<AssetWeight> {
-        env.storage().instance().get(&DataKey::Assets).unwrap()
-    }
-}
 const INSTANCE_BUMP_THRESHOLD: u32 = 17_280;
 const INSTANCE_EXTEND_TO: u32 = 518_400;
 const PERSISTENT_BUMP_THRESHOLD: u32 = 17_280;
@@ -185,7 +124,9 @@ impl IndexTokenContract {
 
         env.storage().instance().set(&DataKey::Pool(pool_id), &pool);
         env.storage().instance().set(&DataKey::PoolCount, &pool_id);
-        env.storage().instance().set(&DataKey::AssetCount(pool_id), &0u32);
+        env.storage()
+            .instance()
+            .set(&DataKey::AssetCount(pool_id), &0u32);
         env.storage()
             .instance()
             .set(&DataKey::TotalValueLocked(pool_id), &0i128);
@@ -241,9 +182,11 @@ impl IndexTokenContract {
         env.storage()
             .persistent()
             .set(&DataKey::Asset(pool_id, asset_id), &asset);
-        env.storage()
-            .persistent()
-            .extend_ttl(&DataKey::Asset(pool_id, asset_id), PERSISTENT_BUMP_THRESHOLD, PERSISTENT_EXTEND_TO);
+        env.storage().persistent().extend_ttl(
+            &DataKey::Asset(pool_id, asset_id),
+            PERSISTENT_BUMP_THRESHOLD,
+            PERSISTENT_EXTEND_TO,
+        );
         env.storage()
             .instance()
             .set(&DataKey::AssetCount(pool_id), &asset_id);
@@ -403,7 +346,7 @@ impl IndexTokenContract {
     pub fn execute_rebalance(
         env: Env,
         pool_id: u32,
-        max_slippage_bps: u32,
+        _max_slippage_bps: u32,
     ) -> Result<(), IndexTokenError> {
         let admin: Address = env
             .storage()

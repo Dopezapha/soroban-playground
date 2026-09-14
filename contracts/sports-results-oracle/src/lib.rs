@@ -152,7 +152,8 @@ impl SportsResultsOracle {
         ds.submissions += 1;
         set_source(&env, &ds);
 
-        env.events().publish((symbol_short!("submit"),), (id, submitter));
+        env.events()
+            .publish((symbol_short!("submit"),), (id, submitter));
         Ok(id)
     }
 
@@ -178,7 +179,8 @@ impl SportsResultsOracle {
         let threshold = get_threshold(&env);
         if result.confirmations >= threshold {
             result.status = SportDataStatus::Verified;
-            env.events().publish((symbol_short!("verified"),), result_id);
+            env.events()
+                .publish((symbol_short!("verified"),), result_id);
         }
         set_result(&env, &result);
         Ok(())
@@ -243,7 +245,11 @@ impl SportsResultsOracle {
             return 0;
         }
         let available = total - from_id;
-        if available < count { available } else { count }
+        if available < count {
+            available
+        } else {
+            count
+        }
     }
 
     pub fn get_result_count(env: Env) -> u32 {

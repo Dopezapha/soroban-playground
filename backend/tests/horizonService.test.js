@@ -33,7 +33,9 @@ describe('HorizonService Ingestion Engine', () => {
     it('creates database schema on ensureSchema()', async () => {
       await service.ensureSchema();
       expect(mockDb.exec).toHaveBeenCalledWith(
-        expect.stringContaining('CREATE TABLE IF NOT EXISTS horizon_transactions_index')
+        expect.stringContaining(
+          'CREATE TABLE IF NOT EXISTS horizon_transactions_index'
+        )
       );
     });
 
@@ -57,7 +59,9 @@ describe('HorizonService Ingestion Engine', () => {
 
   describe('fetchTransactions and backoff', () => {
     it('fetches transactions successfully', async () => {
-      const mockRecords = [{ hash: 'tx123', ledger: 100, paging_token: 'pt123' }];
+      const mockRecords = [
+        { hash: 'tx123', ledger: 100, paging_token: 'pt123' },
+      ];
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -79,7 +83,9 @@ describe('HorizonService Ingestion Engine', () => {
           ok: true,
           status: 200,
           json: async () => ({
-            _embedded: { records: [{ hash: 'tx456', ledger: 101, paging_token: 'pt456' }] },
+            _embedded: {
+              records: [{ hash: 'tx456', ledger: 101, paging_token: 'pt456' }],
+            },
           }),
         });
 
@@ -91,21 +97,14 @@ describe('HorizonService Ingestion Engine', () => {
 
   describe('gap detection', () => {
     it('returns no gap for contiguous ledgers', () => {
-      const records = [
-        { ledger: 100 },
-        { ledger: 101 },
-        { ledger: 102 },
-      ];
+      const records = [{ ledger: 100 }, { ledger: 101 }, { ledger: 102 }];
       const gapResult = service.detectGaps(records, 99);
       expect(gapResult.hasGap).toBe(false);
       expect(gapResult.missingLedgers).toEqual([]);
     });
 
     it('detects missing ledgers and flags gap', () => {
-      const records = [
-        { ledger: 100 },
-        { ledger: 105 },
-      ];
+      const records = [{ ledger: 100 }, { ledger: 105 }];
       const gapResult = service.detectGaps(records, 99);
       expect(gapResult.hasGap).toBe(true);
       expect(gapResult.missingLedgers).toEqual([101, 102, 103, 104]);
@@ -169,7 +168,12 @@ describe('HorizonService Ingestion Engine', () => {
         json: async () => ({
           _embedded: {
             records: [
-              { hash: 'tx1', ledger: 100, paging_token: 'cur2', successful: true },
+              {
+                hash: 'tx1',
+                ledger: 100,
+                paging_token: 'cur2',
+                successful: true,
+              },
             ],
           },
         }),

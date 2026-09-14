@@ -43,7 +43,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, vec, Address, Env, Symbol, Vec,
+    contract, contracterror, contractimpl, contracttype, symbol_short, vec, Address, Env, Symbol,
+    Vec,
 };
 
 // ── Error codes ───────────────────────────────────────────────────────────────
@@ -217,9 +218,7 @@ fn get_inv_size(env: &Env, player: &Address) -> u32 {
 }
 
 fn get_inv_slot(env: &Env, player: &Address, slot: u32) -> Option<ItemInstance> {
-    env.storage()
-        .persistent()
-        .get(&(INV, player.clone(), slot))
+    env.storage().persistent().get(&(INV, player.clone(), slot))
 }
 
 fn set_inv_slot(env: &Env, player: &Address, slot: u32, item: &ItemInstance) {
@@ -250,7 +249,9 @@ fn derive_seed(env: &Env, crafter: &Address, item_def_id: u32, recipe_id: u32) -
 /// Advance the LCG seed and return a value in `[0, range]`.
 fn roll(seed: &mut u64, range: u32) -> u32 {
     // Knuth multiplicative LCG (64-bit variant).
-    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *seed = seed
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     if range == 0 {
         return 0;
     }
@@ -536,8 +537,10 @@ impl GamingCrafting {
                 .persistent()
                 .set(&(INV_SIZE, player.clone()), &new_size);
 
-            env.events()
-                .publish((symbol_short!("destroyed"),), (player, item.item_def_id, slot));
+            env.events().publish(
+                (symbol_short!("destroyed"),),
+                (player, item.item_def_id, slot),
+            );
             return Ok(0);
         }
 

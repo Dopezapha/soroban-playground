@@ -1,15 +1,16 @@
 #![no_std]
 
 mod storage;
+#[cfg(test)]
+mod test;
 mod types;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol};
 use crate::storage::{
-    add_storage, get_file, get_offer, get_provider, get_total_storage, 
-    is_initialized, is_paused, set_file, set_initialized, set_offer, set_provider,
-    get_all_provider_ids
+    get_all_provider_ids, get_file, get_provider, get_total_storage, is_initialized, is_paused,
+    set_file, set_initialized, set_paused, set_provider,
 };
-use crate::types::{Error, FileMetadata, StorageOffer, StorageProvider};
+use crate::types::{Error, FileMetadata, StorageProvider};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Vec};
 
 #[contract]
 pub struct CloudStorage;
@@ -21,7 +22,7 @@ impl CloudStorage {
             return Err(Error::AlreadyInitialized);
         }
         set_initialized(&env);
-        env.events().publish((Symbol::new(&env, "initialize"),));
+        env.events().publish((symbol_short!("init"),), ());
         Ok(())
     }
 
@@ -29,7 +30,7 @@ impl CloudStorage {
         caller.require_auth();
         if is_paused(&env) != paused {
             set_paused(&env, paused);
-            env.events().publish((Symbol::new(&env, "paused"), paused));
+            env.events().publish((symbol_short!("paused"),), paused);
         }
         Ok(())
     }
@@ -54,13 +55,11 @@ impl CloudStorage {
             is_active: true,
         };
 
-        set_provider(&env, provider, &storage_provider);
-        env.events().publish((
-            Symbol::new(&env, "provider_registered"),
-            provider,
-            capacity,
-            price_per_gb,
-        ));
+        set_provider(&env, provider.clone(), &storage_provider);
+        env.events().publish(
+            (symbol_short!("prov_reg"), provider),
+            (capacity, price_per_gb),
+        );
         Ok(())
     }
 
@@ -71,14 +70,13 @@ impl CloudStorage {
             return Err(Error::Paused);
         }
 
-        let mut storage_provider = get_provider(&env, provider).ok_or(Error::ProviderNotFound)?;
+        let mut storage_provider =
+            get_provider(&env, provider.clone()).ok_or(Error::ProviderNotFound)?;
         storage_provider.is_active = false;
         set_provider(&env, provider.clone(), &storage_provider);
 
-        env.events().publish((
-            Symbol::new(&env, "provider_removed"),
-            provider,
-        ));
+        env.events()
+            .publish((symbol_short!("prov_rem"), provider), ());
         Ok(())
     }
 
@@ -112,14 +110,9 @@ impl CloudStorage {
             is_active: true,
         };
 
-        set_file(&env, cid, &meta);
-        env.events().publish((
-            Symbol::new(&env, "file_uploaded"),
-            owner,
-            cid,
-            size,
-            uploaded_at,
-        ));
+        set_file(&env, cid.clone(), &meta);
+        env.events()
+            .publish((symbol_short!("file_up"), owner), (cid, size, uploaded_at));
         Ok(())
     }
 
@@ -149,20 +142,13 @@ impl CloudStorage {
             meta.redundancy_factor = redundancy_factor;
         }
 
-        set_file(&env, cid, &meta);
-        env.events().publish((
-            Symbol::new(&env, "file_updated"),
-            caller,
-            cid,
-        ));
+        set_file(&env, cid.clone(), &meta);
+        env.events()
+            .publish((symbol_short!("file_upd"), caller), cid);
         Ok(())
     }
 
-    pub fn delete_file_metadata(
-        env: Env,
-        caller: Address,
-        cid: String,
-    ) -> Result<(), Error> {
+    pub fn delete_file_metadata(env: Env, caller: Address, cid: String) -> Result<(), Error> {
         caller.require_auth();
 
         if is_paused(&env) {
@@ -179,11 +165,8 @@ impl CloudStorage {
         let mut meta = meta;
         meta.is_active = false;
 
-        env.events().publish((
-            Symbol::new(&env, "file_deleted"),
-            caller,
-            cid,
-        ));
+        env.events()
+            .publish((symbol_short!("file_del"), caller), cid);
         Ok(())
     }
 
@@ -192,7 +175,7 @@ impl CloudStorage {
     }
 
     pub fn get_all_active_providers(env: Env) -> Vec<StorageProvider> {
-        let active_providers = Vec::new(&env);
+        let mut active_providers = Vec::new(&env);
         let all_ids = get_all_provider_ids(&env);
 
         for id in all_ids.iter() {

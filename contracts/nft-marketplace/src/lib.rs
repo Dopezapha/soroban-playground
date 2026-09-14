@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, token};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env};
 
 #[contracttype]
 #[derive(Clone)]
@@ -21,7 +21,7 @@ pub struct Listing {
     pub nft_contract: Address,
     pub price: i128,
     pub is_auction: bool,
-    pub end_time: u64, 
+    pub end_time: u64,
     pub highest_bidder: Option<Address>,
     pub highest_bid: i128,
     pub royalty_recipient: Address,
@@ -37,7 +37,9 @@ impl NftMarketplace {
     pub fn init(env: Env, admin: Address, fee_recipient: Address) {
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::FeeRecipient, &fee_recipient);
+        env.storage()
+            .instance()
+            .set(&DataKey::FeeRecipient, &fee_recipient);
         env.storage().instance().set(&DataKey::ListingCount, &0u64);
     }
 
@@ -60,7 +62,11 @@ impl NftMarketplace {
         let nft_client = token::Client::new(&env, &nft_contract);
         nft_client.transfer(&seller, &env.current_contract_address(), &1);
 
-        let mut count: u64 = env.storage().instance().get(&DataKey::ListingCount).unwrap_or(0);
+        let mut count: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::ListingCount)
+            .unwrap_or(0);
         count += 1;
 
         let end_time = env.ledger().timestamp() + duration;
@@ -78,15 +84,27 @@ impl NftMarketplace {
             active: true,
         };
 
-        env.storage().persistent().set(&DataKey::Listing(count), &listing);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Listing(count), &listing);
         env.storage().instance().set(&DataKey::ListingCount, &count);
 
         count
     }
 
-    pub fn buy_or_bid(env: Env, buyer: Address, listing_id: u64, payment_token: Address, bid_amount: i128) {
+    pub fn buy_or_bid(
+        env: Env,
+        buyer: Address,
+        listing_id: u64,
+        payment_token: Address,
+        bid_amount: i128,
+    ) {
         buyer.require_auth();
-        let mut listing: Listing = env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap();
+        let mut listing: Listing = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap();
         if !listing.active {
             panic!("Listing is not active");
         }
@@ -98,7 +116,11 @@ impl NftMarketplace {
                 panic!("Insufficient payment");
             }
             // Execute fixed price sale
-            let fee_recipient: Address = env.storage().instance().get(&DataKey::FeeRecipient).unwrap();
+            let fee_recipient: Address = env
+                .storage()
+                .instance()
+                .get(&DataKey::FeeRecipient)
+                .unwrap();
             let marketplace_fee = bid_amount * 25 / 1000; // 2.5% fee
             let royalty = bid_amount * (listing.royalty_percent as i128) / 1000;
             let seller_revenue = bid_amount - marketplace_fee - royalty;
@@ -125,7 +147,11 @@ impl NftMarketplace {
 
             // Refund previous bidder
             if let Some(prev_bidder) = &listing.highest_bidder {
-                token_client.transfer(&env.current_contract_address(), prev_bidder, &listing.highest_bid);
+                token_client.transfer(
+                    &env.current_contract_address(),
+                    prev_bidder,
+                    &listing.highest_bid,
+                );
             }
 
             // Escrow new bid
@@ -140,11 +166,17 @@ impl NftMarketplace {
             }
         }
 
-        env.storage().persistent().set(&DataKey::Listing(listing_id), &listing);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Listing(listing_id), &listing);
     }
 
     pub fn settle_auction(env: Env, listing_id: u64, payment_token: Address) {
-        let mut listing: Listing = env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap();
+        let mut listing: Listing = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap();
         if !listing.is_auction || !listing.active {
             panic!("Not an active auction");
         }
@@ -156,16 +188,32 @@ impl NftMarketplace {
 
         if let Some(winner) = &listing.highest_bidder {
             let token_client = token::Client::new(&env, &payment_token);
-            let fee_recipient: Address = env.storage().instance().get(&DataKey::FeeRecipient).unwrap();
+            let fee_recipient: Address = env
+                .storage()
+                .instance()
+                .get(&DataKey::FeeRecipient)
+                .unwrap();
             let marketplace_fee = listing.highest_bid * 25 / 1000;
             let royalty = listing.highest_bid * (listing.royalty_percent as i128) / 1000;
             let seller_revenue = listing.highest_bid - marketplace_fee - royalty;
 
-            token_client.transfer(&env.current_contract_address(), &fee_recipient, &marketplace_fee);
+            token_client.transfer(
+                &env.current_contract_address(),
+                &fee_recipient,
+                &marketplace_fee,
+            );
             if royalty > 0 {
-                token_client.transfer(&env.current_contract_address(), &listing.royalty_recipient, &royalty);
+                token_client.transfer(
+                    &env.current_contract_address(),
+                    &listing.royalty_recipient,
+                    &royalty,
+                );
             }
-            token_client.transfer(&env.current_contract_address(), &listing.seller, &seller_revenue);
+            token_client.transfer(
+                &env.current_contract_address(),
+                &listing.seller,
+                &seller_revenue,
+            );
 
             nft_client.transfer(&env.current_contract_address(), winner, &1);
         } else {
@@ -174,12 +222,18 @@ impl NftMarketplace {
         }
 
         listing.active = false;
-        env.storage().persistent().set(&DataKey::Listing(listing_id), &listing);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Listing(listing_id), &listing);
     }
 
     pub fn cancel_listing(env: Env, seller: Address, listing_id: u64) {
         seller.require_auth();
-        let mut listing: Listing = env.storage().persistent().get(&DataKey::Listing(listing_id)).unwrap();
+        let mut listing: Listing = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Listing(listing_id))
+            .unwrap();
         if !listing.active {
             panic!("Not active");
         }
@@ -194,6 +248,8 @@ impl NftMarketplace {
         nft_client.transfer(&env.current_contract_address(), &seller, &1);
 
         listing.active = false;
-        env.storage().persistent().set(&DataKey::Listing(listing_id), &listing);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Listing(listing_id), &listing);
     }
 }

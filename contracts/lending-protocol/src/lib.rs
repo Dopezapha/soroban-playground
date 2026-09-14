@@ -74,7 +74,10 @@ impl LendingProtocol {
         validate_amount(amount)?;
 
         let mut pos = get_position(&env, &user);
-        pos.deposited = pos.deposited.checked_add(amount).ok_or(Error::InvalidAmount)?;
+        pos.deposited = pos
+            .deposited
+            .checked_add(amount)
+            .ok_or(Error::InvalidAmount)?;
         pos.last_updated = env.ledger().timestamp();
         set_position(&env, &user, &pos);
 
@@ -83,7 +86,8 @@ impl LendingProtocol {
             .ok_or(Error::InvalidAmount)?;
         set_total_deposited(&env, new_total);
 
-        env.events().publish((symbol_short!("deposit"), user), amount);
+        env.events()
+            .publish((symbol_short!("deposit"), user), amount);
         Ok(())
     }
 
@@ -124,7 +128,8 @@ impl LendingProtocol {
             .ok_or(Error::InvalidAmount)?;
         set_total_deposited(&env, new_total);
 
-        env.events().publish((symbol_short!("withdraw"), user), amount);
+        env.events()
+            .publish((symbol_short!("withdraw"), user), amount);
         Ok(())
     }
 
@@ -158,7 +163,8 @@ impl LendingProtocol {
             .ok_or(Error::InvalidAmount)?;
         set_total_borrowed(&env, new_total);
 
-        env.events().publish((symbol_short!("borrow"), user), amount);
+        env.events()
+            .publish((symbol_short!("borrow"), user), amount);
         Ok(())
     }
 

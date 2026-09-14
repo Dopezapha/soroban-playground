@@ -4,7 +4,14 @@
 // Production: Compiler Artifact S3 / Cloudflare R2 Persistent Storage Adapter
 // Uploads compiled WASM binaries and build logs to S3-compatible object storage
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'stream';
 import path from 'path';
@@ -20,8 +27,10 @@ const STORAGE_CONFIG = {
   endpoint: process.env.S3_ENDPOINT || process.env.R2_ENDPOINT,
   region: process.env.S3_REGION || 'us-east-1',
   accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY,
-  bucket: process.env.S3_BUCKET || process.env.R2_BUCKET || 'soroban-playground',
+  secretAccessKey:
+    process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY,
+  bucket:
+    process.env.S3_BUCKET || process.env.R2_BUCKET || 'soroban-playground',
   forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
   signatureVersion: process.env.S3_SIGNATURE_VERSION || 'v4',
 };
@@ -66,7 +75,12 @@ export const NETWORK = {
  * @param {string} filename - Original filename
  * @returns {string} Storage key (path)
  */
-export function generateStorageKey(contractId, network, artifactType, filename) {
+export function generateStorageKey(
+  contractId,
+  network,
+  artifactType,
+  filename
+) {
   const timestamp = Date.now();
   const ext = path.extname(filename);
   const baseName = path.basename(filename, ext);
@@ -125,7 +139,7 @@ async function uploadBuffer(buffer, key, metadata = {}) {
 
 /**
  * Get content type from file extension
- * @param {string} filename 
+ * @param {string} filename
  * @returns {string} MIME type
  */
 function getContentType(filename) {
@@ -144,7 +158,7 @@ function getContentType(filename) {
 
 /**
  * Convert stream to buffer
- * @param {Readable} stream 
+ * @param {Readable} stream
  * @returns {Promise<Buffer>}
  */
 async function streamToBuffer(stream) {
@@ -172,15 +186,25 @@ export class StorageService {
    * @returns {Promise<object>} Upload result with key
    */
   async uploadWasmBinary(wasmBuffer, contractId, metadata = {}) {
-    const key = generateStorageKey(contractId, metadata.network || NETWORK.TESTNET, ARTIFACT_TYPE.WASM_BINARY, metadata.filename || 'contract.wasm');
-    
+    const key = generateStorageKey(
+      contractId,
+      metadata.network || NETWORK.TESTNET,
+      ARTIFACT_TYPE.WASM_BINARY,
+      metadata.filename || 'contract.wasm'
+    );
+
     await uploadBuffer(wasmBuffer, key, {
       ...metadata,
       artifactType: ARTIFACT_TYPE.WASM_BINARY,
       contractId,
     });
 
-    return { key, bucket: this.bucket, size: wasmBuffer.length, contentHash: computeContentHash(wasmBuffer) };
+    return {
+      key,
+      bucket: this.bucket,
+      size: wasmBuffer.length,
+      contentHash: computeContentHash(wasmBuffer),
+    };
   }
 
   /**
@@ -191,9 +215,15 @@ export class StorageService {
    * @returns {Promise<object>} Upload result
    */
   async uploadBuildLog(logContent, contractId, metadata = {}) {
-    const buffer = typeof logContent === 'string' ? Buffer.from(logContent) : logContent;
-    const key = generateStorageKey(contractId, metadata.network || NETWORK.TESTNET, ARTIFACT_TYPE.BUILD_LOG, metadata.filename || 'build.log');
-    
+    const buffer =
+      typeof logContent === 'string' ? Buffer.from(logContent) : logContent;
+    const key = generateStorageKey(
+      contractId,
+      metadata.network || NETWORK.TESTNET,
+      ARTIFACT_TYPE.BUILD_LOG,
+      metadata.filename || 'build.log'
+    );
+
     await uploadBuffer(buffer, key, {
       ...metadata,
       artifactType: ARTIFACT_TYPE.BUILD_LOG,
@@ -213,8 +243,13 @@ export class StorageService {
   async uploadSourceMap(sourceMap, contractId, metadata = {}) {
     const content = JSON.stringify(sourceMap, null, 2);
     const buffer = Buffer.from(content);
-    const key = generateStorageKey(contractId, metadata.network || NETWORK.TESTNET, ARTIFACT_TYPE.SOURCE_MAP, metadata.filename || 'source.map');
-    
+    const key = generateStorageKey(
+      contractId,
+      metadata.network || NETWORK.TESTNET,
+      ARTIFACT_TYPE.SOURCE_MAP,
+      metadata.filename || 'source.map'
+    );
+
     await uploadBuffer(buffer, key, {
       ...metadata,
       artifactType: ARTIFACT_TYPE.SOURCE_MAP,
@@ -233,8 +268,13 @@ export class StorageService {
   async uploadCompileMetadata(metadata, contractId) {
     const content = JSON.stringify(metadata, null, 2);
     const buffer = Buffer.from(content);
-    const key = generateStorageKey(contractId, metadata.network || NETWORK.TESTNET, ARTIFACT_TYPE.COMPILE_METADATA, 'metadata.json');
-    
+    const key = generateStorageKey(
+      contractId,
+      metadata.network || NETWORK.TESTNET,
+      ARTIFACT_TYPE.COMPILE_METADATA,
+      'metadata.json'
+    );
+
     await uploadBuffer(buffer, key, {
       artifactType: ARTIFACT_TYPE.COMPILE_METADATA,
       contractId,
@@ -256,8 +296,13 @@ export class StorageService {
   async uploadContractArtifact(artifact, contractId, metadata = {}) {
     const content = JSON.stringify(artifact, null, 2);
     const buffer = Buffer.from(content);
-    const key = generateStorageKey(contractId, metadata.network || NETWORK.TESTNET, ARTIFACT_TYPE.CONTRACT_ARTIFACT, 'artifact.json');
-    
+    const key = generateStorageKey(
+      contractId,
+      metadata.network || NETWORK.TESTNET,
+      ARTIFACT_TYPE.CONTRACT_ARTIFACT,
+      'artifact.json'
+    );
+
     await uploadBuffer(buffer, key, {
       ...metadata,
       artifactType: ARTIFACT_TYPE.CONTRACT_ARTIFACT,
@@ -281,7 +326,7 @@ export class StorageService {
 
     const response = await this.client.send(command);
     const buffer = await streamToBuffer(response.Body);
-    
+
     return {
       content: buffer,
       contentType: response.ContentType,
@@ -333,18 +378,20 @@ export class StorageService {
    */
   async listArtifacts(contractId, network) {
     const prefix = `artifacts/${network}/${contractId}/`;
-    
+
     const command = new ListObjectsV2Command({
       Bucket: this.bucket,
       Prefix: prefix,
     });
 
     const response = await this.client.send(command);
-    return response.Contents?.map(item => ({
-      key: item.Key,
-      size: item.Size,
-      lastModified: item.LastModified,
-    })) || [];
+    return (
+      response.Contents?.map((item) => ({
+        key: item.Key,
+        size: item.Size,
+        lastModified: item.LastModified,
+      })) || []
+    );
   }
 
   /**

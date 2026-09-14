@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { validateRequest, validateInput, commonSchemas } from '../src/middleware/validation.js';
+import {
+  validateRequest,
+  validateInput,
+  commonSchemas,
+} from '../src/middleware/validation.js';
 
 describe('Zod Validation Middleware', () => {
   test('validateInput works as a pass-through middleware', () => {
@@ -42,16 +46,20 @@ describe('Zod Validation Middleware', () => {
 
     middleware(req, res, next);
     expect(res.status).toHaveBeenCalledWith(422);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: false,
-      error: 'Unprocessable Entity',
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: 'Unprocessable Entity',
+      })
+    );
     expect(next).not.toHaveBeenCalled();
   });
 
   test('commonSchemas.stellarAddress validates Stellar public keys', () => {
     const valid = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7';
     expect(commonSchemas.stellarAddress.safeParse(valid).success).toBe(true);
-    expect(commonSchemas.stellarAddress.safeParse('invalid').success).toBe(false);
+    expect(commonSchemas.stellarAddress.safeParse('invalid').success).toBe(
+      false
+    );
   });
 });

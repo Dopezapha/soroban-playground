@@ -1,8 +1,11 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, vec, Address, Env, Vec};
 use crate::types::{CurveType, RateTier};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    vec, Address, Env, Vec,
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,7 +22,10 @@ fn setup() -> (Env, Address, InterestRateModelClient<'static>) {
 fn make_ascending_tiers(env: &Env, count: u32) -> Vec<RateTier> {
     let mut tiers = Vec::new(env);
     for i in 1..=count {
-        tiers.push_back(RateTier { threshold_bps: i * 400, rate_bps: i * 50 });
+        tiers.push_back(RateTier {
+            threshold_bps: i * 400,
+            rate_bps: i * 50,
+        });
     }
     tiers
 }
@@ -206,7 +212,13 @@ fn test_compute_rate_exponential_full_utilization() {
     // high max to avoid cap
     // util_bps=10000, util_sq = 10000*10000/10000 = 10000
     // rate = 100 + (10000 * 10000 / 10000) = 100 + 10000 = 10100
-    client.initialize(&admin, &100u32, &10_000u32, &50_000u32, &CurveType::Exponential);
+    client.initialize(
+        &admin,
+        &100u32,
+        &10_000u32,
+        &50_000u32,
+        &CurveType::Exponential,
+    );
     let r = client.compute_rate(&1000i128, &1000i128);
     assert_eq!(r.utilization_bps, 10000);
     assert_eq!(r.current_rate_bps, 10100);
@@ -240,7 +252,13 @@ fn test_exponential_rate_lower_than_linear_below_full_utilization() {
     let exp_id = env.register_contract(None, InterestRateModel);
     let exp = InterestRateModelClient::new(&env, &exp_id);
     let admin_e = Address::generate(&env);
-    exp.initialize(&admin_e, &0u32, &5000u32, &100_000u32, &CurveType::Exponential);
+    exp.initialize(
+        &admin_e,
+        &0u32,
+        &5000u32,
+        &100_000u32,
+        &CurveType::Exponential,
+    );
 
     let rl = lin.compute_rate(&500i128, &1000i128); // 50% util
     let re = exp.compute_rate(&500i128, &1000i128); // 50% util
@@ -267,7 +285,9 @@ fn test_last_update_advances_after_compute_rate() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &500u32, &2000u32, &10_000u32, &CurveType::Linear);
 
-    env.ledger().with_mut(|l| { l.timestamp = 999; });
+    env.ledger().with_mut(|l| {
+        l.timestamp = 999;
+    });
     client.compute_rate(&500i128, &1000i128);
     assert_eq!(client.last_update(), 999);
 }
@@ -277,11 +297,15 @@ fn test_last_update_monotonically_increases() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &500u32, &2000u32, &10_000u32, &CurveType::Linear);
 
-    env.ledger().with_mut(|l| { l.timestamp = 100; });
+    env.ledger().with_mut(|l| {
+        l.timestamp = 100;
+    });
     client.compute_rate(&500i128, &1000i128);
     let t1 = client.last_update();
 
-    env.ledger().with_mut(|l| { l.timestamp = 200; });
+    env.ledger().with_mut(|l| {
+        l.timestamp = 200;
+    });
     client.compute_rate(&500i128, &1000i128);
     let t2 = client.last_update();
 
@@ -325,9 +349,16 @@ fn test_repeated_same_inputs_produce_same_rate() {
 fn test_set_tiered_rates_valid() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
-    let tiers = vec![&env,
-        RateTier { threshold_bps: 2500, rate_bps: 200 },
-        RateTier { threshold_bps: 5000, rate_bps: 400 },
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 2500,
+            rate_bps: 200,
+        },
+        RateTier {
+            threshold_bps: 5000,
+            rate_bps: 400,
+        },
     ];
     client.set_tiered_rates(&admin, &tiers);
     // base config is unaffected by setting tiers
@@ -338,7 +369,13 @@ fn test_set_tiered_rates_valid() {
 fn test_set_tiers_single_tier_valid() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
-    let tiers = vec![&env, RateTier { threshold_bps: 5000, rate_bps: 300 }];
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 5000,
+            rate_bps: 300,
+        },
+    ];
     client.set_tiered_rates(&admin, &tiers);
     assert!(client.get_config().is_some());
 }
@@ -366,9 +403,16 @@ fn test_set_tiers_too_many_panics() {
 fn test_set_tiers_descending_thresholds_panics() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
-    let tiers = vec![&env,
-        RateTier { threshold_bps: 5000, rate_bps: 200 },
-        RateTier { threshold_bps: 4000, rate_bps: 400 },
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 5000,
+            rate_bps: 200,
+        },
+        RateTier {
+            threshold_bps: 4000,
+            rate_bps: 400,
+        },
     ];
     client.set_tiered_rates(&admin, &tiers);
 }
@@ -379,9 +423,16 @@ fn test_set_tiers_duplicate_threshold_panics() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
     // second tier has the same threshold as the first → not strictly ascending
-    let tiers = vec![&env,
-        RateTier { threshold_bps: 3000, rate_bps: 200 },
-        RateTier { threshold_bps: 3000, rate_bps: 400 },
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 3000,
+            rate_bps: 200,
+        },
+        RateTier {
+            threshold_bps: 3000,
+            rate_bps: 400,
+        },
     ];
     client.set_tiered_rates(&admin, &tiers);
 }
@@ -392,7 +443,13 @@ fn test_set_tiers_zero_threshold_panics() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
     // threshold_bps == 0 == prev(0) → not strictly ascending
-    let tiers = vec![&env, RateTier { threshold_bps: 0, rate_bps: 200 }];
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 0,
+            rate_bps: 200,
+        },
+    ];
     client.set_tiered_rates(&admin, &tiers);
 }
 
@@ -425,7 +482,13 @@ fn test_set_tiered_rates_rejects_non_admin() {
     let (env, admin, client) = setup();
     client.initialize(&admin, &100u32, &1000u32, &5000u32, &CurveType::Linear);
     let attacker = Address::generate(&env);
-    let tiers = vec![&env, RateTier { threshold_bps: 5000, rate_bps: 300 }];
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 5000,
+            rate_bps: 300,
+        },
+    ];
     client.set_tiered_rates(&attacker, &tiers);
 }
 
@@ -433,7 +496,13 @@ fn test_set_tiered_rates_rejects_non_admin() {
 #[should_panic]
 fn test_set_tiered_rates_panics_before_init() {
     let (env, admin, client) = setup();
-    let tiers = vec![&env, RateTier { threshold_bps: 5000, rate_bps: 300 }];
+    let tiers = vec![
+        &env,
+        RateTier {
+            threshold_bps: 5000,
+            rate_bps: 300,
+        },
+    ];
     // Not initialized yet — get_admin() returns None, so this must panic
     // ("Not initialized"), not silently accept the tiers.
     client.set_tiered_rates(&admin, &tiers);

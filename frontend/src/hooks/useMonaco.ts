@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type * as monaco from "monaco-editor";
-import { scheduleEditorLoad } from "../../lib/editorLoadScheduler";
-import { configureMonacoWorkers } from "../../lib/monacoWorkers";
-import "monaco-editor/min/vs/editor/editor.main.css";
+import { scheduleEditorLoad } from "@/lib/editorLoadScheduler";
+import { configureMonacoWorkers } from "@/lib/monacoWorkers";
+import "monaco-editor/min/vs/style.css";
 
 interface UseMonacoProps {
   language: string;
@@ -21,12 +21,12 @@ export function useMonaco({
   value,
   onChange,
 }: UseMonacoProps): UseMonacoResult {
-  containerRef = useRef<HTMLDivElement | null>(null);
-  editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  modelRef = useRef<monaco.editor.ITextModel | null>(null);
-  workerRef = useRef<Worker | null>(null);
-  onChangeRef = useRef(onChange);
-  valueRef = useRef(value);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const modelRef = useRef<monaco.editor.ITextModel | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const onChangeRef = useRef(onChange);
+  const valueRef = useRef(value);
   const [isEditorReady, setIsEditorReady] = useState(false);
 
   useEffect(() => {
@@ -55,8 +55,9 @@ export function useMonaco({
         if (disposed) return;
 
         try {
-          monacoAPI = await import("monaco-editor");
-          if (disposed) return;
+          const rawMonaco = await import("monaco-editor");
+          monacoAPI = (rawMonaco as any).default?.editor ? (rawMonaco as any).default : rawMonaco;
+          if (disposed || !monacoAPI || !containerRef.current) return;
 
           configureMonacoWorkers();
 
@@ -121,7 +122,7 @@ export function useMonaco({
             );
           };
 
-          editor.onDieChangeModelContent(() => {
+          editor.onDidChangeModelContent(() => {
             const currentValue = modelRef.current?.getValue();
             if (currentValue !== undefined) {
               onChangeRef.current(currentValue);

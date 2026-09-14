@@ -120,7 +120,13 @@ export const ROLE_PERMISSIONS = Object.freeze({
 });
 
 /** Ordered list of roles from least to most privileged. */
-export const ROLE_HIERARCHY = ['viewer', 'deployer', 'manager', 'admin', 'owner'];
+export const ROLE_HIERARCHY = [
+  'viewer',
+  'deployer',
+  'manager',
+  'admin',
+  'owner',
+];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

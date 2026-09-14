@@ -3,9 +3,7 @@
 
 use soroban_sdk::{Address, Env};
 
-use crate::types::{
-    DataKey, Dispute, Error, Escrow, InstanceKey, License, Milestone, Patent,
-};
+use crate::types::{DataKey, Dispute, Error, Escrow, InstanceKey, License, Milestone, Patent};
 
 // ── Admin / init ──────────────────────────────────────────────────────────────
 
@@ -83,9 +81,7 @@ pub fn next_escrow_id(env: &Env) -> u32 {
         .get(&InstanceKey::EscrowCount)
         .unwrap_or(0)
         + 1;
-    env.storage()
-        .instance()
-        .set(&InstanceKey::EscrowCount, &id);
+    env.storage().instance().set(&InstanceKey::EscrowCount, &id);
     id
 }
 
@@ -183,9 +179,7 @@ pub fn get_dispute(env: &Env, id: u32) -> Result<Dispute, Error> {
 // ── Escrow ────────────────────────────────────────────────────────────────────
 
 pub fn set_escrow(env: &Env, id: u32, escrow: &Escrow) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Escrow(id), escrow);
+    env.storage().persistent().set(&DataKey::Escrow(id), escrow);
 }
 
 pub fn get_escrow(env: &Env, id: u32) -> Result<Escrow, Error> {

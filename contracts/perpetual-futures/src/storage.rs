@@ -1,8 +1,8 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
 
-use soroban_sdk::{contracttype, Address, Env};
 use crate::types::{Error, FundingRate, Position};
+use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
 #[derive(Clone)]

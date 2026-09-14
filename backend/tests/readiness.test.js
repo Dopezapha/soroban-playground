@@ -5,11 +5,11 @@
 // decision logic by stubbing dependencies via jest module mocks, keeping the
 // suite fast and hermetic.
 
-jest.mock('../database/connection.js', () => ({
+jest.mock('../src/database/connection.js', () => ({
   getDatabase: jest.fn(),
 }));
 
-jest.mock('../../src/services/queueService.js', () => ({
+jest.mock('../src/services/queueService.js', () => ({
   queues: {},
 }));
 
@@ -20,7 +20,9 @@ describe('readiness probe decision rules (#1289)', () => {
     jest.isolateModules(() => {
       // Re-implement the same rule the route uses, imported from a tiny
       // exported helper if present; otherwise mirror it exactly.
-      ({ computeReadinessStatus: computeStatus } = require('../readinessRules.js'));
+      ({
+        computeReadinessStatus: computeStatus,
+      } = require('../src/routes/readinessRules.js'));
     });
   });
 
@@ -41,7 +43,10 @@ describe('readiness probe decision rules (#1289)', () => {
       sorobanRpc: { status: 'healthy' },
       workerQueue: { status: 'healthy' },
     };
-    expect(computeStatus(deps)).toEqual({ status: 'unhealthy', httpStatus: 503 });
+    expect(computeStatus(deps)).toEqual({
+      status: 'unhealthy',
+      httpStatus: 503,
+    });
   });
 
   test('redis down -> unhealthy (503)', () => {
@@ -61,7 +66,10 @@ describe('readiness probe decision rules (#1289)', () => {
       sorobanRpc: { status: 'unhealthy', error: 'timeout' },
       workerQueue: { status: 'healthy' },
     };
-    expect(computeStatus(deps)).toEqual({ status: 'degraded', httpStatus: 200 });
+    expect(computeStatus(deps)).toEqual({
+      status: 'degraded',
+      httpStatus: 200,
+    });
   });
 
   test('worker queue degraded -> degraded but serving (200)', () => {

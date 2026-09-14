@@ -172,7 +172,10 @@ fn test_time_priority_when_prices_equal() {
     client.place_order(&buyer, &Side::Buy, &1_000_000, &4_000_000);
 
     assert_eq!(client.get_order(&first_sell).status, OrderStatus::Filled);
-    assert_eq!(client.get_order(&second_sell).status, OrderStatus::PartiallyFilled);
+    assert_eq!(
+        client.get_order(&second_sell).status,
+        OrderStatus::PartiallyFilled
+    );
 }
 
 #[test]

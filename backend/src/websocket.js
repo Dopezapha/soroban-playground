@@ -157,7 +157,6 @@ export function setupWebSocketServer(httpServer) {
 
     // Decrement the per-IP count on connection close.
 
-
     const authHeader = request.headers.authorization || '';
     const tokenFromQuery = url.searchParams.get('token');
     const token = authHeader.startsWith('Bearer ')
@@ -340,3 +339,8 @@ export function broadcast(payload) {
   if (!message) return;
   broadcastGlobal(message);
 }
+
+export {
+  setupWebSocketServer as setupWebsocketServer,
+  closeWebSocketServer as closeWebsocketServer,
+};

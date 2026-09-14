@@ -14,7 +14,7 @@ export function computeReadinessStatus(deps) {
     (k) => deps[k]?.status !== 'healthy'
   );
   const degraded = ['sorobanRpc', 'workerQueue'].some(
-    (k) => deps[k]?.status === 'unhealthy'
+    (k) => deps[k]?.status === 'unhealthy' || deps[k]?.status === 'degraded'
   );
 
   if (criticalDown) return { status: 'unhealthy', httpStatus: 503 };

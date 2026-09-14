@@ -108,7 +108,10 @@ function postJson(url, body, headers) {
       });
 
       res.on('end', () =>
-        resolve({ status: res.statusCode, body: text.slice(0, MAX_RESPONSE_BODY_BYTES) })
+        resolve({
+          status: res.statusCode,
+          body: text.slice(0, MAX_RESPONSE_BODY_BYTES),
+        })
       );
     });
 
@@ -212,13 +215,21 @@ export async function updateSubscription(id, tenantId, updates) {
   const values = [];
 
   if (updates.url !== undefined) {
-    try { new URL(updates.url); } catch { throw new Error(`Invalid URL: ${updates.url}`); }
+    try {
+      new URL(updates.url);
+    } catch {
+      throw new Error(`Invalid URL: ${updates.url}`);
+    }
     fields.push('url = ?');
     values.push(updates.url);
   }
   if (updates.events !== undefined) {
     fields.push('events = ?');
-    values.push(JSON.stringify(Array.isArray(updates.events) ? updates.events : [updates.events]));
+    values.push(
+      JSON.stringify(
+        Array.isArray(updates.events) ? updates.events : [updates.events]
+      )
+    );
   }
   if (updates.active !== undefined) {
     fields.push('active = ?');
@@ -368,7 +379,10 @@ export async function processPendingDeliveries() {
     try {
       result = await postJson(row.url, payloadString, headers);
     } catch (err) {
-      result = { status: null, body: String(err.message).slice(0, MAX_RESPONSE_BODY_BYTES) };
+      result = {
+        status: null,
+        body: String(err.message).slice(0, MAX_RESPONSE_BODY_BYTES),
+      };
     }
 
     const success =
@@ -425,7 +439,7 @@ export async function processPendingDeliveries() {
       if (newConsecutive >= CIRCUIT_BREAKER_THRESHOLD) {
         console.warn(
           `[webhookService] Circuit breaker tripped for subscription ${row.subscription_id} ` +
-          `after ${newConsecutive} consecutive failures. Subscription paused.`
+            `after ${newConsecutive} consecutive failures. Subscription paused.`
         );
       }
     } else {

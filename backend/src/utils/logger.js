@@ -148,7 +148,6 @@ function buildWinstonLogger() {
   try {
     // Dynamic import lets us avoid a hard dependency at module evaluation time.
     // In environments where winston isn't installed the catch block activates.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const winston = await_require('winston');
 
     const { createLogger, format, transports } = winston;
@@ -196,13 +195,23 @@ function buildWinstonLogger() {
       new transports.Console({
         format: isDev
           ? combine(colorize(), simple())
-          : combine(timestamp(), errors({ stack: true }), traceAndMask(), json()),
+          : combine(
+              timestamp(),
+              errors({ stack: true }),
+              traceAndMask(),
+              json()
+            ),
       }),
     ];
 
     return createLogger({
       level: process.env.LOG_LEVEL || 'info',
-      format: combine(timestamp(), errors({ stack: true }), traceAndMask(), json()),
+      format: combine(
+        timestamp(),
+        errors({ stack: true }),
+        traceAndMask(),
+        json()
+      ),
       transports: transportList,
       // Do not exit on handled exceptions.
       exitOnError: false,
@@ -221,7 +230,7 @@ function buildWinstonLogger() {
 function await_require(name) {
   // This will throw in pure ESM environments without a bundler.  The catch
   // block in buildWinstonLogger handles that gracefully.
-  // eslint-disable-next-line no-undef
+
   return require(name);
 }
 
@@ -232,14 +241,16 @@ function await_require(name) {
  * Produces JSON lines to stdout/stderr with the same fields winston would emit.
  */
 function buildConsoleLogger() {
-  const silent = process.env.NODE_ENV === 'test' && process.env.LOG_LEVEL !== 'debug';
+  const silent =
+    process.env.NODE_ENV === 'test' && process.env.LOG_LEVEL !== 'debug';
 
   function write(level, message, meta) {
     if (silent) return;
 
     const entry = {
       level,
-      message: typeof message === 'string' ? maskString(message) : String(message),
+      message:
+        typeof message === 'string' ? maskString(message) : String(message),
       traceId: getCurrentTraceId(),
       timestamp: new Date().toISOString(),
     };

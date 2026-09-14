@@ -28,8 +28,8 @@ use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 
 use crate::storage::{
     get_admin, get_history_index, get_record, get_record_count, get_source, get_threshold,
-    has_submitted, is_circuit_breaker_active, is_initialized, is_paused, mark_submitted,
-    set_admin, set_circuit_breaker, set_history_index, set_initialized, set_paused, set_record,
+    has_submitted, is_circuit_breaker_active, is_initialized, is_paused, mark_submitted, set_admin,
+    set_circuit_breaker, set_history_index, set_initialized, set_paused, set_record,
     set_record_count, set_source, set_threshold, source_exists,
 };
 use crate::types::{DataSource, Error, WeatherData, WeatherDataStatus};
@@ -176,8 +176,7 @@ impl WeatherOracle {
             return Err(Error::InvalidThreshold);
         }
         set_threshold(&env, threshold);
-        env.events()
-            .publish((symbol_short!("thresh"),), threshold);
+        env.events().publish((symbol_short!("thresh"),), threshold);
         Ok(())
     }
 
@@ -213,7 +212,13 @@ impl WeatherOracle {
         }
 
         // Validate inputs
-        validate_inputs(&location, temperature_c, humidity_pct, wind_speed_kmh, observed_at)?;
+        validate_inputs(
+            &location,
+            temperature_c,
+            humidity_pct,
+            wind_speed_kmh,
+            observed_at,
+        )?;
 
         let record_id = match get_history_index(&env, &location, observed_at) {
             Some(existing_id) => {
@@ -282,8 +287,7 @@ impl WeatherOracle {
         observed_at: u64,
     ) -> Result<WeatherData, Error> {
         ensure_initialized(&env)?;
-        let id = get_history_index(&env, &location, observed_at)
-            .ok_or(Error::RecordNotFound)?;
+        let id = get_history_index(&env, &location, observed_at).ok_or(Error::RecordNotFound)?;
         get_record(&env, id)
     }
 

@@ -31,7 +31,8 @@ export class HorizonService {
     maxRetries = 5,
   } = {}) {
     this.db = db;
-    this.horizonUrls = horizonUrls || parseHorizonUrls(process.env.HORIZON_URLS);
+    this.horizonUrls =
+      horizonUrls || parseHorizonUrls(process.env.HORIZON_URLS);
     this.fetchImpl = fetchImpl;
     this.logger = logger;
     this.pollIntervalMs = pollIntervalMs;
@@ -146,7 +147,10 @@ export class HorizonService {
 
     for (const baseUrl of this.horizonUrls) {
       const cleanBase = baseUrl.replace(/\/$/, '');
-      const cursorParam = cursor && cursor !== 'now' ? `&cursor=${encodeURIComponent(cursor)}` : '';
+      const cursorParam =
+        cursor && cursor !== 'now'
+          ? `&cursor=${encodeURIComponent(cursor)}`
+          : '';
       const url = `${cleanBase}/transactions?limit=${limit}&order=${order}${cursorParam}`;
 
       for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
@@ -164,12 +168,16 @@ export class HorizonService {
           });
 
           if (response.status === 429) {
-            this.logger.warn?.(`Horizon rate limit hit on ${baseUrl}, backing off (attempt ${attempt + 1})`);
+            this.logger.warn?.(
+              `Horizon rate limit hit on ${baseUrl}, backing off (attempt ${attempt + 1})`
+            );
             continue;
           }
 
           if (!response.ok) {
-            throw new Error(`Horizon HTTP status ${response.status} from ${url}`);
+            throw new Error(
+              `Horizon HTTP status ${response.status} from ${url}`
+            );
           }
 
           const data = await response.json();
@@ -177,7 +185,9 @@ export class HorizonService {
           return records;
         } catch (err) {
           lastError = err;
-          this.logger.warn?.(`Horizon request failed (attempt ${attempt + 1}): ${err.message}`);
+          this.logger.warn?.(
+            `Horizon request failed (attempt ${attempt + 1}): ${err.message}`
+          );
         }
       }
     }
@@ -308,7 +318,11 @@ export class HorizonService {
       const newCursor = lastRecord.paging_token || currentCursor;
       const newLedger = Number(lastRecord.ledger || this.lastLedger);
 
-      await this.saveCursor(newCursor, newLedger, gapInfo.hasGap ? 'gap_detected' : 'synced');
+      await this.saveCursor(
+        newCursor,
+        newLedger,
+        gapInfo.hasGap ? 'gap_detected' : 'synced'
+      );
 
       this.status.lastIngestedAt = new Date().toISOString();
       this.status.totalIngested += indexedCount;

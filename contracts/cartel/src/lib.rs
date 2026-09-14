@@ -1,5 +1,5 @@
 // contracts/cartel/src/lib.rs
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, BytesN, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -15,7 +15,7 @@ pub struct Proposal {
     pub id: u64,
     pub proposer: Address,
     pub target_contract: Address,
-    pub calldata_hash: [u8; 32],
+    pub calldata_hash: BytesN<32>,
     pub yes_votes: i128,
     pub no_votes: i128,
     pub executed: bool,
@@ -42,34 +42,38 @@ impl CartelSyndicateContract {
         }
 
         let key = DataKey::Member(member.clone());
-        let mut syndicate_member: SyndicateMember = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .unwrap_or(SyndicateMember {
-                member: member.clone(),
-                voting_power: 0,
-                staked_amount: 0,
-            });
+        let mut syndicate_member: SyndicateMember =
+            env.storage()
+                .persistent()
+                .get(&key)
+                .unwrap_or(SyndicateMember {
+                    member: member.clone(),
+                    voting_power: 0,
+                    staked_amount: 0,
+                });
 
         syndicate_member.staked_amount += amount;
         syndicate_member.voting_power += amount; // 1:1 token-weighted voting power
 
-        let total_staked: i128 = env.storage().instance().get(&DataKey::TotalStaked).unwrap_or(0);
-        env.storage().instance().set(&DataKey::TotalStaked, &(total_staked + amount));
+        let total_staked: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalStaked)
+            .unwrap_or(0);
+        env.storage()
+            .instance()
+            .set(&DataKey::TotalStaked, &(total_staked + amount));
         env.storage().persistent().set(&key, &syndicate_member);
 
-        env.events().publish(
-            (Symbol::new(&env, "MemberJoined"), member),
-            amount,
-        );
+        env.events()
+            .publish((Symbol::new(&env, "MemberJoined"), member), amount);
     }
 
     pub fn create_proposal(
         env: Env,
         proposer: Address,
         target_contract: Address,
-        calldata_hash: [u8; 32],
+        calldata_hash: BytesN<32>,
         duration: u64,
     ) -> u64 {
         proposer.require_auth();
@@ -85,7 +89,11 @@ impl CartelSyndicateContract {
             panic!("Inactive members cannot create proposals");
         }
 
-        let proposal_count: u64 = env.storage().instance().get(&DataKey::ProposalCount).unwrap_or(0);
+        let proposal_count: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::ProposalCount)
+            .unwrap_or(0);
         let proposal_id = proposal_count + 1;
         let deadline = env.ledger().timestamp() + duration;
 
@@ -100,8 +108,12 @@ impl CartelSyndicateContract {
             deadline,
         };
 
-        env.storage().instance().set(&DataKey::ProposalCount, &proposal_id);
-        env.storage().persistent().set(&DataKey::Proposal(proposal_id), &proposal);
+        env.storage()
+            .instance()
+            .set(&DataKey::ProposalCount, &proposal_id);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Proposal(proposal_id), &proposal);
 
         env.events().publish(
             (Symbol::new(&env, "ProposalCreated"), proposal_id),

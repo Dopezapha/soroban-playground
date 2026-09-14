@@ -51,9 +51,18 @@ import logger from '../utils/logger.js';
 // ── Configuration ─────────────────────────────────────────────────────────────
 
 const PG_POOL_MAX = parseInt(process.env.PG_POOL_MAX || '10', 10);
-const PG_IDLE_TIMEOUT_MS = parseInt(process.env.PG_IDLE_TIMEOUT_MS || '30000', 10);
-const PG_CONNECT_TIMEOUT_MS = parseInt(process.env.PG_CONNECT_TIMEOUT_MS || '5000', 10);
-const PG_HEALTH_INTERVAL_MS = parseInt(process.env.PG_HEALTH_INTERVAL_MS || '30000', 10);
+const PG_IDLE_TIMEOUT_MS = parseInt(
+  process.env.PG_IDLE_TIMEOUT_MS || '30000',
+  10
+);
+const PG_CONNECT_TIMEOUT_MS = parseInt(
+  process.env.PG_CONNECT_TIMEOUT_MS || '5000',
+  10
+);
+const PG_HEALTH_INTERVAL_MS = parseInt(
+  process.env.PG_HEALTH_INTERVAL_MS || '30000',
+  10
+);
 
 // ── Pool factory ──────────────────────────────────────────────────────────────
 
@@ -64,7 +73,6 @@ const PG_HEALTH_INTERVAL_MS = parseInt(process.env.PG_HEALTH_INTERVAL_MS || '300
  */
 function createPgPool(connectionString, label) {
   try {
-    // eslint-disable-next-line no-undef
     const { Pool } = require('pg');
     const pool = new Pool({
       connectionString,
@@ -243,7 +251,8 @@ export async function queryWrite(textOrConfig, values) {
     logger.error('pool:query:primary:error', {
       durationMs: Date.now() - start,
       error: err.message,
-      query: typeof config.text === 'string' ? config.text.slice(0, 200) : undefined,
+      query:
+        typeof config.text === 'string' ? config.text.slice(0, 200) : undefined,
     });
     throw err;
   }
@@ -358,18 +367,22 @@ export async function endAllPools() {
 
   if (_primary) {
     closePromises.push(
-      _primary.pool.end().catch((err) =>
-        logger.warn('pool:end:primary:error', { error: err.message })
-      )
+      _primary.pool
+        .end()
+        .catch((err) =>
+          logger.warn('pool:end:primary:error', { error: err.message })
+        )
     );
     _primary = null;
   }
 
   for (const replica of _replicas) {
     closePromises.push(
-      replica.pool.end().catch((err) =>
-        logger.warn('pool:end:replica:error', { error: err.message })
-      )
+      replica.pool
+        .end()
+        .catch((err) =>
+          logger.warn('pool:end:replica:error', { error: err.message })
+        )
     );
   }
   _replicas = [];
@@ -379,4 +392,11 @@ export async function endAllPools() {
   logger.info('pool:all_pools_closed');
 }
 
-export default { initPool, query, queryWrite, queryRead, getPoolStats, endAllPools };
+export default {
+  initPool,
+  query,
+  queryWrite,
+  queryRead,
+  getPoolStats,
+  endAllPools,
+};

@@ -84,7 +84,9 @@ fn test_pause_blocks_update_price() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.pause(&admin).unwrap();
     assert_eq!(
         client.update_price(&reporter, &0, &100_000_000),
@@ -119,7 +121,9 @@ fn test_add_source_ok() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    let id = client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    let id = client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     assert_eq!(id, 0);
     assert_eq!(client.get_source_count(), 1);
     let src = client.get_price(&0).unwrap();
@@ -133,7 +137,9 @@ fn test_add_source_with_weight() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &Some(50)).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &Some(50))
+        .unwrap();
     assert_eq!(client.get_price(&0).unwrap().weight, 50);
 }
 
@@ -170,7 +176,9 @@ fn test_remove_source_deactivates() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.remove_source(&admin, &0).unwrap();
     assert!(!client.get_price(&0).unwrap().active);
 }
@@ -179,7 +187,10 @@ fn test_remove_source_deactivates() {
 fn test_remove_nonexistent_source_fails() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
-    assert_eq!(client.remove_source(&admin, &99), Err(Error::SourceNotFound));
+    assert_eq!(
+        client.remove_source(&admin, &99),
+        Err(Error::SourceNotFound)
+    );
 }
 
 // ── set_weight ────────────────────────────────────────────────────────────────
@@ -189,7 +200,9 @@ fn test_set_weight_ok() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.set_weight(&admin, &0, &75).unwrap();
     assert_eq!(client.get_price(&0).unwrap().weight, 75);
 }
@@ -199,9 +212,14 @@ fn test_set_weight_invalid() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     assert_eq!(client.set_weight(&admin, &0, &0), Err(Error::InvalidWeight));
-    assert_eq!(client.set_weight(&admin, &0, &101), Err(Error::InvalidWeight));
+    assert_eq!(
+        client.set_weight(&admin, &0, &101),
+        Err(Error::InvalidWeight)
+    );
 }
 
 // ── update_price ──────────────────────────────────────────────────────────────
@@ -211,7 +229,9 @@ fn test_update_price_ok() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.update_price(&reporter, &0, &1_000_000_0).unwrap();
     assert_eq!(client.get_price(&0).unwrap().last_price, 1_000_000_0);
 }
@@ -221,7 +241,9 @@ fn test_update_price_invalid() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     assert_eq!(
         client.update_price(&reporter, &0, &0),
         Err(Error::InvalidPrice)
@@ -238,7 +260,9 @@ fn test_update_price_wrong_reporter() {
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
     let other = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     assert_eq!(
         client.update_price(&other, &0, &1_000_000_0),
         Err(Error::Unauthorized)
@@ -250,7 +274,9 @@ fn test_update_price_inactive_source() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.remove_source(&admin, &0).unwrap();
     assert_eq!(
         client.update_price(&reporter, &0, &1_000_000_0),
@@ -264,7 +290,9 @@ fn test_circuit_breaker_trips_on_large_swing() {
     // circuit_breaker = 3000 bps (30%)
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.update_price(&reporter, &0, &1_000_000_0).unwrap();
     // 50% move — should trip
     assert_eq!(
@@ -278,7 +306,9 @@ fn test_circuit_breaker_allows_small_swing() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.update_price(&reporter, &0, &1_000_000_0).unwrap();
     // 10% move — within 30% limit
     client.update_price(&reporter, &0, &1_100_000_0).unwrap();
@@ -292,7 +322,9 @@ fn test_aggregated_price_single_source() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
     let reporter = Address::generate(&env);
-    client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+    client
+        .add_source(&admin, &reporter, &desc(&env), &None)
+        .unwrap();
     client.update_price(&reporter, &0, &1_000_000_0).unwrap();
     let agg = client.get_aggregated_price().unwrap();
     assert_eq!(agg.price, 1_000_000_0);
@@ -305,7 +337,9 @@ fn test_aggregated_price_median_odd() {
     init(&env, &admin, &client);
     for (price, i) in [(1_000_000_0i128, 0u32), (1_200_000_0, 1), (1_100_000_0, 2)] {
         let reporter = Address::generate(&env);
-        client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+        client
+            .add_source(&admin, &reporter, &desc(&env), &None)
+            .unwrap();
         client.update_price(&reporter, &i, &price).unwrap();
     }
     let agg = client.get_aggregated_price().unwrap();
@@ -317,9 +351,16 @@ fn test_aggregated_price_median_odd() {
 fn test_aggregated_price_median_even() {
     let (env, admin, client) = setup();
     init(&env, &admin, &client);
-    for (price, i) in [(1_000_000_0i128, 0u32), (1_200_000_0, 1), (1_100_000_0, 2), (1_300_000_0, 3)] {
+    for (price, i) in [
+        (1_000_000_0i128, 0u32),
+        (1_200_000_0, 1),
+        (1_100_000_0, 2),
+        (1_300_000_0, 3),
+    ] {
         let reporter = Address::generate(&env);
-        client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+        client
+            .add_source(&admin, &reporter, &desc(&env), &None)
+            .unwrap();
         client.update_price(&reporter, &i, &price).unwrap();
     }
     let agg = client.get_aggregated_price().unwrap();
@@ -380,11 +421,21 @@ fn test_outlier_detection_filters_extreme_value() {
     let (env, admin, client) = setup();
     // outlier_bps = 1000 (10%)
     client
-        .initialize(&admin, &asset(&env), &None, &None, &Some(1000), &None, &None)
+        .initialize(
+            &admin,
+            &asset(&env),
+            &None,
+            &None,
+            &Some(1000),
+            &None,
+            &None,
+        )
         .unwrap();
     for (price, i) in [(1_000_000_0i128, 0u32), (1_050_000_0, 1), (5_000_000_0, 2)] {
         let reporter = Address::generate(&env);
-        client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+        client
+            .add_source(&admin, &reporter, &desc(&env), &None)
+            .unwrap();
         client.update_price(&reporter, &i, &price).unwrap();
     }
     let agg = client.get_aggregated_price().unwrap();
@@ -410,8 +461,12 @@ fn test_weighted_average_strategy() {
         .unwrap();
     let r0 = Address::generate(&env);
     let r1 = Address::generate(&env);
-    client.add_source(&admin, &r0, &desc(&env), &Some(1)).unwrap(); // weight 1
-    client.add_source(&admin, &r1, &desc(&env), &Some(3)).unwrap(); // weight 3
+    client
+        .add_source(&admin, &r0, &desc(&env), &Some(1))
+        .unwrap(); // weight 1
+    client
+        .add_source(&admin, &r1, &desc(&env), &Some(3))
+        .unwrap(); // weight 3
     client.update_price(&r0, &0, &1_000_000_0).unwrap();
     client.update_price(&r1, &1, &2_000_000_0).unwrap();
     let agg = client.get_aggregated_price().unwrap();
@@ -435,10 +490,18 @@ fn test_trimmed_mean_strategy() {
             &Some(AggregationStrategy::TrimmedMean),
         )
         .unwrap();
-    let prices = [1_000_000_0i128, 1_100_000_0, 1_200_000_0, 1_300_000_0, 5_000_000_0];
+    let prices = [
+        1_000_000_0i128,
+        1_100_000_0,
+        1_200_000_0,
+        1_300_000_0,
+        5_000_000_0,
+    ];
     for (i, &price) in prices.iter().enumerate() {
         let reporter = Address::generate(&env);
-        client.add_source(&admin, &reporter, &desc(&env), &None).unwrap();
+        client
+            .add_source(&admin, &reporter, &desc(&env), &None)
+            .unwrap();
         client.update_price(&reporter, &(i as u32), &price).unwrap();
     }
     let agg = client.get_aggregated_price().unwrap();
@@ -460,8 +523,12 @@ fn test_set_strategy() {
     // verify indirectly: add two differently weighted sources
     let r0 = Address::generate(&env);
     let r1 = Address::generate(&env);
-    client.add_source(&admin, &r0, &desc(&env), &Some(1)).unwrap();
-    client.add_source(&admin, &r1, &desc(&env), &Some(9)).unwrap();
+    client
+        .add_source(&admin, &r0, &desc(&env), &Some(1))
+        .unwrap();
+    client
+        .add_source(&admin, &r1, &desc(&env), &Some(9))
+        .unwrap();
     client.update_price(&r0, &0, &1_000_000_0).unwrap();
     client.update_price(&r1, &1, &2_000_000_0).unwrap();
     let agg = client.get_aggregated_price().unwrap();

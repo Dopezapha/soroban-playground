@@ -89,24 +89,26 @@ import { deprecationHeaders } from './middleware/deprecationHeaders.js';
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
 
-try {
-  validateEnv();
-} catch (err) {
-  console.error('Environment validation failed:');
-  if (err && err.errors) {
-    for (const [key, validationError] of Object.entries(err.errors)) {
-      console.error(`  - ${key}: ${validationError.message || validationError}`);
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    validateEnv();
+  } catch (err) {
+    console.error('Environment validation failed:');
+    if (err && err.errors) {
+      for (const [key, validationError] of Object.entries(err.errors)) {
+        console.error(
+          `  - ${key}: ${validationError.message || validationError}`
+        );
+      }
+    } else {
+      console.error(err.message);
     }
-  } else {
-    console.error(err.message);
+    process.exit(1);
   }
-  process.exit(1);
 }
 
 const app = express();
 app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal', '10.0.0.0/8']);
-let httpServer = http.createServer(app);
-applyServerTuning(httpServer); // HTTP/2: keep-alive + headers-timeout tuning
 let server;
 let websocketRedisClient = null;
 
@@ -157,7 +159,7 @@ try {
 export const acmeChallengeStore = attachAcmeHttp01(app);
 
 // Fallback to HTTP/1.1 if no certs are provided, otherwise HTTP/2 + TLS 1.3 via ALPN.
-const server = createAlpnServer(app, hasCertificates ? httpsOptions : null);
+server = createAlpnServer(app, hasCertificates ? httpsOptions : null);
 applyServerTuning(server);
 let stopCertificateWatch = () => {};
 if (hasCertificates) {
@@ -332,9 +334,11 @@ initializeDatabase()
     startWebhookDispatcher();
     setupCredentialRotation();
     initializeQueues();
-    cacheInvalidator.start().catch((err) =>
-      console.warn('[CacheInvalidator] start failed:', err.message)
-    );
+    cacheInvalidator
+      .start()
+      .catch((err) =>
+        console.warn('[CacheInvalidator] start failed:', err.message)
+      );
     kmsService.start();
 
     if (process.env.LEDGER_SYNC_ENABLED === 'true') {
