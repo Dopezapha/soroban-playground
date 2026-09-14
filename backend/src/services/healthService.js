@@ -187,7 +187,8 @@ async function checkSorobanRpc() {
   const rpcUrl = rpcStatus.activeEndpoint;
 
   try {
-    const { SorobanRpc } = await import('@stellar/stellar-sdk');
+    const sdk = await import('@stellar/stellar-sdk');
+    const SorobanRpc = sdk.rpc || sdk.SorobanRpc;
     const server = new SorobanRpc.Server(rpcUrl);
     const healthFn =
       typeof server.getHealth === 'function'

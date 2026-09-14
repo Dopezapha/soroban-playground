@@ -236,7 +236,8 @@ class ContractEventIndexer {
     this._status.lastPollAt = new Date().toISOString();
 
     // Dynamic import defers the SDK load until the first poll
-    const { SorobanRpc } = await import('@stellar/stellar-sdk');
+    const sdk = await import('@stellar/stellar-sdk');
+    const SorobanRpc = sdk.rpc || sdk.SorobanRpc;
     const rpcServer = new SorobanRpc.Server(this._rpcUrl);
     const startLedger = await this._loadCursor();
 

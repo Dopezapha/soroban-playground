@@ -22,28 +22,36 @@ const STELLAR_NETWORK_PASSPHRASE =
   process.env.STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
 const CHALLENGE_TTL_SEC = 5 * 60; // 5 minutes
 
+const devKeypair = Keypair.random();
+let serverKeypair;
 const STELLAR_SERVER_ACCOUNT = process.env.STELLAR_SERVER_ACCOUNT;
-if (
-  !STELLAR_SERVER_ACCOUNT ||
-  !StrKey.isValidEd25519PublicKey(STELLAR_SERVER_ACCOUNT)
-) {
-  throw new Error(
-    'STELLAR_SERVER_ACCOUNT environment variable is required and must be a valid Stellar public key'
-  );
-}
-
 const STELLAR_SERVER_SECRET = process.env.STELLAR_SERVER_SECRET;
-if (!STELLAR_SERVER_SECRET) {
-  throw new Error('STELLAR_SERVER_SECRET environment variable is required');
-}
-const serverKeypair = Keypair.fromSecret(STELLAR_SERVER_SECRET);
-if (serverKeypair.publicKey() !== STELLAR_SERVER_ACCOUNT) {
+
+if (STELLAR_SERVER_ACCOUNT && STELLAR_SERVER_SECRET) {
+  if (!StrKey.isValidEd25519PublicKey(STELLAR_SERVER_ACCOUNT)) {
+    throw new Error(
+      'STELLAR_SERVER_ACCOUNT environment variable is required and must be a valid Stellar public key'
+    );
+  }
+  serverKeypair = Keypair.fromSecret(STELLAR_SERVER_SECRET);
+  if (serverKeypair.publicKey() !== STELLAR_SERVER_ACCOUNT) {
+    throw new Error(
+      'STELLAR_SERVER_SECRET does not match STELLAR_SERVER_ACCOUNT'
+    );
+  }
+} else if (process.env.NODE_ENV === 'production') {
   throw new Error(
-    'STELLAR_SERVER_SECRET does not match STELLAR_SERVER_ACCOUNT'
+    'STELLAR_SERVER_ACCOUNT and STELLAR_SERVER_SECRET environment variables are required in production'
   );
+} else {
+  serverKeypair = devKeypair;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'production'
+    ? null
+    : 'super_secret_jwt_key_for_dev');
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }

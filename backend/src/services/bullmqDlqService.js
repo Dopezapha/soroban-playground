@@ -30,7 +30,7 @@ function clampNumber(value, min, max, fallback) {
 }
 
 export function getDlqQueueName(queueName) {
-  return `${queueName}:${DLQ_SUFFIX}`;
+  return `${queueName}-${DLQ_SUFFIX}`;
 }
 
 export function createRedisConnection(options = {}) {

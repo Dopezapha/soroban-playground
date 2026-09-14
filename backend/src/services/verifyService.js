@@ -4,7 +4,9 @@
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
-import { SorobanRpc, StrKey } from '@stellar/stellar-sdk';
+import * as StellarSdk from '@stellar/stellar-sdk';
+const { StrKey } = StellarSdk;
+const SorobanRpc = StellarSdk.rpc || StellarSdk.SorobanRpc;
 import DatabaseService from './databaseService.js';
 import { compileQueued } from './compileService.js';
 import { sanitizeDependenciesInput } from '../routes/compile_utils.js';

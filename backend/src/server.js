@@ -346,7 +346,10 @@ initializeDatabase()
       ledgerSyncServiceInstance.start();
     }
 
-    if (process.env.NODE_ENV !== 'test') {
+    if (
+      process.env.NODE_ENV !== 'test' ||
+      process.env.LISTEN_IN_TEST === 'true'
+    ) {
       server.listen(PORT, () => {
         const protocol = hasCertificates ? 'https' : 'http';
         console.log(
