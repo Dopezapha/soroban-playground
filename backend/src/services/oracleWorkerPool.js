@@ -69,27 +69,46 @@ export class OracleWorkerPool {
       process.env.REDIS_URL || 'redis://localhost:6379',
       {
         maxRetriesPerRequest: 1,
+        enableOfflineQueue: false,
       }
     );
+    blockingClient.on('error', () => {
+      // Swallow error events to prevent unhandled EventEmitter crash when Redis is unavailable
+    });
 
     try {
       while (this.isRunning) {
+        if (redisService.isFallbackMode) {
+          await new Promise((r) => setTimeout(r, 5000));
+          continue;
+        }
+
         // Atomic pop from pending and push to this worker's processing queue
         // Blocks for up to 5 seconds waiting for a task
-        const taskId = await blockingClient.brpoplpush(
-          oracleQueueService.PENDING_QUEUE,
-          processingQueue,
-          5
-        );
+        let taskId;
+        try {
+          taskId = await blockingClient.brpoplpush(
+            oracleQueueService.PENDING_QUEUE,
+            processingQueue,
+            5
+          );
+        } catch {
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
 
         if (!taskId) continue; // Timeout, loop again
 
         await this.handleTask(taskId, processingQueue);
       }
     } catch (err) {
-      console.error(`Worker ${workerId} error:`, err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(`Worker ${workerId} error:`, err);
+      }
     } finally {
-      blockingClient.quit();
+      try {
+        blockingClient.disconnect();
+      } catch {}
     }
   }
 
