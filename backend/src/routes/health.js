@@ -46,10 +46,11 @@ export const healthHandler = asyncHandler(async (req, res) => {
     const httpStatus = healthService.getHttpStatusForHealth(deep.status);
     return res
       .status(httpStatus)
-      .json({ success: httpStatus < 500, data: deep });
+      .json({ success: httpStatus < 500, status: deep.status, data: deep });
   } catch (error) {
     return res.status(503).json({
       success: false,
+      status: 'unhealthy',
       data: { status: 'unhealthy', error: error.message },
     });
   }

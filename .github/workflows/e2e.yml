@@ -54,6 +54,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Cache cargo registry
+        uses: Swatinem/rust-cache@v2
+
       - name: Install Stellar CLI
         uses: stellar/stellar-cli@v28.0.0
         with:
@@ -70,6 +73,9 @@ jobs:
           NODE_ENV: test
           LISTEN_IN_TEST: "true"
           PORT: 5000
+          COMPILE_SANDBOX_MODE: process
+          DISABLE_SANDBOX_LIMITS: "true"
+          COMPILE_TIMEOUT_MS: "120000"
           SOROBAN_RPC_URL: ${{ env.E2E_SOROBAN_RPC_URL }}
         run: |
           npm run start --workspace backend > /tmp/backend.log 2>&1 &

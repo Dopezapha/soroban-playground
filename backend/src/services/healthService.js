@@ -308,10 +308,31 @@ export async function performDeepHealthCheck(options = {}) {
     return { ...cachedDeepCheck, cached: true };
   }
 
+  const executeChecker = async (name, defaultFn) => {
+    try {
+      const res = await dependencyCheckers[name]();
+      if (dependencyCheckers[name] !== defaultFn) {
+        recordDependencyStatus(
+          name,
+          res && (res.status === 'healthy' || res.status === 'ok')
+        );
+      }
+      return res;
+    } catch (err) {
+      recordDependencyStatus(name, false);
+      return {
+        name,
+        status: 'unhealthy',
+        latencyMs: 0,
+        message: err.message,
+      };
+    }
+  };
+
   const [sqlite, redis, sorobanRpc] = await Promise.all([
-    dependencyCheckers.sqlite(),
-    dependencyCheckers.redis(),
-    dependencyCheckers.sorobanRpc(),
+    executeChecker('sqlite', checkSqlite),
+    executeChecker('redis', checkRedis),
+    executeChecker('sorobanRpc', checkSorobanRpc),
   ]);
 
   const dependencies = { sqlite, redis, sorobanRpc };

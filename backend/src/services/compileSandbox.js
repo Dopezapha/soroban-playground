@@ -359,7 +359,8 @@ export async function runSandboxedCargoBuild({
   memoryMb = SANDBOX_MEMORY_MB,
   cpuCores = SANDBOX_CPU_CORES,
   mode,
-  useLimitWrapper = process.platform !== 'win32',
+  useLimitWrapper = process.platform !== 'win32' &&
+    process.env.DISABLE_SANDBOX_LIMITS !== 'true',
 }) {
   const resolvedMode = await resolveSandboxMode(mode);
 
