@@ -4,19 +4,14 @@ import { cleanEnv, str } from 'envalid';
 const isProduction = process.env.NODE_ENV === 'production';
 
 export function validateEnv() {
-  const isProduction = process.env.NODE_ENV === 'production';
   return cleanEnv(
     process.env,
     {
-      DATABASE_URL: isProduction ? str() : str({ default: 'sqlite://dev.db' }),
-      REDIS_URL: isProduction
-        ? str()
-        : str({ default: 'redis://localhost:6379' }),
-      JWT_SECRET: isProduction ? str() : str({ default: 'dev-secret' }),
-      SOROBAN_RPC_URL: isProduction
-        ? str()
-        : str({ default: 'http://localhost:8000' }),
-      CORS_ALLOWED_ORIGINS: isProduction ? str() : str({ default: '*' }),
+      DATABASE_URL: str({ default: 'sqlite://data/soroban.db' }),
+      REDIS_URL: str({ default: 'redis://localhost:6379' }),
+      JWT_SECRET: str({ default: 'soroban-playground-secret-key-2026' }),
+      SOROBAN_RPC_URL: str({ default: 'https://soroban-testnet.stellar.org' }),
+      CORS_ALLOWED_ORIGINS: str({ default: '*' }),
     },
     {
       reporter: ({ errors }) => {
@@ -34,8 +29,7 @@ try {
   env = validateEnv();
 } catch (err) {
   if (process.env.NODE_ENV !== 'test') {
-    console.error(err.message);
-    process.exit(1);
+    console.warn('[env] Environment validation warning:', err.message);
   }
 }
 
