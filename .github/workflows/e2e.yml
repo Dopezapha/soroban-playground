@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      E2E_SOROBAN_RPC_URL: http://localhost:8000/soroban/rpc
+      E2E_SOROBAN_RPC_URL: http://localhost:8000/rpc
       E2E_FRONTEND_URL: http://localhost:3000
       E2E_BACKEND_URL: http://localhost:5000
     services:
@@ -31,7 +31,7 @@ jobs:
           NETWORK: standalone
           ENABLE_SOROBAN_RPC: "true"
         options: >-
-          --health-cmd "curl -sf http://localhost:8000/soroban/rpc > /dev/null"
+          --health-cmd "curl -sf http://localhost:8000/rpc > /dev/null"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
