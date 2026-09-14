@@ -28,10 +28,10 @@ jobs:
         ports:
           - 8000:8000
         env:
-          NETWORK: standalone
+          NETWORK: local
           ENABLE_SOROBAN_RPC: "true"
         options: >-
-          --health-cmd "curl -sf http://localhost:8000/rpc > /dev/null"
+          --health-cmd "curl -sf http://localhost:8000/ > /dev/null"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
