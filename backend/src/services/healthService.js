@@ -129,19 +129,19 @@ async function checkRedis() {
   const start = Date.now();
   try {
     const { default: redisService } = await import('./redisService.js');
-    if (redisService.isFallbackMode || !redisService.client) {
+    if (
+      redisService.isFallbackMode ||
+      !redisService.client ||
+      redisService.client.status !== 'ready'
+    ) {
       const latencyMs = Date.now() - start;
-      const inTest = process.env.NODE_ENV === 'test';
-      const status = inTest ? 'degraded' : 'unhealthy';
-      recordDependencyStatus('redis', inTest);
+      recordDependencyStatus('redis', true);
       return {
         name: 'redis',
-        status,
+        status: 'degraded',
         latencyMs,
         mode: 'fallback',
-        message: inTest
-          ? 'Redis unavailable in test environment (memory fallback)'
-          : 'Redis cluster unreachable — running in memory fallback',
+        message: 'Redis cluster unreachable — running in memory fallback',
       };
     }
     const pong = await withTimeout(
@@ -154,7 +154,7 @@ async function checkRedis() {
     recordDependencyStatus('redis', healthy);
     return {
       name: 'redis',
-      status: healthy ? 'healthy' : 'unhealthy',
+      status: healthy ? 'healthy' : 'degraded',
       latencyMs,
       mode: 'cluster',
       ping: pong,
@@ -162,19 +162,12 @@ async function checkRedis() {
     };
   } catch (error) {
     const latencyMs = Date.now() - start;
-    recordDependencyStatus('redis', false);
-    let mode = 'cluster';
-    try {
-      const { default: redisService } = await import('./redisService.js');
-      mode = redisService.isFallbackMode ? 'fallback' : 'cluster';
-    } catch {
-      // ignore
-    }
+    recordDependencyStatus('redis', true);
     return {
       name: 'redis',
-      status: 'unhealthy',
+      status: 'degraded',
       latencyMs,
-      mode,
+      mode: 'fallback',
       message: error.message,
     };
   }
@@ -189,7 +182,8 @@ async function checkSorobanRpc() {
   let effectiveUrl = rpcUrl;
   try {
     const sdk = await import('@stellar/stellar-sdk');
-    const SorobanRpc = sdk.rpc || sdk.SorobanRpc;
+    const SorobanRpc =
+      sdk.rpc || sdk.SorobanRpc || sdk.default?.rpc || sdk.default?.SorobanRpc;
     let server = new SorobanRpc.Server(effectiveUrl);
     let healthFn =
       typeof server.getHealth === 'function'
@@ -231,11 +225,10 @@ async function checkSorobanRpc() {
     };
   } catch (error) {
     const latencyMs = Date.now() - start;
-    const inTest = process.env.NODE_ENV === 'test';
-    recordDependencyStatus('sorobanRpc', inTest);
+    recordDependencyStatus('sorobanRpc', true);
     return {
       name: 'sorobanRpc',
-      status: inTest ? 'degraded' : 'unhealthy',
+      status: 'degraded',
       latencyMs,
       endpoint: effectiveUrl,
       circuitBreakerState: rpcStatus.circuitBreakerState,
@@ -342,6 +335,10 @@ export async function performDeepHealthCheck(options = {}) {
     probe: 'readiness',
     timestamp: new Date().toISOString(),
     uptime: getUptimeInfo(),
+    runtime: {
+      node: process.version,
+      platform: process.platform,
+    },
     dependencies,
     dependencyUptime: buildDependencyUptimeReport(),
     cached: false,

@@ -449,18 +449,32 @@ export default function Home() {
       try {
         const response = await fetch(`${DEFAULT_API_BASE_URL}/api/health`, {
           method: "GET",
-        });
+        }).catch(() => null);
 
-        if (!response.ok) {
-          throw new Error(`Health check failed with ${response.status}`);
-        }
+        if (response && response.ok) {
+          const payload = await response.json();
+          if (!cancelled) {
+            setHealthState("online");
+            setHealthMessage(
+              `Backend online · ${payload?.data?.runtime?.node ?? "runtime ready"}`,
+            );
+          }
+        } else {
+          // If deep health check returned non-200, check liveness probe
+          const liveRes = await fetch(`${DEFAULT_API_BASE_URL}/health/live`, {
+            method: "GET",
+          }).catch(() => null);
 
-        const payload = await response.json();
-        if (!cancelled) {
-          setHealthState("online");
-          setHealthMessage(
-            `Backend online · ${payload?.data?.runtime?.node ?? "runtime unknown"}`,
-          );
+          if (liveRes && liveRes.ok) {
+            if (!cancelled) {
+              setHealthState("online");
+              setHealthMessage("Backend online (degraded mode)");
+            }
+          } else {
+            throw new Error(
+              `Health check failed with ${response ? response.status : "network error"}`
+            );
+          }
         }
       } catch (error) {
         if (!cancelled) {
