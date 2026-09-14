@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useCompileStore } from "@/state/compileStore";
 import {
   Activity,
@@ -433,61 +440,71 @@ export default function Home() {
   const [govVotingPower, setGovVotingPower] = useState(0);
   const [isGovLoading, setIsGovLoading] = useState(false);
 
-  const appendLog = (msg: string) => {
+  const appendLog = useCallback((msg: string) => {
     setLogs((prev) => [...prev, msg]);
-  };
+  }, []);
 
   useEffect(() => {
     setContractAbi(parseContractAbiFromSource(code));
   }, [code]);
 
+  const checkHealth = useCallback(async () => {
+    setHealthState("checking");
+    try {
+      const response = await fetch(`${DEFAULT_API_BASE_URL}/api/health`, {
+        method: "GET",
+      }).catch(() => null);
+
+      if (response && response.ok) {
+        const payload = await response.json();
+        setHealthState("online");
+        setHealthMessage(
+          `Backend online · ${payload?.data?.runtime?.node ?? "runtime ready"}`,
+        );
+        return true;
+      }
+
+      // If deep health check returned non-200, check liveness probe
+      const liveRes = await fetch(`${DEFAULT_API_BASE_URL}/health/live`, {
+        method: "GET",
+      }).catch(() => null);
+
+      if (liveRes && liveRes.ok) {
+        setHealthState("online");
+        setHealthMessage("Backend online (degraded mode)");
+        return true;
+      }
+
+      throw new Error(
+        `Health check failed with ${response ? response.status : "network error"}`
+      );
+    } catch (error) {
+      setHealthState("offline");
+      setHealthMessage(
+        `Backend unavailable at ${DEFAULT_API_BASE_URL}. Start the backend server to compile and deploy.`,
+      );
+      appendLog(`[warn] ${formatApiError(error)}`);
+      return false;
+    }
+  }, [appendLog]);
+
   useEffect(() => {
     let cancelled = false;
 
-    async function checkHealth() {
-      setHealthState("checking");
-      try {
-        const response = await fetch(`${DEFAULT_API_BASE_URL}/api/health`, {
-          method: "GET",
-        }).catch(() => null);
-
-        if (response && response.ok) {
-          const payload = await response.json();
-          if (!cancelled) {
-            setHealthState("online");
-            setHealthMessage(
-              `Backend online · ${payload?.data?.runtime?.node ?? "runtime ready"}`,
-            );
-          }
-        } else {
-          // If deep health check returned non-200, check liveness probe
-          const liveRes = await fetch(`${DEFAULT_API_BASE_URL}/health/live`, {
-            method: "GET",
-          }).catch(() => null);
-
-          if (liveRes && liveRes.ok) {
-            if (!cancelled) {
-              setHealthState("online");
-              setHealthMessage("Backend online (degraded mode)");
-            }
-          } else {
-            throw new Error(
-              `Health check failed with ${response ? response.status : "network error"}`
-            );
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setHealthState("offline");
-          setHealthMessage(
-            `Backend unavailable at ${DEFAULT_API_BASE_URL}. Start the backend server to compile and deploy.`,
-          );
-          appendLog(`[warn] ${formatApiError(error)}`);
-        }
-      }
-    }
-
     checkHealth();
+
+    // If offline, poll every 10s to auto-recover when backend warms up
+    const interval = setInterval(() => {
+      if (!cancelled && healthState !== "online") {
+        checkHealth();
+      }
+    }, 10000);
+
+    const onOnline = () => {
+      if (!cancelled) checkHealth();
+    };
+    window.addEventListener("online", onOnline);
+
     (async () => {
       try {
         const response = await fetch(
@@ -506,8 +523,10 @@ export default function Home() {
 
     return () => {
       cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("online", onOnline);
     };
-  }, []);
+  }, [checkHealth, healthState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2387,22 +2406,33 @@ export default function Home() {
                 <p className="truncate font-mono text-xs text-slate-200">
                   {DEFAULT_API_BASE_URL}
                 </p>
-                <p
-                  className={`mt-2 flex items-center gap-2 text-xs ${
-                    healthState === "online"
-                      ? "text-emerald-300"
-                      : healthState === "offline"
-                        ? "text-rose-300"
-                        : "text-amber-300"
-                  }`}
-                >
-                  {healthState === "checking" ? (
-                    <LoaderCircle size={14} className="animate-spin" />
-                  ) : (
-                    <Activity size={14} />
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                  <p
+                    className={`flex items-center gap-2 ${
+                      healthState === "online"
+                        ? "text-emerald-300"
+                        : healthState === "offline"
+                          ? "text-rose-300"
+                          : "text-amber-300"
+                    }`}
+                  >
+                    {healthState === "checking" ? (
+                      <LoaderCircle size={14} className="animate-spin" />
+                    ) : (
+                      <Activity size={14} />
+                    )}
+                    <span className="truncate">{healthMessage}</span>
+                  </p>
+                  {healthState === "offline" && (
+                    <button
+                      type="button"
+                      onClick={() => checkHealth()}
+                      className="shrink-0 rounded border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-300 transition hover:bg-rose-500/20"
+                    >
+                      Retry
+                    </button>
                   )}
-                  {healthMessage}
-                </p>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
