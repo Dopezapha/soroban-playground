@@ -226,7 +226,11 @@ export class CacheInvalidator {
     }
 
     const client = this.#redisClient();
-    if (!client || typeof client.duplicate !== 'function') {
+    if (
+      !client ||
+      typeof client.duplicate !== 'function' ||
+      client.status !== 'ready'
+    ) {
       return this;
     }
 
@@ -235,11 +239,16 @@ export class CacheInvalidator {
       this.subscriber.on('error', (err) => {
         console.warn('[CacheInvalidator] subscriber error:', err.message);
       });
-      await this.subscriber.subscribe(this.channel);
-      this.subscriber.on('message', (channel, payload) => {
-        if (channel !== this.channel) return;
-        this.applyRemoteInvalidation(payload);
+      await this.subscriber.subscribe(this.channel).catch((err) => {
+        console.warn('[CacheInvalidator] pub/sub unavailable:', err.message);
+        this.subscriber = null;
       });
+      if (this.subscriber) {
+        this.subscriber.on('message', (channel, payload) => {
+          if (channel !== this.channel) return;
+          this.applyRemoteInvalidation(payload);
+        });
+      }
     } catch (err) {
       console.warn('[CacheInvalidator] pub/sub unavailable:', err.message);
       this.subscriber = null;

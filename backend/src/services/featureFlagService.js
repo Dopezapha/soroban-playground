@@ -19,7 +19,11 @@ class FeatureFlagService {
   }
 
   initSubscriber() {
-    if (!redisService.isFallbackMode && redisService.client) {
+    if (
+      !redisService.isFallbackMode &&
+      redisService.client &&
+      redisService.client.status === 'ready'
+    ) {
       this.subClient = new Redis(
         process.env.REDIS_URL || 'redis://localhost:6379',
         {
@@ -31,7 +35,7 @@ class FeatureFlagService {
       this.subClient.on('error', () => {
         // subscriber is best-effort; swallow to avoid unhandled rejection spam
       });
-      this.subClient.subscribe('feature_flags:invalidate');
+      this.subClient.subscribe('feature_flags:invalidate').catch(() => {});
       this.subClient.on('message', () => {
         redisService.delete(FLAGS_CACHE_KEY);
       });

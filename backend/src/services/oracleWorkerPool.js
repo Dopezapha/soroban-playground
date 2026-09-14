@@ -78,7 +78,11 @@ export class OracleWorkerPool {
 
     try {
       while (this.isRunning) {
-        if (redisService.isFallbackMode) {
+        if (
+          redisService.isFallbackMode ||
+          !redisService.client ||
+          redisService.client.status !== 'ready'
+        ) {
           await new Promise((r) => setTimeout(r, 5000));
           continue;
         }

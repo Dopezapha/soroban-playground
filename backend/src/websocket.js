@@ -89,10 +89,16 @@ export function setupWebSocketServer(httpServer) {
   }
 
   // Set up Redis subscriber for cross-cluster broadcasts.
-  if (!redisSubscriber && redisService.client && !redisService.isFallbackMode) {
+  if (
+    !redisSubscriber &&
+    redisService.client &&
+    redisService.client.status === 'ready' &&
+    !redisService.isFallbackMode
+  ) {
     try {
       redisSubscriber = redisService.client.duplicate();
-      redisSubscriber.subscribe(REDIS_BROADCAST_CHANNEL);
+      redisSubscriber.on('error', () => {});
+      redisSubscriber.subscribe(REDIS_BROADCAST_CHANNEL).catch(() => {});
       redisSubscriber.on('message', (channel, message) => {
         if (channel === REDIS_BROADCAST_CHANNEL) {
           broadcastLocal(message);
@@ -101,7 +107,7 @@ export function setupWebSocketServer(httpServer) {
     } catch (err) {
       console.error('WS Redis subscriber error:', err.message);
       if (redisSubscriber) {
-        redisSubscriber.quit();
+        redisSubscriber.quit().catch(() => {});
         redisSubscriber = null;
       }
     }
