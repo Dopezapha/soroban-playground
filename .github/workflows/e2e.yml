@@ -54,8 +54,13 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install Soroban CLI
-        run: cargo install soroban-cli --locked --root /usr/local
+      - name: Install Stellar CLI
+        uses: stellar/stellar-cli@v28.0.0
+        with:
+          version: 28.0.0
+
+      - name: Symlink soroban to stellar
+        run: ln -sf "$(which stellar)" "$HOME/.local/bin/soroban"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
