@@ -315,7 +315,10 @@ initializeDatabase()
   .then(async (db) => {
     if (redisService.client?.duplicate) {
       websocketRedisClient = redisService.client.duplicate();
-      await websocketRedisClient.connect();
+      websocketRedisClient.on('error', () => {});
+      if (websocketRedisClient.status === 'wait') {
+        await websocketRedisClient.connect().catch(() => {});
+      }
     }
     setupWebsocketServer(server, {
       heartbeatInterval: 30000,

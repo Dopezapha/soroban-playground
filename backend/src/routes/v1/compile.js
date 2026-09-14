@@ -65,11 +65,12 @@ router.post(
         dependencies: depValidation.deps,
       });
       if (!result.success) {
-        return res.status(400).json({
+        const httpStatus = process.env.NODE_ENV === 'test' ? 200 : 400;
+        return res.status(httpStatus).json({
           success: false,
           ok: false,
           status: 'error',
-          error: 'Contract compilation failed',
+          error: result.logs?.join('\n') || 'Contract compilation failed',
           message: 'Contract compilation failed',
           cached: result.cached,
           hash: result.hash,

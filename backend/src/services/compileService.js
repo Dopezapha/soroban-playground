@@ -17,6 +17,8 @@ import redisService from './redisService.js';
 
 // Cache integration using the shared redisService singleton.
 const COMPILE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const CACHE_KEY_PREFIX = 'compile:cache:';
+const LOCK_KEY_PREFIX = 'compile:lock:';
 
 async function initializeCacheService(hashes = []) {
   if (!redisService || redisService.isFallbackMode) return false;
