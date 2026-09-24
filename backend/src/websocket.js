@@ -92,7 +92,9 @@ function getClientIp(req) {
     const ip = xff.split(',')[0].trim();
     if (ip) return ip;
   }
-  return req?.socket?.remoteAddress || req?.connection?.remoteAddress || '127.0.0.1';
+  return (
+    req?.socket?.remoteAddress || req?.connection?.remoteAddress || '127.0.0.1'
+  );
 }
 
 export function broadcastTreasuryEvent(event) {

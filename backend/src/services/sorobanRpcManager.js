@@ -189,7 +189,10 @@ class SorobanRpcManager {
               { endpoint: ep.url, status: 'success' },
               durationSec
             );
-            sorobanRpcCallsTotal?.inc?.({ endpoint: ep.url, status: 'success' });
+            sorobanRpcCallsTotal?.inc?.({
+              endpoint: ep.url,
+              status: 'success',
+            });
           } catch (_) {}
 
           ep.failCount = 0;

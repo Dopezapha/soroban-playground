@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { jest } from '@jest/globals';
 
-
 // Capture the connection handler set by setupWebsocketServer
 let connectionHandler = null;
 const wssHandlers = {};
@@ -221,7 +220,11 @@ describe('WebSocket server', () => {
     connectionHandler(socket, makeRequest());
     socket.send.mockClear();
 
-    broadcastContractEvent({ contractId: 'CC123', topics: ['transfer'], value: 100 });
+    broadcastContractEvent({
+      contractId: 'CC123',
+      topics: ['transfer'],
+      value: 100,
+    });
 
     expect(socket.send).toHaveBeenCalledWith(
       expect.stringContaining('"type":"contract-event"')
@@ -251,7 +254,10 @@ describe('WebSocket server', () => {
     connectionHandler(socket, makeRequest());
     socket.send.mockClear();
 
-    broadcastTerminalLog({ sessionId: 'term-1', data: 'Compiling contract...' });
+    broadcastTerminalLog({
+      sessionId: 'term-1',
+      data: 'Compiling contract...',
+    });
 
     expect(socket.send).toHaveBeenCalledWith(
       expect.stringContaining('"type":"terminal-log"')
@@ -263,8 +269,12 @@ describe('WebSocket server', () => {
 
   it('exposes defined Redis cluster channels', () => {
     expect(REDIS_WS_CHANNELS.BROADCAST).toBe('ws:broadcast');
-    expect(REDIS_WS_CHANNELS.CONTRACT_EVENTS).toBe('ws:channel:contract-events');
-    expect(REDIS_WS_CHANNELS.COMPILATION_PROGRESS).toBe('ws:channel:compilation-progress');
+    expect(REDIS_WS_CHANNELS.CONTRACT_EVENTS).toBe(
+      'ws:channel:contract-events'
+    );
+    expect(REDIS_WS_CHANNELS.COMPILATION_PROGRESS).toBe(
+      'ws:channel:compilation-progress'
+    );
     expect(REDIS_WS_CHANNELS.TERMINAL_LOGS).toBe('ws:channel:terminal-logs');
   });
 });

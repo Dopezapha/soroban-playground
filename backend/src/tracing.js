@@ -8,7 +8,13 @@ import {
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
 } from '@opentelemetry/sdk-trace-base';
-import { Resource } from '@opentelemetry/resources';
+import resourcesPkg from '@opentelemetry/resources';
+
+const Resource =
+  resourcesPkg.Resource ||
+  resourcesPkg.default?.Resource ||
+  resourcesPkg.default ||
+  resourcesPkg;
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import config from './config/index.js';

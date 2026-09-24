@@ -43,7 +43,9 @@ function expectSecurityHeaders(res) {
   );
   expect(res.headers['content-security-policy']).toContain("object-src 'none'");
   expect(res.headers['content-security-policy']).toContain("base-uri 'self'");
-  expect(res.headers['content-security-policy']).toContain("form-action 'self'");
+  expect(res.headers['content-security-policy']).toContain(
+    "form-action 'self'"
+  );
   expect(res.headers['referrer-policy']).toBe(
     'strict-origin-when-cross-origin'
   );
