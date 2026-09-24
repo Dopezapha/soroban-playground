@@ -263,6 +263,38 @@ export const oracleProofWorkerHeartbeats = new client.Counter({
 });
 register.registerMetric(oracleProofWorkerHeartbeats);
 
+// Database Query Metrics
+export const dbQueryDuration = new client.Histogram({
+  name: 'db_query_duration_seconds',
+  help: 'Duration of database queries in seconds',
+  labelNames: ['operation', 'status'],
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
+});
+register.registerMetric(dbQueryDuration);
+
+export const dbQueriesTotal = new client.Counter({
+  name: 'db_queries_total',
+  help: 'Total number of database queries executed',
+  labelNames: ['operation', 'status'],
+});
+register.registerMetric(dbQueriesTotal);
+
+// Soroban RPC Call Metrics
+export const sorobanRpcCallDuration = new client.Histogram({
+  name: 'soroban_rpc_call_duration_seconds',
+  help: 'Duration of Soroban RPC calls in seconds',
+  labelNames: ['endpoint', 'status'],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+});
+register.registerMetric(sorobanRpcCallDuration);
+
+export const sorobanRpcCallsTotal = new client.Counter({
+  name: 'soroban_rpc_calls_total',
+  help: 'Total number of Soroban RPC calls',
+  labelNames: ['endpoint', 'status'],
+});
+register.registerMetric(sorobanRpcCallsTotal);
+
 router.get('/', async (req, res) => {
   try {
     updateSystemMetrics();

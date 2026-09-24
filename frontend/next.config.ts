@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
             value: "DENY",
           },
           {
+            key: "X-DNS-Prefetch-Control",
+            value: "off",
+          },
+          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },

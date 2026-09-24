@@ -28,6 +28,7 @@ function expectSecurityHeaders(res) {
   expect(res.headers['x-powered-by']).toBeUndefined();
   expect(res.headers['x-content-type-options']).toBe('nosniff');
   expect(res.headers['x-frame-options']).toBe('DENY');
+  expect(res.headers['x-dns-prefetch-control']).toBe('off');
   expect(res.headers['strict-transport-security']).toContain(
     'max-age=63072000'
   );
@@ -37,8 +38,17 @@ function expectSecurityHeaders(res) {
   expect(res.headers['strict-transport-security']).toContain('preload');
   expect(res.headers['content-security-policy']).toBeDefined();
   expect(res.headers['content-security-policy']).toContain("'self'");
+  expect(res.headers['content-security-policy']).toContain(
+    "frame-ancestors 'none'"
+  );
+  expect(res.headers['content-security-policy']).toContain("object-src 'none'");
+  expect(res.headers['content-security-policy']).toContain("base-uri 'self'");
+  expect(res.headers['content-security-policy']).toContain("form-action 'self'");
   expect(res.headers['referrer-policy']).toBe(
     'strict-origin-when-cross-origin'
+  );
+  expect(res.headers['permissions-policy']).toBe(
+    'camera=(), microphone=(), geolocation=()'
   );
   expect(res.headers['x-csp-nonce']).toBeDefined();
   expect(res.headers['content-security-policy']).toContain(

@@ -42,6 +42,10 @@ jest.mock('../src/services/redisService.js', () => ({
 jest.mock('../src/services/oracle/oracleEvents.js', () => ({
   sharedOracleEventBus: { on: jest.fn() },
 }));
+jest.mock('../src/services/contractEventParser.js', () => ({
+  registerHandler: jest.fn(),
+  dispatchEvent: jest.fn(),
+}));
 
 function makeSocket(overrides = {}) {
   const { EventEmitter } = require('events');

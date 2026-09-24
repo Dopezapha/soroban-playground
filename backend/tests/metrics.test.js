@@ -15,5 +15,9 @@ describe('/metrics', () => {
     expect(res.text).toContain('process_cpu_seconds_total');
     expect(res.text).toContain('http_requests_total');
     expect(res.text).toContain('http_request_rate_per_second');
+    expect(res.text).toContain('db_query_duration_seconds');
+    expect(res.text).toContain('db_queries_total');
+    expect(res.text).toContain('soroban_rpc_call_duration_seconds');
+    expect(res.text).toContain('soroban_rpc_calls_total');
   });
 });

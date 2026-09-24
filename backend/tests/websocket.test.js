@@ -1,4 +1,6 @@
 import { EventEmitter } from 'events';
+import { jest } from '@jest/globals';
+
 
 // Capture the connection handler set by setupWebsocketServer
 let connectionHandler = null;
@@ -59,6 +61,11 @@ jest.mock('../src/services/oracle/oracleEvents.js', () => ({
   __esModule: true,
   sharedOracleEventBus: { on: jest.fn() },
 }));
+jest.mock('../src/services/contractEventParser.js', () => ({
+  __esModule: true,
+  registerHandler: jest.fn(),
+  dispatchEvent: jest.fn(),
+}));
 jest.mock('../src/services/redisService.js', () => ({
   __esModule: true,
   default: { isFallbackMode: true, client: null },
@@ -66,8 +73,14 @@ jest.mock('../src/services/redisService.js', () => ({
 
 import {
   setupWebsocketServer,
+  closeWebsocketServer,
   broadcast,
   broadcastTreasuryEvent,
+  broadcastContractEvent,
+  broadcastCompilationProgress,
+  broadcastTerminalLog,
+  broadcastCluster,
+  REDIS_WS_CHANNELS,
 } from '../src/websocket.js';
 
 function makeSocket(readyState = 1) {
@@ -90,6 +103,10 @@ function makeRequest(url = '/ws', headers = {}) {
 
 beforeAll(() => {
   setupWebsocketServer({ on: jest.fn() });
+});
+
+afterAll(() => {
+  closeWebsocketServer();
 });
 
 describe('WebSocket server', () => {
@@ -197,5 +214,57 @@ describe('WebSocket server', () => {
     expect(socket.send).toHaveBeenCalledWith(
       expect.stringContaining('"type":"treasury-event"')
     );
+  });
+
+  it('broadcastContractEvent sends contract-event type across cluster', () => {
+    const socket = makeSocket();
+    connectionHandler(socket, makeRequest());
+    socket.send.mockClear();
+
+    broadcastContractEvent({ contractId: 'CC123', topics: ['transfer'], value: 100 });
+
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('"type":"contract-event"')
+    );
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('"contractId":"CC123"')
+    );
+  });
+
+  it('broadcastCompilationProgress sends compile-progress type across cluster', () => {
+    const socket = makeSocket();
+    connectionHandler(socket, makeRequest());
+    socket.send.mockClear();
+
+    broadcastCompilationProgress({ step: 'building', progress: 50 });
+
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('"type":"compile-progress"')
+    );
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('"step":"building"')
+    );
+  });
+
+  it('broadcastTerminalLog sends terminal-log type across cluster', () => {
+    const socket = makeSocket();
+    connectionHandler(socket, makeRequest());
+    socket.send.mockClear();
+
+    broadcastTerminalLog({ sessionId: 'term-1', data: 'Compiling contract...' });
+
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('"type":"terminal-log"')
+    );
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('Compiling contract...')
+    );
+  });
+
+  it('exposes defined Redis cluster channels', () => {
+    expect(REDIS_WS_CHANNELS.BROADCAST).toBe('ws:broadcast');
+    expect(REDIS_WS_CHANNELS.CONTRACT_EVENTS).toBe('ws:channel:contract-events');
+    expect(REDIS_WS_CHANNELS.COMPILATION_PROGRESS).toBe('ws:channel:compilation-progress');
+    expect(REDIS_WS_CHANNELS.TERMINAL_LOGS).toBe('ws:channel:terminal-logs');
   });
 });

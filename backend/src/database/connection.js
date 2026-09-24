@@ -2,6 +2,8 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createSpan } from '../utils/tracing.js';
+import { dbQueryDuration, dbQueriesTotal } from '../routes/metrics.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -46,12 +48,50 @@ async function openDatabase(options = {}) {
   methodsToWrap.forEach((method) => {
     const original = handle[method].bind(handle);
     handle[method] = async function (...args) {
+      const query = args[0];
+      const params = args.slice(1);
+      const queryStr = typeof query === 'string' ? query : 'unknown';
+
+      const span = createSpan(`db.${method}`, {
+        'db.system': 'sqlite',
+        'db.operation': method,
+        'db.statement': queryStr,
+      });
+
       const startTime = process.hrtime.bigint();
-      const traceId = Math.random().toString(36).substring(2, 15);
+      const startHrTime = process.hrtime();
+      const traceId =
+        span?.spanContext()?.traceId ||
+        Math.random().toString(36).substring(2, 15);
 
       try {
-        return await original(...args);
+        const result = await original(...args);
+        span?.setStatus?.({ code: 1 });
+        const [secs, nanos] = process.hrtime(startHrTime);
+        const durationSec = secs + nanos / 1e9;
+        try {
+          dbQueryDuration?.observe?.(
+            { operation: method, status: 'success' },
+            durationSec
+          );
+          dbQueriesTotal?.inc?.({ operation: method, status: 'success' });
+        } catch (_) {}
+        return result;
+      } catch (err) {
+        span?.setStatus?.({ code: 2, message: err.message });
+        span?.recordException?.(err);
+        const [secs, nanos] = process.hrtime(startHrTime);
+        const durationSec = secs + nanos / 1e9;
+        try {
+          dbQueryDuration?.observe?.(
+            { operation: method, status: 'error' },
+            durationSec
+          );
+          dbQueriesTotal?.inc?.({ operation: method, status: 'error' });
+        } catch (_) {}
+        throw err;
       } finally {
+        span?.end?.();
         const endTime = process.hrtime.bigint();
         const durationMs = Number(endTime - startTime) / 1000000;
 

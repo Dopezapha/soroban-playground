@@ -3,9 +3,11 @@ import helmet from 'helmet';
 
 const STELLAR_RPC_HOSTS = [
   'https://soroban-testnet.stellar.org',
+  'https://rpc-futurenet.stellar.org',
   'https://soroban-mainnet.stellar.org',
   'https://horizon-testnet.stellar.org',
   'https://horizon.stellar.org',
+  'https://mainnet.sorobanrpc.com',
 ];
 
 const CSP_EXTRA_CONNECT_SRC = (process.env.CSP_CONNECT_SRC || '')

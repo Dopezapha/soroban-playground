@@ -7,6 +7,8 @@ import oracleProofQueueService from './services/oracleProofQueueService.js';
 import redisService from './services/redisService.js';
 import { sharedOracleEventBus } from './services/oracle/oracleEvents.js';
 
+import { registerHandler } from './services/contractEventParser.js';
+
 const clients = new Set();
 
 // Tracks number of active connections per IP address.
@@ -15,18 +17,29 @@ const ipCounts = new Map();
 const HEARTBEAT_INTERVAL_MS = 30_000; // ping every 30 s
 const MAX_MISSED_PONGS = 2; // terminate after 2 consecutive misses
 const MAX_CONNECTIONS_PER_IP = 10;
-const REDIS_BROADCAST_CHANNEL = 'ws:broadcast';
+
+export const REDIS_WS_CHANNELS = {
+  BROADCAST: 'ws:broadcast',
+  CONTRACT_EVENTS: 'ws:channel:contract-events',
+  COMPILATION_PROGRESS: 'ws:channel:compilation-progress',
+  TERMINAL_LOGS: 'ws:channel:terminal-logs',
+};
+
+const REDIS_BROADCAST_CHANNEL = REDIS_WS_CHANNELS.BROADCAST;
 
 let redisSubscriber = null;
 
 function safeSend(socket, message) {
   try {
-    if (socket.readyState === WebSocket.OPEN) {
+    const isOpen = socket.readyState === (WebSocket?.OPEN ?? 1);
+    if (isOpen) {
       socket.send(message);
     }
   } catch (err) {
     console.error('WS send error:', err.message);
-    socket.terminate();
+    if (typeof socket.terminate === 'function') {
+      socket.terminate();
+    }
     if (socket.releaseIp) socket.releaseIp();
     clients.delete(socket);
   }
@@ -49,34 +62,61 @@ function broadcastLocal(message) {
   }
 }
 
-// Broadcast a message to all clients across all instances using Redis Pub/Sub.
-function broadcastGlobal(message) {
+// Broadcast a message to all clients across all instances using a specific Redis Pub/Sub channel.
+export function broadcastCluster(channel, message) {
   if (!message) return;
+  const serialized =
+    typeof message === 'string' ? message : safeStringify(message);
+  if (!serialized) return;
+
   if (redisService.client && !redisService.isFallbackMode) {
     try {
-      redisService.client.publish(REDIS_BROADCAST_CHANNEL, message);
+      redisService.client.publish(channel, serialized);
     } catch (err) {
-      console.error('Redis publish error:', err.message);
-      broadcastLocal(message);
+      console.error(`Redis publish error on ${channel}:`, err.message);
+      broadcastLocal(serialized);
     }
   } else {
-    broadcastLocal(message);
+    broadcastLocal(serialized);
   }
 }
 
+// Broadcast a message to all clients across all instances using Redis Pub/Sub default broadcast channel.
+function broadcastGlobal(message) {
+  broadcastCluster(REDIS_BROADCAST_CHANNEL, message);
+}
+
 function getClientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
+  const xff = req?.headers?.['x-forwarded-for'];
   if (xff) {
     const ip = xff.split(',')[0].trim();
     if (ip) return ip;
   }
-  return req.socket.remoteAddress;
+  return req?.socket?.remoteAddress || req?.connection?.remoteAddress || '127.0.0.1';
 }
 
 export function broadcastTreasuryEvent(event) {
   const message = safeStringify({ type: 'treasury-event', ...event });
   if (!message) return;
   broadcastGlobal(message);
+}
+
+export function broadcastContractEvent(event) {
+  const message = safeStringify({ type: 'contract-event', ...event });
+  if (!message) return;
+  broadcastCluster(REDIS_WS_CHANNELS.CONTRACT_EVENTS, message);
+}
+
+export function broadcastCompilationProgress(progress) {
+  const message = safeStringify({ type: 'compile-progress', ...progress });
+  if (!message) return;
+  broadcastCluster(REDIS_WS_CHANNELS.COMPILATION_PROGRESS, message);
+}
+
+export function broadcastTerminalLog(logData) {
+  const message = safeStringify({ type: 'terminal-log', ...logData });
+  if (!message) return;
+  broadcastCluster(REDIS_WS_CHANNELS.TERMINAL_LOGS, message);
 }
 
 let wssInstance = null;
@@ -88,7 +128,7 @@ export function setupWebSocketServer(httpServer) {
     } catch (_) {}
   }
 
-  // Set up Redis subscriber for cross-cluster broadcasts.
+  // Set up Redis subscriber for cross-cluster broadcasts across channels.
   if (
     !redisSubscriber &&
     redisService.client &&
@@ -98,9 +138,12 @@ export function setupWebSocketServer(httpServer) {
     try {
       redisSubscriber = redisService.client.duplicate();
       redisSubscriber.on('error', () => {});
-      redisSubscriber.subscribe(REDIS_BROADCAST_CHANNEL).catch(() => {});
+      const subscribedChannels = Object.values(REDIS_WS_CHANNELS);
+      for (const ch of subscribedChannels) {
+        redisSubscriber.subscribe(ch).catch(() => {});
+      }
       redisSubscriber.on('message', (channel, message) => {
-        if (channel === REDIS_BROADCAST_CHANNEL) {
+        if (subscribedChannels.includes(channel)) {
           broadcastLocal(message);
         }
       });
@@ -243,8 +286,16 @@ export function setupWebSocketServer(httpServer) {
 
   invokeProgressBus.on('progress', forward('invoke-progress'));
   deployProgressBus.on('progress', forward('deploy-progress'));
-  compileProgressBus.on('progress', forward('compile-progress'));
+  compileProgressBus.on('progress', (progress) => {
+    broadcastCompilationProgress(progress);
+  });
   oracleProofQueueService.on('progress', forward('oracle-proof-progress'));
+
+  try {
+    registerHandler('*', (event) => {
+      broadcastContractEvent(event);
+    });
+  } catch (_) {}
 
   sharedOracleEventBus.on('*', (payload) => {
     const message = safeStringify({ type: 'oracle-event', ...payload });
@@ -273,11 +324,9 @@ export function setupWebSocketServer(httpServer) {
       }
     }
   }, HEARTBEAT_INTERVAL_MS);
+  activeHeartbeatTimer = heartbeatTimer;
 
-  wss.on('close', () => clearInterval(heartbeatTimer));
-
-  // Broadcast analytics every 2 seconds
-  setInterval(async () => {
+  const analyticsTimer = setInterval(async () => {
     if (
       clients.size === 0 ||
       redisService.isFallbackMode ||
@@ -315,23 +364,49 @@ export function setupWebSocketServer(httpServer) {
       console.error('WS Analytics Broadcast Error:', err.message);
     }
   }, 2000);
+  activeAnalyticsTimer = analyticsTimer;
+
+  wss.on('close', () => {
+    clearInterval(heartbeatTimer);
+    clearInterval(analyticsTimer);
+    activeHeartbeatTimer = null;
+    activeAnalyticsTimer = null;
+  });
 
   return wss;
 }
 
+let activeHeartbeatTimer = null;
+let activeAnalyticsTimer = null;
+
 export function closeWebSocketServer() {
+  if (activeHeartbeatTimer) {
+    clearInterval(activeHeartbeatTimer);
+    activeHeartbeatTimer = null;
+  }
+  if (activeAnalyticsTimer) {
+    clearInterval(activeAnalyticsTimer);
+    activeAnalyticsTimer = null;
+  }
   if (wssInstance) {
     for (const socket of clients) {
       if (socket.releaseIp) socket.releaseIp();
-      socket.terminate();
+      if (typeof socket.terminate === 'function') {
+        socket.terminate();
+      }
     }
     clients.clear();
-    wssInstance.close();
+    if (typeof wssInstance.close === 'function') {
+      wssInstance.close();
+    }
   }
   ipCounts.clear();
   if (redisSubscriber) {
     try {
-      redisSubscriber.unsubscribe(REDIS_BROADCAST_CHANNEL);
+      const subscribedChannels = Object.values(REDIS_WS_CHANNELS);
+      for (const ch of subscribedChannels) {
+        redisSubscriber.unsubscribe(ch);
+      }
       redisSubscriber.quit();
     } catch (err) {
       console.error('WS Redis subscriber close error:', err.message);

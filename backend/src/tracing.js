@@ -59,11 +59,16 @@ export function initializeTracing() {
     return null;
   }
 
-  const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: config.tracing.serviceName,
-    [SemanticResourceAttributes.SERVICE_VERSION]: config.tracing.serviceVersion,
-    [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: process.pid.toString(),
-  });
+  const resourceAttrs = {
+    [SemanticResourceAttributes?.SERVICE_NAME || 'service.name']:
+      config.tracing.serviceName,
+    [SemanticResourceAttributes?.SERVICE_VERSION || 'service.version']:
+      config.tracing.serviceVersion,
+    [SemanticResourceAttributes?.SERVICE_INSTANCE_ID || 'service.instance.id']:
+      process.pid.toString(),
+  };
+
+  const resource = new Resource(resourceAttrs);
 
   const exporters = [];
 

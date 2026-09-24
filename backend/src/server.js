@@ -9,8 +9,13 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 
+import { initializeTracing } from './tracing.js';
 import config from './config/index.js';
 import { validateEnv } from './config/env.js';
+
+if (process.env.NODE_ENV !== 'test') {
+  initializeTracing();
+}
 import { corsOptions } from './config/cors.js';
 import {
   applyServerTuning,

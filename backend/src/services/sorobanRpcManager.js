@@ -1,5 +1,9 @@
 import config from '../config/index.js';
 import { createSpan, getTraceId } from '../utils/tracing.js';
+import {
+  sorobanRpcCallDuration,
+  sorobanRpcCallsTotal,
+} from '../routes/metrics.js';
 
 const DEFAULT_FALLBACK_ENDPOINTS = [
   process.env.SOROBAN_RPC_URL ||
@@ -143,12 +147,11 @@ class SorobanRpcManager {
     this.checkCircuitStates();
 
     const activeTraceId = getTraceId();
-    const span = activeTraceId
-      ? createSpan('soroban_rpc_call', {
-          'rpc.active_endpoint': this.activeEndpoint.url,
-          'rpc.circuit_state': this.activeEndpoint.state,
-        })
-      : null;
+    const span = createSpan('soroban_rpc_call', {
+      'rpc.system': 'soroban_rpc',
+      'rpc.active_endpoint': this.activeEndpoint.url,
+      'rpc.circuit_state': this.activeEndpoint.state,
+    });
 
     const traceHeaders = activeTraceId
       ? {
@@ -168,6 +171,7 @@ class SorobanRpcManager {
         continue;
       }
 
+      const callStart = process.hrtime();
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
@@ -178,18 +182,39 @@ class SorobanRpcManager {
             signal: controller.signal,
           });
 
+          const [secs, nanos] = process.hrtime(callStart);
+          const durationSec = secs + nanos / 1e9;
+          try {
+            sorobanRpcCallDuration?.observe?.(
+              { endpoint: ep.url, status: 'success' },
+              durationSec
+            );
+            sorobanRpcCallsTotal?.inc?.({ endpoint: ep.url, status: 'success' });
+          } catch (_) {}
+
           ep.failCount = 0;
           ep.state = CIRCUIT_STATES.CLOSED;
           ep.isHealthy = true;
           this.activeEndpointIndex = idx;
 
-          span?.setStatus({ code: 1 });
+          span?.setStatus?.({ code: 1 });
+          span?.end?.();
           return result;
         } finally {
           clearTimeout(timeout);
         }
       } catch (err) {
         lastError = err;
+        const [secs, nanos] = process.hrtime(callStart);
+        const durationSec = secs + nanos / 1e9;
+        try {
+          sorobanRpcCallDuration?.observe?.(
+            { endpoint: ep.url, status: 'error' },
+            durationSec
+          );
+          sorobanRpcCallsTotal?.inc?.({ endpoint: ep.url, status: 'error' });
+        } catch (_) {}
+
         ep.failCount += 1;
         ep.lastFailureTime = Date.now();
 
@@ -205,9 +230,9 @@ class SorobanRpcManager {
     const errorMsg = `All Soroban RPC endpoints failed or are circuit breaker OPEN. Last error: ${
       lastError?.message || 'Unknown error'
     }`;
-    span?.setStatus({ code: 2, message: errorMsg });
-    span?.recordException(lastError || new Error(errorMsg));
-    span?.end();
+    span?.setStatus?.({ code: 2, message: errorMsg });
+    span?.recordException?.(lastError || new Error(errorMsg));
+    span?.end?.();
     throw new Error(errorMsg);
   }
 
